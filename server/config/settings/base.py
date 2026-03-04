@@ -38,12 +38,12 @@ USE_TZ = True
 # Site settings
 # ------------------------------------------------------------------------------
 SITE_ID = 1
-SITE_NAME = env("SITE_NAME")
+SITE_NAME = env("SITE_NAME", default="Alpha Apartments")
 
 
 # Databases
 # ------------------------------------------------------------------------------
-DATABASES = {"default": env.db("DATABASE_URL")}
+DATABASES = {"default": env.db("DATABASE_URL", default="sqlite:///test.db")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -220,7 +220,7 @@ LOGGING = {
 # ------------------------------------------------------------------------------
 if USE_TZ:
     CELERY_TIMEZONE = TIME_ZONE
-CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="memory://")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_RESULT_EXTENDED = True
 CELERY_RESULT_BACKEND_ALWAYS_RETRY = True
@@ -299,7 +299,7 @@ SPECTACULAR_SETTINGS = {
 # Django Simple JWT
 # -------------------------------------------------------------------------------
 SIMPLE_JWT = {
-    "SIGNING_KEY": env.str("DJANGO_SECRET_KEY"),
+    "SIGNING_KEY": env.str("DJANGO_SECRET_KEY", default="test-signing-key-change-in-production"),
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
@@ -327,8 +327,8 @@ DJOSER = {
 
 # Social Auth
 # -------------------------------------------------------------------------------
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env.str("GOOGLE_CLIENT_ID")
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env.str("GOOGLE_CLIENT_SECRET")
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = env.str("GOOGLE_CLIENT_ID", default="")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = env.str("GOOGLE_CLIENT_SECRET", default="")
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
