@@ -1,6 +1,29 @@
 # Imports
-from apps.apartments.models import Apartment
+from apps.apartments.models import Apartment, Building, Entrance, Unit
 from django.contrib import admin
+
+
+@admin.register(Building)
+class BuildingAdmin(admin.ModelAdmin):
+    list_display = ["id", "name", "address", "city", "is_active", "created_at"]
+    list_filter = ["is_active", "city"]
+    search_fields = ["name", "address"]
+
+
+@admin.register(Entrance)
+class EntranceAdmin(admin.ModelAdmin):
+    list_display = ["id", "building", "name", "created_at"]
+    list_filter = ["building"]
+    search_fields = ["name", "building__name"]
+    autocomplete_fields = ["building"]
+
+
+@admin.register(Unit)
+class UnitAdmin(admin.ModelAdmin):
+    list_display = ["id", "number", "floor", "entrance", "apartment"]
+    list_filter = ["entrance__building"]
+    search_fields = ["number", "entrance__building__name"]
+    autocomplete_fields = ["entrance"]
 
 
 # Register the Apartment model with the admin panel
