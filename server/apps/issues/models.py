@@ -1,5 +1,6 @@
 # Imports
 import logging
+from datetime import timedelta
 from typing import Dict
 
 from apps.apartments.models import Apartment, Unit
@@ -9,6 +10,7 @@ from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
@@ -20,7 +22,41 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-# Issue Model
+# ── Category Model (with SLA) ──────────────────────────────────────────────
+
+class Category(TimeStampedModel):
+    """Service request category with SLA hours."""
+
+    name = models.CharField(_("Name"), max_length=100, unique=True)
+    sla_hours = models.PositiveIntegerField(
+        _("SLA Hours"),
+        default=72,
+        help_text="Hours within which the issue must be resolved.",
+    )
+
+    class Meta:
+        verbose_name = _("Category")
+        verbose_name_plural = _("Categories")
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} (SLA: {self.sla_hours}h)"
+
+
+# ── Allowed status transitions ─────────────────────────────────────────────
+ALLOWED_TRANSITIONS = {
+    "reported": {"accepted", "rejected"},
+    "accepted": {"in_progress", "rejected"},
+    "in_progress": {"done", "rejected"},
+    "done": set(),
+    "rejected": set(),
+    # Legacy statuses → map to new ones
+    "resolved": set(),
+}
+
+
+# ── Issue Model ─────────────────────────────────────────────────────────────
+
 class Issue(TimeStampedModel):
     """Issue
 
@@ -49,11 +85,15 @@ class Issue(TimeStampedModel):
         Priority: The priority of the issue.
     """
 
-    # Constants for the issue status
+    # Constants for the issue status (extended for SLA flow)
     class IssueStatus(models.TextChoices):
         REPORTED = ("reported", _("Reported"))
-        RESOLVED = ("resolved", _("Resolved"))
+        ACCEPTED = ("accepted", _("Accepted"))
         IN_PROGRESS = ("in_progress", _("In Progress"))
+        DONE = ("done", _("Done"))
+        REJECTED = ("rejected", _("Rejected"))
+        # Legacy kept for backward compat
+        RESOLVED = ("resolved", _("Resolved"))
 
     # Constants for the issue priority
     class Priority(models.TextChoices):
@@ -77,6 +117,15 @@ class Issue(TimeStampedModel):
         related_name="issues",
         verbose_name=_("Unit"),
     )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issues",
+        verbose_name=_("Category"),
+    )
+    due_at = models.DateTimeField(_("Due At"), null=True, blank=True)
     reported_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -109,14 +158,29 @@ class Issue(TimeStampedModel):
 
     # String Representation
     def __str__(self) -> str:
-        """Return the string representation of the issue.
-
-        Returns:
-            str: The string representation of the issue.
-        """
-
-        # Return the title
         return self.title
+
+    @property
+    def is_overdue(self) -> bool:
+        """True if due_at is set and has passed without being done/resolved."""
+        if not self.due_at:
+            return False
+        if self.status in (self.IssueStatus.DONE, self.IssueStatus.RESOLVED):
+            return False
+        return timezone.now() > self.due_at
+
+    def transition_to(self, new_status: str) -> None:
+        """Perform a status transition, raising ValueError for invalid moves."""
+        allowed = ALLOWED_TRANSITIONS.get(self.status, set())
+        if new_status not in allowed:
+            raise ValueError(
+                f"Cannot transition from '{self.status}' to '{new_status}'. "
+                f"Allowed: {allowed or 'none (terminal state)'}."
+            )
+        self.status = new_status
+        if new_status in (self.IssueStatus.DONE, self.IssueStatus.RESOLVED):
+            self.resolved_on = timezone.now().date()
+        self.save(update_fields=["status", "resolved_on"])
 
     # Save Method
     def save(self, *args: Dict, **kwargs: Dict) -> None:
@@ -130,8 +194,12 @@ class Issue(TimeStampedModel):
             Exception: If the email sending fails.
         """
 
-        # Check if the issue is existing
+        # Compute due_at on first save when category is set
         is_existing = self.pk is not None
+        if not is_existing and self.category and not self.due_at:
+            self.due_at = timezone.now() + timedelta(hours=self.category.sla_hours)
+
+        # Check if the issue is existing (re-use variable from above)
 
         # Get the old assigned user
         old_assigned_to = None

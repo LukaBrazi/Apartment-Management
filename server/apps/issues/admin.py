@@ -1,9 +1,15 @@
 # Imports
 from apps.common.admin import ContentViewInline
 from apps.common.models import ContentView
-from apps.issues.models import Issue
+from apps.issues.models import Category, Issue
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ["id", "name", "sla_hours"]
+    search_fields = ["name"]
 
 
 # Register the Issue model with the admin panel

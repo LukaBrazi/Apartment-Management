@@ -62,6 +62,14 @@ class ApartmentFactory(DjangoModelFactory):
     floor = factory.Sequence(lambda n: (n % 9) + 1)
 
 
+class CategoryFactory(DjangoModelFactory):
+    class Meta:
+        model = "issues.Category"
+
+    name = factory.Sequence(lambda n: f"Category {n}")
+    sla_hours = 72
+
+
 class IssueFactory(DjangoModelFactory):
     class Meta:
         model = "issues.Issue"
