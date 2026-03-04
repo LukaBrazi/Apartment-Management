@@ -191,7 +191,7 @@ EMAIL_TIMEOUT = 5
 # Admin
 # ------------------------------------------------------------------------------
 ADMIN_URL = "admin/"
-ADMINS = [("""Rohit Vilas Ingole""", "datarohit@alpha-apartments.com")]
+ADMINS = [("Andriienko Dmytro", "d.andriienko@alpha-apartments.local")]
 MANAGERS = ADMINS
 
 
@@ -288,7 +288,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Alpha Apartments API",
     "DESCRIPTION": "Alpha Apartments web portal lets tenants report issues, report other tenants, and securely share incidents. It effectively uses Django REST Framework for the backend and DRF Spectacular for the API documentation.",
     "VERSION": "1.0.0",
-    "CONTACT": {"name": "Rohit Vilas Ingole", "email": "rohit.vilas.ingole@gmail.com"},
+    "CONTACT": {"name": "Andriienko Dmytro", "email": "d.andriienko@alpha-apartments.local"},
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",

@@ -19,4 +19,5 @@ python manage.py collectstatic --no-input
 
 
 # Start the Django development server on all available network interfaces on port 8000
-exec python manage.py runserver_plus 0.0.0.0:8000
+# Use --reloader-type stat to avoid inotify spuriously watching Python stdlib inside Docker
+exec python manage.py runserver_plus --reloader-type stat 0.0.0.0:8000

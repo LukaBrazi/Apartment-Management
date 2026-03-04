@@ -71,7 +71,8 @@ class StaticStorage(CustomS3Boto3Storage):
 
     # Attributes
     location = "static"
-    default_acl = "private"
+    default_acl = "public-read"
+    querystring_auth = False
     file_overwrite = False
 
 

@@ -1,140 +1,141 @@
-# **🏢 Alpha Apartments**
+# ОСББ / Керуюча в кишені — Alpha Apartments
 
-**Alpha Apartments is a comprehensive web portal designed to streamline apartment management and communication for tenants and non-tenants (technicians). The platform features user-friendly interfaces and robust backend support to ensure a seamless experience.**
+Веб-портал для керування багатоквартирними будинками (ОСББ). Мешканці повідомляють про проблеми, отримують оголошення від управляючої компанії та стежать за статусом ремонтних заявок з дотриманням SLA.
 
-## **🚀 Features**
+## Особливості
 
-### **Authentication**
-- Google OAuth login
-- User email/password registration
-- User email/password login
-- User logout
-- JWT Cookie authentication
+### Автентифікація
+- JWT cookie-аутентифікація
+- Реєстрація та вхід за email/паролем
+- Google OAuth (конфігурується)
 
-### **Profiles**
-- View all tenants' profiles
-- View all non-tenants' (technicians) profiles
-- Get the logged-in user's profile
-- Update user profile
-- Upload image for user avatar
+### Ієрархія нерухомості
+- **Будинок (Building)** → **Під'їзд (Entrance)** → **Квартира (Unit)**
+- Зворотна сумісність із старою моделлю `Apartment`
 
-### **Apartments**
-- Add apartment
-- View all apartments for the logged-in user
+### Заявки на обслуговування (Service Requests / Issues)
+- Категорії із SLA (норматив часу виконання в годинах)
+- Автоматичний розрахунок `due_at` та флаг `is_overdue`
+- Чіткий потік статусів: `reported → accepted → in_progress → done | rejected`
+- Email-сповіщення при вирішенні заявки
 
-### **Issues**
-- List all issues
-- List all assigned issues
-- View all issues created by the logged-in user
-- Create a new issue for a specified apartment
-- View details of an issue
-- Update an issue
-- Delete an issue
+### Оголошення (Announcements)
+- Оголошення прив'язані до конкретного будинку
+- Мешканці бачать лише оголошення свого будинку
 
-### **Reports**
-- Create a new report for another tenant
-- View reports created about the logged-in user
-- **Note:** First report serves as a warning, and if a user accumulates 5 reports, the account will be deactivated
+### Профілі та рейтинги
+- Профілі мешканців і технічних спеціалістів
+- Рейтингова система технічного персоналу
 
-### **Ratings**
-- Create a rating for non-tenants (technicians)
-- Display average rating for technicians
+### Публікації (Posts)
+- Стрічка публікацій з тегами, голосуванням, закладками
+- Коментарі та перегляди
 
-### **Posts**
-- List all posts
-- Get list of posts by tags
-- Get top posts (most replies and content views)
-- List popular tags (most used tags)
-- Create a new post
-- List logged-in user's posts
-- View details of a post
-- Update a post
-- Bookmark a post
-- Unbookmark a post
-- View list of bookmarked posts
-- Add a reply to a post
-- Get all replies for a post
-- Upvote a post
-- Downvote a post
+### Звіти про порушення (Reports)
+- Перша скарга — попередження
+- Після 5 скарг обліковий запис деактивується
 
-## **🛠️ Tech Stack**
+## Технічний стек
 
-### **Backend**
-- **Django**: Web framework
-- **Django REST Framework**: API development
-- **PostgreSQL**: Database
-- **Celery**: Asynchronous task queue
-- **Redis**: Message broker for Celery
-- **MinIO**: Object storage for static and media files
+### Backend
+- **Django 4.2** + **Django REST Framework**
+- **PostgreSQL** — основна СУБД
+- **Celery** + **Redis** — черга задач
+- **MinIO** — S3-сумісне сховище статичних і медіа-файлів
+- **Mailpit** — SMTP-перехоплювач для розробки
+- **pytest** + **factory_boy** — тестування
 
-### **Frontend**
-- **NextJS**: Frontend Web Framework
-- **Heroicons**: Icon Library
-- **TailwindCSS**: CSS Utility Class Package
-- **Redux**: Statement Management
-- **Zod**: Data and Schema Validation
-- **Axios**: HTTP Request and Response Package
+### Frontend
+- **Next.js** — React-фреймворк
+- **TailwindCSS** + **Heroicons**
+- **Redux** — управління станом
+- **Zod** — валідація даних
+- **Axios** — HTTP-запити
 
-## **📦 Deployment**
+### Інфраструктура
+- **Docker Compose** — локальна оркестрація
+- **Nginx** — зворотний проксі
 
-### **Docker**
-**The application is containerized using Docker for easy deployment and management. Below is a brief overview of the Docker setup:**
+## Швидкий старт
 
-- **Services**: 
-  - `server`: Django backend
-  - `client`: NextJS frontend
-  - `postgres`: PostgreSQL database
-  - `minio`: MinIO object storage
-  - `mailpit`: Mail server for development
-  - `redis`: Redis message broker
-  - `celeryworker`: Celery worker
-  - `celerybeat`: Celery beat scheduler
-  - `flower`: Celery monitoring tool
-  - `nginx`: Reverse proxy server
+### Залежності
+- Docker та Docker Compose
 
-### **Volumes**
-- `local_postgres_data`
-- `local_postgres_data_backups`
-- `local_minio_data`
-- `local_mailpit_data`
-- `local_redis_data`
-- `local_logs_nginx`
+### Запуск
 
-### **Networks**
-- `alpha_apartments_network`
+```bash
+# Клонувати репозиторій
+git clone <repo-url>
+cd Django-Apartment-Management
 
-## **🔧 Setup and Installation**
+# Запустити всі сервіси
+make up
 
-### **Prerequisites**
-- **Docker and Docker Compose installed on your system**
+# Або вручну
+docker compose -f docker-compose.local.yml up --build
+```
 
-### **Installation**
-1. **Clone the repository:**
-    ```bash
-    git clone https://github.com/DataRohit/Django-Apartment-Management.git
-    cd alpha-apartments
-    ```
+### Після першого запуску
 
-2. **Build and start the container:**
-    ```bash
-    docker-compose -f docker-compose.local.yml up --build
-    ```
+```bash
+# Створити MinIO bucket (тільки при першому запуску)
+make minio-init
 
-3. **Access the application:**
-    - **Backend:** `http://localhost:8080/api/v1/`
-    - **Frontend** `http://localhost:8080/`
-    - **Swagger Redoc:** `http://localhost:8080/api/v1/redoc/`
-    - **Swagger Playground:** `http://localhost:8080/api/v1/swagger/`
-    - **Minio:** `http://localhost:9090/`
-    - **Mailpit:** `http://localhost:8025/`
-    - **Flower:** `http://localhost:5555/`
+# Наповнити демо-даними
+make seed
 
-## **📝 License**
-**This project is licensed under the MIT License - see the [LICENSE](https://github.com/DataRohit/Django-Apartment-Management/blob/master/license) file for details.**
+# Створити суперкористувача
+make createsuperuser
+```
 
-## 📞 Contact
-**For any inquiries or support, please reach out to [rohit.vilas.ingole@gmail.com](mailto:rohit.vilas.ingole@gmail.com).**
+### Доступні адреси
+
+| Сервіс | URL |
+|--------|-----|
+| Frontend | http://localhost:8080/ |
+| Django Admin | http://localhost:8080/admin/ |
+| REST API | http://localhost:8080/api/v1/ |
+| Swagger UI | http://localhost:8080/swagger/redoc/ |
+| MinIO Console | http://localhost:9090/ |
+| Mailpit | http://localhost:8025/ |
+| Flower (Celery) | http://localhost:5555/ |
+
+### Облікові дані для розробки
+
+| Сервіс | Логін | Пароль |
+|--------|-------|--------|
+| Django Admin | admin@admin.com | admin123 |
+| MinIO | minioadmin | minioadmin123 |
+
+## Тестування
+
+```bash
+# Запустити всі тести
+make test
+
+# З покриттям
+make test-cov
+```
+
+## Сервіси Docker
+
+| Сервіс | Опис |
+|--------|------|
+| `server` | Django backend |
+| `client` | Next.js frontend |
+| `postgres` | PostgreSQL база даних |
+| `minio` | MinIO сховище файлів |
+| `mailpit` | SMTP-перехоплювач |
+| `redis` | Брокер повідомлень |
+| `celeryworker` | Celery воркер |
+| `celerybeat` | Celery планувальник |
+| `flower` | Моніторинг Celery |
+| `nginx` | Зворотний проксі |
+
+## Ліцензія
+
+MIT License
 
 ---
 
-Made with ❤️ by [Rohit Vilas Ingole](https://github.com/datarohit)
+Розробник: **Andriienko Dmytro**
