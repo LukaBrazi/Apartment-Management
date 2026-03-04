@@ -60,3 +60,15 @@ class ApartmentFactory(DjangoModelFactory):
     unit_number = factory.Sequence(lambda n: f"A{n:03d}")
     building = factory.Sequence(lambda n: f"Block {n}")
     floor = factory.Sequence(lambda n: (n % 9) + 1)
+
+
+class IssueFactory(DjangoModelFactory):
+    class Meta:
+        model = "issues.Issue"
+
+    apartment = factory.SubFactory(ApartmentFactory)
+    reported_by = factory.SubFactory(UserFactory)
+    title = factory.Sequence(lambda n: f"Issue {n}")
+    description = factory.Faker("text", max_nb_chars=200)
+    status = "reported"
+    priority = "low"

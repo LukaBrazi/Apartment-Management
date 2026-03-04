@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from apps.apartments.models import Apartment
+from apps.apartments.models import Apartment, Unit
 from apps.common.models import ContentView
 from apps.common.renderers import GenericJSONRenderer
 from apps.issues.emails import send_issue_confirmation_email
@@ -196,37 +196,50 @@ class IssueCreateAPIView(generics.CreateAPIView):
 
     # Method to create an issue
     def perform_create(self, serializer: IssueSerializer) -> None:
-        """Method to create an issue.
+        """Create an issue. Supports both apartment_id (legacy) and unit_id."""
 
-        Args:
-            serializer (IssueSerializer): The issue serializer.
-
-        Raises:
-            ValidationError: The validation error.
-            PermissionDenied: The permission denied error.
-        """
-
-        # Get the apartment ID
         apartment_id = self.kwargs.get("apartment_id")
+        unit_id = self.kwargs.get("unit_id")
+        user = self.request.user
 
-        # If the apartment ID is not provided
-        if not apartment_id:
-            # Raise the validation error
-            raise ValidationError({"apartment_id": ["Apartment ID is required."]})
+        unit = None
+        apartment = None
 
-        # Try to get the apartment
-        try:
-            apartment = Apartment.objects.get(id=apartment_id, tenant=self.request.user)
+        if unit_id:
+            # New path: create via Unit — tenant must own this unit
+            try:
+                unit = Unit.objects.get(pk=unit_id)
+            except Unit.DoesNotExist:
+                raise PermissionDenied("Unit not found.")
+            # Permission: user must be tenant of the linked apartment
+            if not (user.is_staff or user.is_superuser):
+                if not unit.apartment or unit.apartment.tenant != user:
+                    raise PermissionDenied(
+                        "You can only report issues for your own unit."
+                    )
+            apartment = unit.apartment
 
-        # If the apartment does not exist
-        except Apartment.DoesNotExist:
-            # Raise the validation error
-            raise PermissionDenied(
-                "You do have the permission to report issues for this apartment."
-            )
+        elif apartment_id:
+            # Legacy path: create via Apartment
+            if not apartment_id:
+                raise ValidationError({"apartment_id": ["Apartment ID is required."]})
+            try:
+                apartment = Apartment.objects.get(id=apartment_id, tenant=user)
+            except Apartment.DoesNotExist:
+                raise PermissionDenied(
+                    "You do not have permission to report issues for this apartment."
+                )
+            # Resolve unit from apartment if linked
+            unit = getattr(apartment, "unit", None)
 
-        # Save the issue
-        issue = serializer.save(reported_by=self.request.user, apartment=apartment)
+        else:
+            raise ValidationError({"detail": "Provide apartment_id or unit_id."})
+
+        issue = serializer.save(
+            reported_by=user,
+            apartment=apartment,
+            unit=unit,
+        )
 
         # Send the issue confirmation email
         send_issue_confirmation_email(issue)

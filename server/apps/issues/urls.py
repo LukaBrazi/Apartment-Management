@@ -18,6 +18,9 @@ urlpatterns = [
     path(
         "create/<uuid:apartment_id>/", IssueCreateAPIView.as_view(), name="create-issue"
     ),
+    path(
+        "create/unit/<int:unit_id>/", IssueCreateAPIView.as_view(), name="create-issue-by-unit"
+    ),
     path("<uuid:id>/", IssueDetailAPIView.as_view(), name="detail-issue"),
     path("update/<uuid:id>/", IssueUpdateAPIView.as_view(), name="update-issue"),
     path("delete/<uuid:id>/", IssueDeleteAPIView.as_view(), name="delete-issue"),

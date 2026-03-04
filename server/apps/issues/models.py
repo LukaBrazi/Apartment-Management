@@ -2,7 +2,7 @@
 import logging
 from typing import Dict
 
-from apps.apartments.models import Apartment
+from apps.apartments.models import Apartment, Unit
 from apps.common.models import TimeStampedModel
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -67,6 +67,15 @@ class Issue(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="issues",
         verbose_name=_("Apartment"),
+    )
+    # New: link to Unit (preferred over apartment FK going forward)
+    unit = models.ForeignKey(
+        Unit,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issues",
+        verbose_name=_("Unit"),
     )
     reported_by = models.ForeignKey(
         User,
