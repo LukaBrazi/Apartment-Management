@@ -1,11 +1,19 @@
 # Imports
 from apps.common.admin import ContentViewInline
 from apps.common.models import ContentView
-from apps.posts.models import Post, Reply
+from apps.posts.models import Announcement, Post, Reply
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.query import QuerySet
 from rest_framework.request import Request
+
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ["id", "building", "title", "is_active", "created_at"]
+    list_filter = ["building", "is_active"]
+    search_fields = ["title", "body", "building__name"]
+    autocomplete_fields = ["building"]
 
 
 # Reply Inline

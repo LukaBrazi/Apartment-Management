@@ -1,4 +1,5 @@
 # Imports
+from apps.posts.announcement_views import AnnouncementListAPIView
 from apps.posts.views import (
     BookmarkedPostsListAPIView,
     BookmarkPostAPIView,
@@ -20,6 +21,7 @@ from django.urls import path
 
 # Set the url patterns
 urlpatterns = [
+    path("announcements/", AnnouncementListAPIView.as_view(), name="list-announcements"),
     path("all/", PostListAPIView.as_view(), name="list-posts"),
     path(
         "tags/<str:tag_slug>/",

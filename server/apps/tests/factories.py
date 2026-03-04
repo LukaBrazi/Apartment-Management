@@ -62,6 +62,16 @@ class ApartmentFactory(DjangoModelFactory):
     floor = factory.Sequence(lambda n: (n % 9) + 1)
 
 
+class AnnouncementFactory(DjangoModelFactory):
+    class Meta:
+        model = "posts.Announcement"
+
+    building = factory.SubFactory(BuildingFactory)
+    title = factory.Sequence(lambda n: f"Announcement {n}")
+    body = factory.Faker("paragraph")
+    is_active = True
+
+
 class CategoryFactory(DjangoModelFactory):
     class Meta:
         model = "issues.Category"

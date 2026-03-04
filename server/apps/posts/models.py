@@ -1,4 +1,5 @@
 # Imports
+from apps.apartments.models import Building
 from apps.common.models import ContentView, TimeStampedModel
 from apps.profiles.models import Profile
 from autoslug import AutoSlugField
@@ -12,6 +13,30 @@ from taggit.managers import TaggableManager
 
 # Get the user model
 User = get_user_model()
+
+
+# ── Announcement Model ─────────────────────────────────────────────────────
+
+class Announcement(TimeStampedModel):
+    """Building-scoped announcement created by admin."""
+
+    building = models.ForeignKey(
+        Building,
+        on_delete=models.CASCADE,
+        related_name="announcements",
+        verbose_name=_("Building"),
+    )
+    title = models.CharField(_("Title"), max_length=255)
+    body = models.TextField(_("Body"))
+    is_active = models.BooleanField(_("Active"), default=True)
+
+    class Meta:
+        verbose_name = _("Announcement")
+        verbose_name_plural = _("Announcements")
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"[{self.building.name}] {self.title}"
 
 
 # Post Model
