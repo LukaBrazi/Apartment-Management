@@ -38,32 +38,42 @@ class IssueSerializer(serializers.ModelSerializer):
 
     # Attributes
     apartment_unit = serializers.ReadOnlyField(source="apartment.unit_number")
+    # New aliases using Building/Unit terminology
+    unit_number = serializers.ReadOnlyField(source="unit.number")
+    unit_id = serializers.UUIDField(source="unit.id", read_only=True)
+    building_name = serializers.ReadOnlyField(source="unit.entrance.building.name")
     reported_by = serializers.ReadOnlyField(source="reported_by.full_name")
     assigned_to = serializers.ReadOnlyField(source="assigned_to.full_name")
+    category_name = serializers.ReadOnlyField(source="category.name")
+    due_at = serializers.DateTimeField(read_only=True)
+    is_overdue = serializers.SerializerMethodField()
     view_count = serializers.SerializerMethodField()
 
     # Meta Class
     class Meta:
-        """Meta Class
-
-        Attributes:
-            model (Issue): The issue model.
-            fields (list): The fields to include in the serialized
-        """
-
-        # Attributes
         model = Issue
         fields = [
             "id",
+            # Legacy field kept for backward compat
             "apartment_unit",
+            # New preferred fields
+            "unit_id",
+            "unit_number",
+            "building_name",
             "reported_by",
             "assigned_to",
             "title",
             "description",
             "status",
             "priority",
+            "category_name",
+            "due_at",
+            "is_overdue",
             "view_count",
         ]
+
+    def get_is_overdue(self, obj):
+        return obj.is_overdue
 
     # Method to get the view count
     def get_view_count(self, obj: Issue) -> int:
