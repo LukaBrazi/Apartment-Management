@@ -8,10 +8,12 @@ ALLOWED_HOSTS = ["*"]
 SITE_NAME = "Alpha Apartments Test"
 
 # SQLite for fast tests — no Postgres needed
+import os
+_TEST_DB = os.environ.get("TEST_DB_PATH", ":memory:")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "NAME": _TEST_DB,
         "ATOMIC_REQUESTS": True,
     }
 }
