@@ -49,7 +49,7 @@ function TenantCardContent() {
 		<div>
 			<UsersSearch />
 			<h1 className="flex-center font-robotoSlab dark:text-pumpkin text-4xl sm:text-5xl">
-				All Tenants - ({data?.profiles.results.length})
+				Усі мешканці — ({data?.profiles.results.length})
 			</h1>
 
 			<div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
@@ -81,17 +81,17 @@ function TenantCardContent() {
 								<CardDescription className="mt-4 space-y-2 border-b-0">
 									<div>
 										<TenantInfo
-											label="Country of Origin"
+											label="Країна"
 											value={tenant.country_of_origin}
 											icon={Map}
 										/>
 										<TenantInfo
-											label="Occupation"
+											label="Рід занять"
 											value={tenant.occupation}
 											icon={Briefcase}
 										/>
 										<TenantInfo
-											label="Date Joined"
+											label="Дата реєстрації"
 											value={formatDate(tenant.date_joined).toString()}
 											icon={CalendarDays}
 										/>
@@ -99,17 +99,17 @@ function TenantCardContent() {
 									{tenant.apartment && (
 										<>
 											<TenantInfo
-												label="Building"
+												label="Будинок"
 												value={tenant.apartment.building}
 												icon={Building}
 											/>
 											<TenantInfo
-												label="Apartment Floor"
+												label="Поверх"
 												value={tenant.apartment.floor}
 												icon={School}
 											/>
 											<TenantInfo
-												label="Unit Number"
+												label="Номер квартири"
 												value={tenant.apartment.unit_number}
 												icon={BrickWall}
 											/>
@@ -120,7 +120,7 @@ function TenantCardContent() {
 						</Card>
 					))
 				) : (
-					<p>No tenants found</p>
+					<p>Мешканців не знайдено</p>
 				)}
 			</div>
 			<PaginationSection totalPages={totalPages} entityType="user" />

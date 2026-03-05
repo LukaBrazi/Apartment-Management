@@ -45,7 +45,7 @@ export default function CreateRatingForm() {
 	const onSubmit = async (data: TRatingCreateSchema) => {
 		try {
 			await addRating(data).unwrap();
-			toast.success("Your Rating has been added!");
+			toast.success("Оцінку успішно додано!");
 			router.push("/technicians");
 		} catch (error) {
 			const errorMessage = extractErrorMessage(error);
@@ -70,7 +70,7 @@ export default function CreateRatingForm() {
 				/>
 				<label htmlFor="rating" className="h4-semibold dark:text-babyPowder">
 					{" "}
-					Rating{" "}
+					Оцінка{" "}
 				</label>
 				<Controller
 					name="rating"
@@ -80,7 +80,7 @@ export default function CreateRatingForm() {
 							{...field}
 							id="rating"
 							type="number"
-							placeholder="Choose a value of between 1 and 5"
+							placeholder="Оберіть значення від 1 до 5"
 							onChange={(e) => field.onChange(parseInt(e.target.value))}
 							className="flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 						/>
@@ -90,11 +90,11 @@ export default function CreateRatingForm() {
 					<p className="text-sm text-red-500">{errors.rating.message}</p>
 				)}
 				<FormFieldComponent
-					label="Comment"
+					label="Коментар"
 					name="comment"
 					errors={errors}
 					register={register}
-					placeholder="Tell us why you have given the rating, it will help us improve service delivery"
+					placeholder="Розкажіть, чому ви поставили таку оцінку"
 					isTextArea
 				/>
 				<Button
@@ -102,7 +102,7 @@ export default function CreateRatingForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Add Rating`}
+					{isLoading ? <Spinner size="sm" /> : "Додати оцінку"}
 				</Button>
 			</form>
 		</main>

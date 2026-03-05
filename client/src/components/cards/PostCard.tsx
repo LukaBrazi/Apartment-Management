@@ -47,7 +47,7 @@ export default function PostCard() {
 		<>
 			<div className="flex w-full flex-col-reverse justify-between gap-4 sm:flex-row sm:items-center">
 				<h1 className="font-robotoSlab dark:text-pumpkin text-5xl">
-					All Posts - ({data?.posts.results.length})
+					Усі публікації — ({data?.posts.results.length})
 				</h1>
 
 				<Link href="/add-post" className="flex justify-end max-sm:w-full">
@@ -73,7 +73,7 @@ export default function PostCard() {
 								<CardDescription>
 									<div className="flex flex-row justify-between">
 										<div>
-											<span>Posted on</span>
+											<span>Опубліковано</span>
 											<span className="dark:text-pumpkin ml-1">
 												{formatDate(postItem.created_at).toString()}
 											</span>
@@ -81,7 +81,7 @@ export default function PostCard() {
 									</div>
 
 									<div>
-										<span>Last Updated</span>
+										<span>Оновлено</span>
 										<span className="dark:text-pumpkin ml-1">
 											{formatDistanceToNow(parseISO(postItem.updated_at), {
 												addSuffix: true,
@@ -121,7 +121,7 @@ export default function PostCard() {
 						</Card>
 					))
 				) : (
-					<p className="h2-semibold dark:text-lime-500">No Posts Found!</p>
+					<p className="h2-semibold dark:text-lime-500">Публікацій не знайдено!</p>
 				)}
 			</div>
 

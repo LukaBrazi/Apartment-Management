@@ -36,7 +36,7 @@ export default function PasswordResetRequestForm() {
 	) => {
 		try {
 			await resetPasswordRequest(values).unwrap();
-			toast.success("Request sent, check your email for the reset link");
+			toast.success("Запит відправлено. Перевірте пошту для отримання посилання на скидання паролю.");
 			reset();
 		} catch (e) {
 			const errorMessage = extractErrorMessage(e);
@@ -51,11 +51,11 @@ export default function PasswordResetRequestForm() {
 				className="flex w-full max-w-md flex-col gap-4"
 			>
 				<FormFieldComponent
-					label="Email Address"
+					label="Електронна адреса"
 					name="email"
 					register={register}
 					errors={errors}
-					placeholder="Email Address"
+					placeholder="Електронна адреса"
 					startIcon={<MailIcon className="dark:text-babyPowder size-8" />}
 				/>
 				<Button
@@ -63,7 +63,7 @@ export default function PasswordResetRequestForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Request Password Reset`}
+					{isLoading ? <Spinner size="sm" /> : `Скинути пароль`}
 				</Button>
 			</form>
 		</main>

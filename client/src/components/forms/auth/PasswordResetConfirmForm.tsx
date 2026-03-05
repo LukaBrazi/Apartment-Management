@@ -46,7 +46,7 @@ export default function PasswordResetConfirmForm() {
 				token: token as string,
 			}).unwrap();
 			router.push("/login");
-			toast.success("Your password was reset successfully");
+			toast.success("Пароль успішно змінено");
 			reset();
 		} catch (e) {
 			const errorMessage = extractErrorMessage(e);
@@ -62,20 +62,20 @@ export default function PasswordResetConfirmForm() {
 				className="flex w-full max-w-md flex-col gap-4"
 			>
 				<FormFieldComponent
-					label="New Password"
+					label="Новий пароль"
 					name="new_password"
 					register={register}
 					errors={errors}
-					placeholder="New Password"
+					placeholder="Новий пароль"
 					isPassword={true}
 				/>
 
 				<FormFieldComponent
-					label="Confirm Password"
+					label="Підтвердіть новий пароль"
 					name="re_new_password"
 					register={register}
 					errors={errors}
-					placeholder="Confirm New Password"
+					placeholder="Підтвердіть новий пароль"
 					isPassword={true}
 				/>
 				<Button
@@ -83,7 +83,7 @@ export default function PasswordResetConfirmForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Confirm New Password`}
+					{isLoading ? <Spinner size="sm" /> : `Підтвердити новий пароль`}
 				</Button>
 			</form>
 		</main>

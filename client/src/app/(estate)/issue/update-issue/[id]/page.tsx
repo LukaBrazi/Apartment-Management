@@ -4,9 +4,9 @@ import { AuthFormHeader } from "@/components/forms/auth";
 import UpdateIssueForm from "@/components/forms/update-issue/UpdateIssueForm";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Update Issue ",
+	title: "Alpha Apartments | Оновити заявку",
 	description:
-		"Technicians assigned to an issue can update the status of the issue",
+		"Призначені спеціалісти можуть оновлювати статус заявки",
 };
 
 interface UpdateParamsProps {
@@ -19,9 +19,9 @@ export default function UpdateIssuePage({ params }: UpdateParamsProps) {
 	return (
 		<div>
 			<AuthFormHeader
-				title="Update Issue"
-				staticText="Want to go back?"
-				linkText="Back to Profile"
+				title="Оновити заявку"
+				staticText="Хочете повернутись?"
+				linkText="До профілю"
 				linkHref="/profile"
 			/>
 			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">

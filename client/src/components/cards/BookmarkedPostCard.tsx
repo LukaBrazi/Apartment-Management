@@ -39,7 +39,7 @@ export default function BookmarkedPostCard() {
 	return (
 		<div>
 			<h1 className="flex-center font-robotoSlab dark:text-pumpkin mb-3.5 text-5xl">
-				My Bookmarks - ({bookmarks?.results.length})
+				Мої закладки — ({bookmarks?.results.length})
 			</h1>
 
 			<div className="flex w-full flex-col-reverse justify-between gap-4 sm:flex-row sm:items-center">
@@ -59,13 +59,13 @@ export default function BookmarkedPostCard() {
 									<CardDescription>
 										<div className="flex flex-row justify-between">
 											<div>
-												<span>Posted on</span>
+												<span>Опубліковано</span>
 												<span className="dark:text-pumpkin ml-1">
 													{formatDate(bookmarkItem.created_at).toString()}
 												</span>
 											</div>
 											<div>
-												<span>Last Updated</span>
+												<span>Оновлено</span>
 												<span className="dark:text-pumpkin ml-1">
 													{formatDistanceToNow(
 														parseISO(bookmarkItem.updated_at),

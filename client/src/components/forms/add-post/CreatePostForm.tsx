@@ -63,7 +63,7 @@ function CreatePostFormContent() {
 	const onSubmit = async (values: TPostSchema) => {
 		try {
 			await createPost(values).unwrap();
-			toast.success("Your Post has been added");
+			toast.success("Публікацію успішно додано");
 			router.push("/welcome");
 		} catch (error) {
 			const errorMessage = extractErrorMessage(error);
@@ -79,23 +79,23 @@ function CreatePostFormContent() {
 				className="flex w-full max-w-md flex-col gap-4"
 			>
 				<FormFieldComponent
-					label="Title"
+					label="Заголовок"
 					name="title"
 					register={register}
 					errors={errors}
-					placeholder="Post Title"
+					placeholder="Заголовок публікації"
 					startIcon={<FileText className="dark:text-babyPowder size-8" />}
 				/>
 				<FormFieldComponent
-					label="Body"
+					label="Текст"
 					name="body"
 					register={register}
 					errors={errors}
-					placeholder="Ask a question or share what you have in mind..."
+					placeholder="Задайте питання або поділіться думками..."
 					isTextArea
 				/>
 				<label htmlFor="tags" className="h4-semibold dark:text-babyPowder">
-					Tags (press Enter to add a tag)
+					Теги (натисніть Enter, щоб додати)
 				</label>
 				<Controller
 					name="tags"
@@ -122,7 +122,7 @@ function CreatePostFormContent() {
 							<input
 								type="text"
 								id="tags"
-								placeholder="Add your tags..."
+								placeholder="Додайте теги..."
 								onKeyDown={(e) => handleInputKeyDown(e, field)}
 								className="flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 							/>
@@ -139,7 +139,7 @@ function CreatePostFormContent() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Create Your Post`}
+					{isLoading ? <Spinner size="sm" /> : "Опублікувати"}
 				</Button>
 			</form>
 		</main>

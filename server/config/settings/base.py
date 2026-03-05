@@ -29,10 +29,17 @@ AUTH_USER_MODEL = "users.User"
 # General
 # ------------------------------------------------------------------------------
 DEBUG = env.bool("DJANGO_DEBUG", False)
-TIME_ZONE = "Asia/Kolkata"
-LANGUAGE_CODE = "en-us"
+TIME_ZONE = "Europe/Kyiv"
+LANGUAGE_CODE = "uk"
 USE_I18N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ("uk", "Українська"),
+    ("en", "English"),
+]
+
+LOCALE_PATHS = [str(BASE_DIR / "locale")]
 
 
 # Site settings
@@ -90,6 +97,7 @@ LOCAL_APPS = [
     "apps.reports",
     "apps.ratings",
     "apps.posts",
+    "apps.passes",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 

@@ -357,7 +357,8 @@ export interface Profile {
 		| "painter"
 		| "electrician"
 		| "hvac"
-		| "tenant";
+		| "tenant"
+		| "guard";
 	reputation: number;
 	date_joined: string;
 	avatar?: string;
@@ -428,7 +429,8 @@ export interface ProfileData {
 		| "painter"
 		| "electrician"
 		| "hvac"
-		| "tenant";
+		| "tenant"
+		| "guard";
 	phone_number: string;
 }
 
@@ -440,4 +442,40 @@ export type Occupation =
 	| "painter"
 	| "electrician"
 	| "hvac"
-	| "tenant";
+	| "tenant"
+	| "guard";
+
+export interface VehiclePass {
+	id: string;
+	tenant_name: string;
+	tenant_username: string;
+	unit_label: string | null;
+	building_name: string | null;
+	car_number: string;
+	comment: string;
+	visit_date: string;
+	status: "pending" | "closed";
+	closed_by_username: string | null;
+	closed_at: string | null;
+	created_at: string;
+}
+
+export interface VehiclePassesResponse {
+	count: number;
+	next: string | null;
+	previous: string | null;
+	results: VehiclePass[];
+}
+
+export interface VehiclePassCreateData {
+	car_number?: string;
+	comment?: string;
+	visit_date: string;
+}
+
+export interface VehiclePassCreateResponse {
+	id: string;
+	car_number: string;
+	comment: string;
+	visit_date: string;
+}

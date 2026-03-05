@@ -13,9 +13,9 @@ export default function ForgotPassword() {
 	return (
 		<div>
 			<AuthFormHeader
-				title="Reset Password Request"
-				staticText="Want to go back?"
-				linkText="Back to Login Page"
+				title="Скидання паролю"
+				staticText="Хочете повернутись?"
+				linkText="Назад до входу"
 				linkHref="/login"
 			/>
 			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">

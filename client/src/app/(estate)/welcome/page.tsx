@@ -2,9 +2,9 @@ import PostCard from "@/components/cards/PostCard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Welcome",
+	title: "Alpha Apartments | Ласкаво просимо",
 	description:
-		"Welcome to the Alpha Apartments Website. This webapp allows users who are tenants to signup, create their profiles, report any issues with their apartments, report any tenants, post anything of relevance for other tenants to see and or respond.",
+		"Ласкаво просимо до Alpha Apartments. Платформа для мешканців: подавайте заявки, залишайте оголошення та спілкуйтесь.",
 };
 
 export default function WelcomePage() {

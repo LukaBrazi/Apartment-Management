@@ -102,6 +102,7 @@ class Profile(TimeStampedModel):
         ELECTRICIAN = ("electrician", _("Electrician"))
         HVAC = ("hvac", _("HVAC"))
         TENANT = ("tenant", _("Tenant"))
+        GUARD = ("guard", _("Guard"))
 
     # Attributes
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")

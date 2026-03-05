@@ -23,7 +23,7 @@ const UsersSearch = () => {
 				className="mx-3"
 			/>
 			<Input
-				placeholder="Search by username, first or last name"
+				placeholder="Пошук за ім'ям, прізвищем або нікнеймом"
 				type="search"
 				value={searchTerm}
 				onChange={handleInputChange}

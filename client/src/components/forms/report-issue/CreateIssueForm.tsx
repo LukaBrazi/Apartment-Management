@@ -44,7 +44,7 @@ export default function CreateIssueForm() {
 	const onSubmit = async (formValues: TIssueCreateSchema) => {
 		if (!apartment?.id) {
 			toast.error(
-				"Create your apartment first in your profile, before creating an issue",
+				"Спочатку додайте квартиру у профілі, перед тим як подавати заявку",
 			);
 			return;
 		}
@@ -75,19 +75,19 @@ export default function CreateIssueForm() {
 				className="flex w-full max-w-md flex-col gap-4 dark:text-black"
 			>
 				<FormFieldComponent
-					label="Title"
+					label="Назва"
 					name="title"
 					register={register}
 					errors={errors}
-					placeholder="Issue Title"
+					placeholder="Назва заявки"
 					startIcon={<FlagIcon className="dark:text-babyPowder size-8" />}
 				/>
 				<FormFieldComponent
-					label="Description"
+					label="Опис"
 					name="description"
 					register={register}
 					errors={errors}
-					placeholder="Detailed Description of the issue"
+					placeholder="Детальний опис проблеми"
 					isTextArea
 					startIcon={<FlagIcon className="dark:text-babyPowder size-8" />}
 				/>
@@ -109,7 +109,7 @@ export default function CreateIssueForm() {
 										)}
 										onChange={(val) => onChange(val?.value)}
 										onBlur={onBlur}
-										placeholder="Select Reported if you are reportign an issue"
+										placeholder="Оберіть статус"
 										instanceId="status-select"
 										styles={customStyles}
 									/>
@@ -140,7 +140,7 @@ export default function CreateIssueForm() {
 										)}
 										onChange={(val) => onChange(val?.value)}
 										onBlur={onBlur}
-										placeholder="What priority is your issue?"
+										placeholder="Пріоритет заявки"
 										instanceId="priority-select"
 										styles={customStyles}
 									/>
@@ -159,7 +159,7 @@ export default function CreateIssueForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin mt-2 w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Report`}
+					{isLoading ? <Spinner size="sm" /> : `Подати заявку`}
 				</Button>
 			</form>
 		</main>

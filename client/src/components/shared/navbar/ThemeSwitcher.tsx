@@ -10,9 +10,9 @@ import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
 import { useTheme } from "next-themes";
 
 const themeOptions = [
-	{ value: "light", label: "Light" },
-	{ value: "dark", label: "Dark" },
-	{ value: "system", label: "System" },
+	{ value: "light", label: "Світла" },
+	{ value: "dark", label: "Темна" },
+	{ value: "system", label: "Системна" },
 ];
 
 export default function ThemeSwitcher() {
@@ -37,7 +37,7 @@ export default function ThemeSwitcher() {
 						}`}
 						suppressHydrationWarning
 					/>
-					<span className="sr-only">Toggle theme</span>
+					<span className="sr-only">Змінити тему</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent

@@ -32,19 +32,19 @@ function ProfilePageContent() {
 					>
 						<TabsList className="bg-baby_rich flex space-x-4">
 							<TabsTrigger value="about" className="h3-semibold tab">
-								About
+								Про мене
 							</TabsTrigger>
 							<TabsTrigger value="posts" className="h3-semibold tab">
-								Posts
+								Публікації
 							</TabsTrigger>
 							<TabsTrigger value="my-issues" className="h3-semibold tab">
-								My Issues
+								Мої заявки
 							</TabsTrigger>
 							<TabsTrigger value="my-reports" className="h3-semibold tab">
-								My Reports
+								Мої скарги
 							</TabsTrigger>
 							<TabsTrigger value="assigned-issues" className="h3-semibold tab">
-								Assigned Issues
+								Призначені заявки
 							</TabsTrigger>
 						</TabsList>
 
@@ -66,12 +66,12 @@ function ProfilePageContent() {
 			<div className="flex cursor-pointer flex-row justify-between">
 				<Link href="/profile/edit">
 					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
-						Update Profile
+						Оновити профіль
 					</Button>
 				</Link>
 				<Link href="/apartment">
 					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
-						Add Your Apartment
+						Додати квартиру
 					</Button>
 				</Link>
 			</div>

@@ -14,7 +14,7 @@ export default function RightNavbar() {
 	return (
 		<section className="bg-baby_rich light-border custom-scrollbar shadow-platinum sticky right-0 top-0 flex h-screen w-[280px] flex-col justify-between overflow-y-auto border-l p-6 pt-36 max-xl:hidden dark:shadow-none">
 			<div>
-				<h3 className="h3-semibold dark:text-pumpkin">Top Posts</h3>
+				<h3 className="h3-semibold dark:text-pumpkin">Популярні публікації</h3>
 				<div className="mt-7 flex w-full flex-col gap-[30px]">
 					{topPosts && topPosts.length > 0 ? (
 						topPosts.map((post) => (
@@ -33,14 +33,14 @@ export default function RightNavbar() {
 						))
 					) : (
 						<p className="h2-semibold dark:text-lime-500">
-							No Top Posts found!
+							No Популярні публікації found!
 						</p>
 					)}
 				</div>
 			</div>
 
 			<div>
-				<h3 className="h3-semibold dark:text-lime-500">Popular Tags</h3>
+				<h3 className="h3-semibold dark:text-lime-500">Популярні теги</h3>
 				<div className="mt-7 flex w-full flex-col gap-[30px]">
 					{tagData && tagData.popular_tags.results.length > 0 ? (
 						tagData.popular_tags.results.slice(0, 5).map((tag) => (
@@ -60,7 +60,7 @@ export default function RightNavbar() {
 						))
 					) : (
 						<p className="h2-semibold dark:text-lime-500">
-							No Popular Tags found!
+							No Популярні теги found!
 						</p>
 					)}
 				</div>

@@ -38,7 +38,7 @@ export default function ApartmentCreateForm() {
 	const onSubmit = async (values: z.infer<typeof apartmentCreateSchema>) => {
 		try {
 			await createApartment(values).unwrap();
-			toast.success("Apartment Added");
+			toast.success("Квартиру додано");
 			router.push("/profile");
 			reset();
 		} catch (error) {
@@ -54,26 +54,26 @@ export default function ApartmentCreateForm() {
 				className="flex w-full max-w-md flex-col gap-4"
 			>
 				<FormFieldComponent
-					label="Building"
+					label="Будинок"
 					name="building"
 					register={register}
 					errors={errors}
-					placeholder="Building Name"
+					placeholder="Назва будинку"
 					startIcon={
 						<BuildingOfficeIcon className="dark:text-babyPowder size-8" />
 					}
 				/>
 
 				<FormFieldComponent
-					label="Apartment Unit Number"
+					label="Номер квартири"
 					name="unit_number"
 					register={register}
 					errors={errors}
-					placeholder="Apartment Number"
+					placeholder="Номер квартири"
 					startIcon={<HomeIcon className="dark:text-babyPowder size-8" />}
 				/>
 				<label htmlFor="floor" className="h4-semibold dark:text-babyPowder">
-					Apartment Floor
+					Поверх
 				</label>
 				<Controller
 					name="floor"
@@ -97,7 +97,7 @@ export default function ApartmentCreateForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Add Your Apartment`}
+					{isLoading ? <Spinner size="sm" /> : `Додати квартиру`}
 				</Button>
 			</form>
 		</main>

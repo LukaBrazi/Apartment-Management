@@ -40,24 +40,24 @@ function PostDetailsContent({ params }: PostDetailsProps) {
 
 	const handleUpvote = () => {
 		post?.id && upvotePost(post.id);
-		toast.success("Post Upvoted 😋");
+		toast.success("Вподобано!");
 	};
 
 	const handleDownVote = () => {
 		post?.id && downvotePost(post.id);
-		toast.success("Post Downvoted 🥺");
+		toast.success("Не вподобано!");
 	};
 
 	const handleBookmarkPost = () => {
 		post?.slug && bookmarkPost(post.slug);
-		toast.success("This post has been added to your Bookmarks");
+		toast.success("Публікацію додано до закладок");
 	};
 
 	return (
 		<Card className="dark:border-gray rounded-xl border border-dashed">
 			<AuthFormHeader
 				title={post?.title}
-				linkText="Go back to Home"
+				linkText="На головну"
 				linkHref="/welcome"
 			/>
 			<CardHeader className="flex-start border-b-eerieBlack dark:border-gray w-full flex-col border-b border-dashed">
@@ -94,13 +94,13 @@ function PostDetailsContent({ params }: PostDetailsProps) {
 						<RepliesList key={reply.id} reply={reply} />
 					))
 				) : (
-					<p className="text-lg">This Post does&apos;t have any replies yet</p>
+					<p className="text-lg">Відповідей ще немає</p>
 				)}
 			</div>
 
 			<CardContent className="border-b-eerieBlack dark:border-gray dark:text-platinum border-b border-dashed">
 				<h2 className="h2-semibold dark:text-pumpkin mt-3">
-					Add your reply here
+					Залишити відповідь
 				</h2>
 				<CreateReplyForm slug={post?.slug} />
 			</CardContent>

@@ -19,9 +19,9 @@ function isGender(value: any): value is Gender {
 }
 
 const genderOptions = [
-	{ value: "male", label: "Male" },
-	{ value: "female", label: "Female" },
-	{ value: "other", label: "Other" },
+	{ value: "male", label: "Чоловік" },
+	{ value: "female", label: "Жінка" },
+	{ value: "other", label: "Інше" },
 ];
 
 interface GenderSelectFieldProps {
@@ -51,7 +51,7 @@ export default function GenderSelectField({
 	return (
 		<div>
 			<label htmlFor="gender" className="h4-semibold dark:text-babyPowder">
-				Gender
+				Стать
 			</label>
 			<div className="mt-1 flex items-center space-x-3">
 				<UserSearch className="dark:text-babyPowder size-8" />

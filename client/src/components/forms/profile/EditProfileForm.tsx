@@ -77,7 +77,7 @@ export default function EditProfileForm() {
 	const onSubmit = async (values: z.infer<typeof profileSchema>) => {
 		try {
 			await updateUserProfile(values).unwrap();
-			toast.success("Update Successful");
+			toast.success("Профіль оновлено");
 			router.push("/profile");
 		} catch (error) {
 			const errorMessage = extractErrorMessage(error);
@@ -93,60 +93,60 @@ export default function EditProfileForm() {
 				className="flex w-full max-w-md flex-col gap-4"
 			>
 				<FormFieldComponent
-					label="Username"
+					label="Ім'я користувача"
 					name="username"
 					register={register}
 					errors={errors}
-					placeholder="Username"
+					placeholder="Ім'я користувача"
 					startIcon={<UserCheck2 className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="First Name"
+					label="Ім'я"
 					name="first_name"
 					register={register}
 					errors={errors}
-					placeholder="First Name"
+					placeholder="Ім'я"
 					startIcon={<Contact2Icon className="dark:text-babyPowder size-8" />}
 				/>
 				<FormFieldComponent
-					label="Last Name"
+					label="Прізвище"
 					name="last_name"
 					register={register}
 					errors={errors}
-					placeholder="Last Name"
+					placeholder="Прізвище"
 					startIcon={<Contact2Icon className="dark:text-babyPowder size-8" />}
 				/>
 				<GenderSelectField setValue={setValue} control={control} />
 				<OccupationSelectField setValue={setValue} control={control} />
 				<FormFieldComponent
-					label="Country of Origin"
+					label="Країна"
 					name="country_of_origin"
 					register={register}
 					errors={errors}
-					placeholder="What's your country"
+					placeholder="Ваша країна"
 					startIcon={<Map className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="City of Origin"
+					label="Місто"
 					name="city_of_origin"
 					register={register}
 					errors={errors}
-					placeholder="City"
+					placeholder="Місто"
 					startIcon={<MapPinnedIcon className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="Bio"
+					label="Про себе"
 					name="bio"
 					register={register}
 					errors={errors}
-					placeholder="Bio"
+					placeholder="Розкажіть про себе"
 					isTextArea
 				/>
 				<Label className="h4-semibold dark:text-babyPowder" htmlFor="avatar">
-					Avatar
+					Аватар
 				</Label>
 				<div className="flex w-full cursor-pointer items-center">
 					<div className="grow" style={{ maxWidth: "90%" }}>
@@ -170,7 +170,7 @@ export default function EditProfileForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin mt-2 w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Update Profile`}
+					{isLoading ? <Spinner size="sm" /> : `Оновити профіль`}
 				</Button>
 			</form>
 		</main>

@@ -18,17 +18,17 @@ export default function TechnicianCardDetails({
 		<div className="space-y-2">
 			<p className="flex items-center space-x-2">
 				<Map className="card-icon" />
-				<span className="tab-font">Country of Origin: </span>
+				<span className="tab-font">Країна: </span>
 				<span className="tab-font">{country_of_origin}</span>
 			</p>
 			<p className="flex items-center space-x-2">
 				<Briefcase className="card-icon" />
-				<span className="tab-font">Occupation: </span>
+				<span className="tab-font">Рід занять: </span>
 				<span className="tab-font">{capitalizeFirstLetter(occupation)}</span>
 			</p>
 			<p className="flex items-center space-x-2">
 				<Star className="card-icon" />
-				<span className="tab-font">Average rating: </span>
+				<span className="tab-font">Середня оцінка: </span>
 				<span className="flex items-center space-x-0">
 					{[...Array(5)].map((_, index) => {
 						const ratingValue = index + 0.5;
@@ -51,7 +51,7 @@ export default function TechnicianCardDetails({
 			</p>
 			<p className="flex items-center space-x-2">
 				<CalendarDays className="card-icon" />
-				<span className="tab-font">Date Joined: </span>
+				<span className="tab-font">Дата реєстрації: </span>
 				<span className="tab-font">{formatDate(date_joined).toString()}</span>
 			</p>
 		</div>

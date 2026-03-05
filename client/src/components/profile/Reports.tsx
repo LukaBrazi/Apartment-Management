@@ -50,7 +50,7 @@ export default function Reports() {
 							<CardFooter className="dark:text-babyPowder flex flex-row justify-between">
 								<p>
 									<span className="dark:text-pumpkin mr-0.5 font-bold">
-										Created On:{" "}
+										Дата:{" "}
 									</span>
 									<Badge className="bg-eerieBlack text-babyPowder dark:bg-electricIndigo dark:text-babyPowder">
 										{formatDate(report.created_at).toString()}
@@ -61,7 +61,7 @@ export default function Reports() {
 					))
 				) : (
 					<p className="h2-semibold dark:text-lime-500">
-						You have not Reported any Tenant(s) Yet!
+						Ви ще не подавали жодних скарг!
 					</p>
 				)}
 			</div>

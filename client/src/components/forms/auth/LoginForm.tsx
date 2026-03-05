@@ -37,7 +37,7 @@ export default function LoginForm() {
 		try {
 			await loginUser(values).unwrap();
 			dispatch(setAuth());
-			toast.success("Login Successful");
+			toast.success("Вхід успішний");
 			router.push("/welcome");
 			reset();
 		} catch (error) {
@@ -54,29 +54,29 @@ export default function LoginForm() {
 				className="flex w-full max-w-md flex-col gap-4"
 			>
 				<FormFieldComponent
-					label="Email Address"
+					label="Електронна адреса"
 					name="email"
 					register={register}
 					errors={errors}
-					placeholder="Email Address"
+					placeholder="Електронна адреса"
 					startIcon={<MailIcon className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="Password"
+					label="Пароль"
 					name="password"
 					register={register}
 					errors={errors}
-					placeholder="Password"
+					placeholder="Пароль"
 					isPassword={true}
-					link={{ linkText: "Forgot Password?", linkUrl: "/forgot-password" }}
+					link={{ linkText: "Забули пароль?", linkUrl: "/forgot-password" }}
 				/>
 				<Button
 					type="submit"
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Sign In`}
+					{isLoading ? <Spinner size="sm" /> : `Увійти`}
 				</Button>
 			</form>
 		</main>

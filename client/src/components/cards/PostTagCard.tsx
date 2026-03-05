@@ -36,7 +36,7 @@ export default function PostTagCard({ params }: SlugParamsProps) {
 	return (
 		<div>
 			<h1 className="flex-center font-robotoSlab dark:text-pumpkin text-4xl">
-				Posts tagged with{" "}
+				Публікації з тегом{" "}
 				<span className="text-electricIndigo ml-1 dark:text-lime-500">
 					&ldquo;{params.tagSlug}&rdquo;
 				</span>
@@ -53,13 +53,13 @@ export default function PostTagCard({ params }: SlugParamsProps) {
 							<CardDescription>
 								<div className="flex flex-row justify-between">
 									<div>
-										<span>Posted on</span>
+										<span>Опубліковано</span>
 										<span className="dark:text-pumpkin ml-1">
 											{formatDate(post.created_at).toString()}
 										</span>
 									</div>
 									<div>
-										<span>Last Updated</span>
+										<span>Оновлено</span>
 										<span className="dark:text-pumpkin ml-1">
 											{formatDistanceToNow(parseISO(post.updated_at), {
 												addSuffix: true,

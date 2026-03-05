@@ -3,18 +3,18 @@ import { AuthFormHeader } from "@/components/forms/auth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Add a Post",
+	title: "Alpha Apartments | Нова публікація",
 	description:
-		"Authenticated users can ask any question or post some content for all users to see",
+		"Авторизовані користувачі можуть задавати питання або публікувати контент для всіх",
 };
 
 export default function AddPostPage() {
 	return (
 		<div>
 			<AuthFormHeader
-				title="Create a post"
+				title="Створити публікацію"
 				staticText="Ask Questions, share thoughts or information with everyone!"
-				linkText="Back to Home Page"
+				linkText="На головну"
 				linkHref="/welcome"
 			/>
 			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">

@@ -41,7 +41,7 @@ export default function RegisterForm() {
 		try {
 			await registerUser(values).unwrap();
 			toast.success(
-				"An Email with an activation link has been sent to your email address. Please check your email and activate your account.",
+				"На вашу електронну адресу надіслано листа з посиланням для активації. Перевірте пошту та активуйте акаунт.",
 			);
 			router.push("/login");
 			reset();
@@ -59,56 +59,56 @@ export default function RegisterForm() {
 				className="flex w-full max-w-md flex-col gap-4"
 			>
 				<FormFieldComponent
-					label="Username"
+					label="Ім'я користувача"
 					name="username"
 					register={register}
 					errors={errors}
-					placeholder="Username"
+					placeholder="Ім'я користувача"
 					startIcon={<UserCheck2 className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="First Name"
+					label="Ім'я"
 					name="first_name"
 					register={register}
 					errors={errors}
-					placeholder="First Name"
+					placeholder="Ім'я"
 					startIcon={<Contact2Icon className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="Last Name"
+					label="Прізвище"
 					name="last_name"
 					register={register}
 					errors={errors}
-					placeholder="Last Name"
+					placeholder="Прізвище"
 					startIcon={<Contact2Icon className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="Email Address"
+					label="Електронна адреса"
 					name="email"
 					register={register}
 					errors={errors}
-					placeholder="Email Address"
+					placeholder="Електронна адреса"
 					startIcon={<MailIcon className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="Password"
+					label="Пароль"
 					name="password"
 					register={register}
 					errors={errors}
-					placeholder="Password"
+					placeholder="Пароль"
 					isPassword={true}
 				/>
 
 				<FormFieldComponent
-					label="Password Confirm"
+					label="Підтвердіть пароль"
 					name="re_password"
 					register={register}
 					errors={errors}
-					placeholder="Confirm Password"
+					placeholder="Підтвердіть пароль"
 					isPassword={true}
 				/>
 				<Button
@@ -116,7 +116,7 @@ export default function RegisterForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Submit`}
+					{isLoading ? <Spinner size="sm" /> : `Зареєструватися`}
 				</Button>
 			</form>
 		</main>

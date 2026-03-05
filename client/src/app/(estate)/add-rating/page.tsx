@@ -3,18 +3,18 @@ import { AuthFormHeader } from "@/components/forms/auth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Add Rating",
+	title: "Alpha Apartments | Залишити оцінку",
 	description:
-		"Tenants can rate the technicians, if they are satisfied or dissatisfied with the services rendered to them",
+		"Мешканці можуть оцінювати технічний персонал",
 };
 
 export default function AddRatingPage() {
 	return (
 		<div>
 			<AuthFormHeader
-				title="Rate a Technician"
-				staticText="Tell us what you think about the services rendered"
-				linkText="Back to Technicians Page"
+				title="Оцінити технічного спеціаліста"
+				staticText="Розкажіть нам, що ви думаєте про надані послуги"
+				linkText="До списку спеціалістів"
 				linkHref="/technicians"
 			/>
 			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">

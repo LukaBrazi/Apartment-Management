@@ -38,32 +38,32 @@ function AboutContent() {
 				<div className="space-y-3">
 					<ProfileItem
 						icon={<Contact className="tab-icon" />}
-						label="Name"
+						label="Ім'я"
 						value={profile?.full_name || ""}
 					/>
 					<ProfileItem
 						icon={<UserRoundCheck className="tab-icon" />}
-						label="Gender"
+						label="Стать"
 						value={capitalizeFirstLetter(profile?.gender || "")}
 					/>
 					<ProfileItem
 						icon={<CalendarDays className="tab-icon" />}
-						label="Joined"
+						label="Дата реєстрації"
 						value={formatDate(profile?.date_joined).toString() || ""}
 					/>
 					<ProfileItem
 						icon={<BadgeCheck className="tab-icon" />}
-						label="Reputation"
-						value={`${profile?.reputation} out of 100` || ""}
+						label="Репутація"
+						value={`${profile?.reputation} з 100` || ""}
 					/>
 					<ProfileItem
 						icon={<Map className="tab-icon" />}
-						label="Country"
+						label="Країна"
 						value={profile?.country_of_origin || ""}
 					/>
 					<ProfileItem
 						icon={<MapPinnedIcon className="tab-icon" />}
-						label="City"
+						label="Місто"
 						value={profile?.city_of_origin || ""}
 					/>
 				</div>
@@ -71,30 +71,30 @@ function AboutContent() {
 				<div className="space-y-3">
 					<ProfileItem
 						icon={<Briefcase className="tab-icon" />}
-						label="Occupation"
+						label="Рід занять"
 						value={capitalizeFirstLetter(profile?.occupation || "")}
 					/>
 					<ProfileItem
 						icon={<Home className="tab-icon" />}
-						label="Apartment"
-						value={profile?.apartment?.unit_number || "None"}
+						label="Квартира"
+						value={profile?.apartment?.unit_number || "Немає"}
 					/>
 					<ProfileItem
 						icon={<Hotel className="tab-icon" />}
-						label="Building"
-						value={`${profile?.apartment?.building || "None"}, Floor: ${profile?.apartment?.floor || "None"} `}
+						label="Будинок"
+						value={`${profile?.apartment?.building || "Немає"}, Floor: ${profile?.apartment?.floor || "Немає"} `}
 					/>
 					<ProfileItem
 						icon={<Star className="tab-icon" />}
-						label="Average Rating"
+						label="Середня оцінка"
 						value={profile?.average_rating?.toString() || ""}
 					/>
 
 					<div className="prose max-w-none">
 						<p>
-							<span className="tab-font">Bio:</span>
+							<span className="tab-font">Про себе:</span>
 							<span className="dark:text-babyPowder">
-								{profile?.bio || "You have not added any bio info yet!"}
+								{profile?.bio || "Ви ще не додали інформацію про себе!"}
 							</span>
 						</p>
 					</div>

@@ -52,7 +52,7 @@ export default function IssueCard({ issue }: IssueCardProps) {
 					<CardDescription className="dark:text-platinum">
 						<p className="flex items-center space-x-2">
 							<Hotel className="tab-icon" />
-							<span className="tab-font">Apartment Number: </span>
+							<span className="tab-font">Номер квартири: </span>
 							<span className="text-lg">{issue.apartment_unit}</span>
 						</p>
 					</CardDescription>
@@ -60,14 +60,14 @@ export default function IssueCard({ issue }: IssueCardProps) {
 
 				<CardFooter className="dark:text-babyPowder flex flex-row justify-between">
 					<p>
-						<span className="mr-0.5 font-bold">Status: </span>
+						<span className="mr-0.5 font-bold">Статус: </span>
 						<Badge className="bg-eerieBlack text-babyPowder dark:bg-electricIndigo dark:text-babyPowder">
 							{issue.status}
 						</Badge>
 					</p>
 
 					<p>
-						<span className="mr-0.5 font-bold">Priority: </span>
+						<span className="mr-0.5 font-bold">Пріоритет: </span>
 						<Badge className="bg-eerieBlack text-babyPowder dark:text-veryBlack dark:bg-lime-500">
 							{issue.priority}
 						</Badge>

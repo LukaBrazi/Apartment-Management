@@ -1,0 +1,539 @@
+# Ukrainian translation for Alpha Apartments
+# Copyright (C) 2026 Alpha Apartments
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Alpha Apartments 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-05 00:00+0200\n"
+"PO-Revision-Date: 2026-03-05 00:00+0200\n"
+"Last-Translator: Andriienko Dmytro <d.andriienko@alpha-apartments.local>\n"
+"Language-Team: Ukrainian\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);\n"
+
+# ── App names ──────────────────────────────────────────────────────────────
+
+#: apps/apartments/apps.py:21
+msgid "Apartments"
+msgstr "Квартири"
+
+#: apps/common/apps.py:21
+msgid "Common"
+msgstr "Загальне"
+
+#: apps/issues/apps.py:21
+msgid "Issues"
+msgstr "Заявки"
+
+#: apps/passes/apps.py:8 apps/passes/models.py:54
+msgid "Vehicle Passes"
+msgstr "Перепустки"
+
+#: apps/posts/apps.py:21 apps/posts/models.py:167
+msgid "Posts"
+msgstr "Публікації"
+
+#: apps/profiles/apps.py:24
+msgid "Profiles"
+msgstr "Профілі"
+
+#: apps/ratings/apps.py:21 apps/ratings/models.py:100
+msgid "Ratings"
+msgstr "Оцінки"
+
+#: apps/reports/apps.py:24 apps/reports/models.py:81
+msgid "Reports"
+msgstr "Скарги"
+
+#: apps/users/apps.py:21 apps/users/models.py:106
+msgid "Users"
+msgstr "Користувачі"
+
+# ── Common fields ──────────────────────────────────────────────────────────
+
+#: apps/common/models.py:38
+msgid "Created At"
+msgstr "Створено"
+
+#: apps/common/models.py:39
+msgid "Updated At"
+msgstr "Оновлено"
+
+#: apps/common/models.py:85
+msgid "Content Type"
+msgstr "Тип контенту"
+
+#: apps/common/models.py:87
+msgid "Object ID"
+msgstr "ID об'єкта"
+
+#: apps/common/models.py:95 apps/users/models.py:105
+msgid "User"
+msgstr "Користувач"
+
+#: apps/common/models.py:98
+msgid "Viewer IP"
+msgstr "IP-адреса переглядача"
+
+#: apps/common/models.py:100
+msgid "Last Viewed At"
+msgstr "Останній перегляд"
+
+#: apps/common/models.py:114
+msgid "Content View"
+msgstr "Перегляд контенту"
+
+#: apps/common/models.py:115
+msgid "Content Views"
+msgstr "Перегляди контенту"
+
+#: apps/common/renderers.py:78
+msgid "Renderer context does not contain a response object"
+msgstr "Контекст рендерера не містить об'єкта відповіді"
+
+# ── Building / Entrance / Unit ─────────────────────────────────────────────
+
+#: apps/apartments/models.py:16 apps/issues/models.py:30
+msgid "Name"
+msgstr "Назва"
+
+#: apps/apartments/models.py:17
+msgid "Address"
+msgstr "Адреса"
+
+#: apps/apartments/models.py:18
+msgid "City"
+msgstr "Місто"
+
+#: apps/apartments/models.py:19 apps/posts/models.py:31
+msgid "Active"
+msgstr "Активний"
+
+#: apps/apartments/models.py:22 apps/apartments/models.py:37
+#: apps/apartments/models.py:106 apps/posts/models.py:27
+msgid "Building"
+msgstr "Будинок"
+
+#: apps/apartments/models.py:23
+msgid "Buildings"
+msgstr "Будинки"
+
+#: apps/apartments/models.py:39
+msgid "Name / Number"
+msgstr "Назва / Номер"
+
+#: apps/apartments/models.py:42 apps/apartments/models.py:58
+msgid "Entrance"
+msgstr "Під'їзд"
+
+#: apps/apartments/models.py:43
+msgid "Entrances"
+msgstr "Під'їзди"
+
+#: apps/apartments/models.py:60 apps/apartments/models.py:104
+msgid "Unit Number"
+msgstr "Номер квартири"
+
+#: apps/apartments/models.py:61 apps/apartments/models.py:107
+msgid "Floor"
+msgstr "Поверх"
+
+#: apps/apartments/models.py:69
+msgid "Legacy Apartment"
+msgstr "Стара квартира"
+
+#: apps/apartments/models.py:73 apps/issues/models.py:118
+#: apps/passes/models.py:29
+msgid "Unit"
+msgstr "Квартира"
+
+#: apps/apartments/models.py:74
+msgid "Units"
+msgstr "Квартири"
+
+#: apps/apartments/models.py:114 apps/passes/models.py:21
+#: apps/profiles/models.py:104
+msgid "Tenant"
+msgstr "Мешканець"
+
+#: apps/issues/models.py:109
+msgid "Apartment"
+msgstr "Квартира"
+
+# ── Issues ─────────────────────────────────────────────────────────────────
+
+#: apps/issues/models.py:32
+msgid "SLA Hours"
+msgstr "Години SLA"
+
+#: apps/issues/models.py:38 apps/issues/models.py:126
+msgid "Category"
+msgstr "Категорія"
+
+#: apps/issues/models.py:39
+msgid "Categories"
+msgstr "Категорії"
+
+#: apps/issues/models.py:90
+msgid "Reported"
+msgstr "Подано"
+
+#: apps/issues/models.py:91
+msgid "Accepted"
+msgstr "Прийнято"
+
+#: apps/issues/models.py:92
+msgid "In Progress"
+msgstr "Виконується"
+
+#: apps/issues/models.py:93
+msgid "Done"
+msgstr "Виконано"
+
+#: apps/issues/models.py:94
+msgid "Rejected"
+msgstr "Відхилено"
+
+#: apps/issues/models.py:96
+msgid "Resolved"
+msgstr "Вирішено"
+
+#: apps/issues/models.py:100
+msgid "Low"
+msgstr "Низький"
+
+#: apps/issues/models.py:101
+msgid "Medium"
+msgstr "Середній"
+
+#: apps/issues/models.py:102
+msgid "High"
+msgstr "Високий"
+
+#: apps/issues/models.py:128
+msgid "Due At"
+msgstr "Термін виконання"
+
+#: apps/issues/models.py:133
+msgid "Reported By"
+msgstr "Подав"
+
+#: apps/issues/models.py:141
+msgid "Assigned To"
+msgstr "Призначено"
+
+#: apps/issues/models.py:143
+msgid "Issue Title"
+msgstr "Назва заявки"
+
+#: apps/issues/models.py:144
+msgid "Issue Description"
+msgstr "Опис заявки"
+
+#: apps/issues/models.py:146 apps/passes/models.py:37
+msgid "Status"
+msgstr "Статус"
+
+#: apps/issues/models.py:152
+msgid "Priority"
+msgstr "Пріоритет"
+
+#: apps/issues/models.py:157
+msgid "Resolved On"
+msgstr "Дата вирішення"
+
+# ── Vehicle Passes ─────────────────────────────────────────────────────────
+
+#: apps/passes/models.py:14
+msgid "Pending"
+msgstr "Очікує"
+
+#: apps/passes/models.py:15
+msgid "Closed"
+msgstr "Закрито"
+
+#: apps/passes/models.py:32
+msgid "Car Number"
+msgstr "Номер авто"
+
+#: apps/passes/models.py:34 apps/ratings/models.py:74
+msgid "Comment"
+msgstr "Коментар"
+
+#: apps/passes/models.py:35
+msgid "Visit Date"
+msgstr "Дата відвідування"
+
+#: apps/passes/models.py:48
+msgid "Closed By"
+msgstr "Закрив"
+
+#: apps/passes/models.py:50
+msgid "Closed At"
+msgstr "Час закриття"
+
+#: apps/passes/models.py:53
+msgid "Vehicle Pass"
+msgstr "Перепустка"
+
+# ── Posts ──────────────────────────────────────────────────────────────────
+
+#: apps/posts/models.py:29 apps/posts/models.py:73 apps/reports/models.py:38
+msgid "Title"
+msgstr "Заголовок"
+
+#: apps/posts/models.py:30 apps/posts/models.py:77
+msgid "Body"
+msgstr "Текст"
+
+#: apps/posts/models.py:34
+msgid "Announcement"
+msgstr "Оголошення"
+
+#: apps/posts/models.py:35
+msgid "Announcements"
+msgstr "Оголошення"
+
+#: apps/posts/models.py:75 apps/profiles/models.py:134
+msgid "Slug"
+msgstr "Посилання"
+
+#: apps/posts/models.py:78
+msgid "Tags"
+msgstr "Теги"
+
+#: apps/posts/models.py:83 apps/posts/models.py:200
+msgid "Author"
+msgstr "Автор"
+
+#: apps/posts/models.py:88
+msgid "Bookmarked by"
+msgstr "У закладках"
+
+#: apps/posts/models.py:91
+msgid "Upvotes"
+msgstr "Лайки"
+
+#: apps/posts/models.py:95
+msgid "Upvoted by"
+msgstr "Лайкнули"
+
+#: apps/posts/models.py:98
+msgid "Downvotes"
+msgstr "Дизлайки"
+
+#: apps/posts/models.py:102
+msgid "Downvoted by"
+msgstr "Дизлайкнули"
+
+#: apps/posts/models.py:151
+msgid "Only superusers, staffusers and tenants can create posts"
+msgstr "Тільки адміністратори та мешканці можуть створювати публікації"
+
+#: apps/posts/models.py:166 apps/posts/models.py:194
+msgid "Post"
+msgstr "Публікація"
+
+#: apps/posts/models.py:202 apps/posts/models.py:224
+msgid "Reply"
+msgstr "Відповідь"
+
+#: apps/posts/models.py:225
+msgid "Replies"
+msgstr "Відповіді"
+
+# ── Profiles ───────────────────────────────────────────────────────────────
+
+#: apps/profiles/models.py:91
+msgid "Male"
+msgstr "Чоловік"
+
+#: apps/profiles/models.py:92
+msgid "Female"
+msgstr "Жінка"
+
+#: apps/profiles/models.py:93
+msgid "Other"
+msgstr "Інше"
+
+#: apps/profiles/models.py:97
+msgid "Mason"
+msgstr "Муляр"
+
+#: apps/profiles/models.py:98
+msgid "Carpenter"
+msgstr "Тесляр"
+
+#: apps/profiles/models.py:99
+msgid "Plumber"
+msgstr "Сантехнік"
+
+#: apps/profiles/models.py:100
+msgid "Roofer"
+msgstr "Покрівельник"
+
+#: apps/profiles/models.py:101
+msgid "Painter"
+msgstr "Маляр"
+
+#: apps/profiles/models.py:102
+msgid "Electrician"
+msgstr "Електрик"
+
+#: apps/profiles/models.py:103
+msgid "HVAC"
+msgstr "Вентиляція/Кондиціювання"
+
+#: apps/profiles/models.py:105
+msgid "Guard"
+msgstr "Охоронець"
+
+#: apps/profiles/models.py:110
+msgid "Avatar"
+msgstr "Аватар"
+
+#: apps/profiles/models.py:113
+msgid "Gender"
+msgstr "Стать"
+
+#: apps/profiles/models.py:115
+msgid "Bio"
+msgstr "Про себе"
+
+#: apps/profiles/models.py:117
+msgid "Occupation"
+msgstr "Рід занять"
+
+#: apps/profiles/models.py:123
+msgid "Phone Number"
+msgstr "Номер телефону"
+
+#: apps/profiles/models.py:127
+msgid "Country of Origin"
+msgstr "Країна"
+
+#: apps/profiles/models.py:129
+msgid "City of Origin"
+msgstr "Місто"
+
+#: apps/profiles/models.py:131
+msgid "Report Count"
+msgstr "Кількість скарг"
+
+#: apps/profiles/models.py:132
+msgid "Reputation"
+msgstr "Репутація"
+
+# ── Ratings ────────────────────────────────────────────────────────────────
+
+#: apps/ratings/models.py:40
+msgid "Very Poor"
+msgstr "Дуже погано"
+
+#: apps/ratings/models.py:44
+msgid "Poor"
+msgstr "Погано"
+
+#: apps/ratings/models.py:48
+msgid "Average"
+msgstr "Задовільно"
+
+#: apps/ratings/models.py:52
+msgid "Good"
+msgstr "Добре"
+
+#: apps/ratings/models.py:54
+msgid "Excellent"
+msgstr "Відмінно"
+
+#: apps/ratings/models.py:61
+msgid "Rated User"
+msgstr "Оцінений користувач"
+
+#: apps/ratings/models.py:67
+msgid "Rating User"
+msgstr "Хто оцінив"
+
+#: apps/ratings/models.py:71 apps/ratings/models.py:99
+msgid "Rating"
+msgstr "Оцінка"
+
+# ── Reports ────────────────────────────────────────────────────────────────
+
+#: apps/reports/models.py:46
+msgid "Reported by"
+msgstr "Поскаржився"
+
+#: apps/reports/models.py:54
+msgid "Reported user"
+msgstr "На кого скарга"
+
+#: apps/reports/models.py:56
+msgid "Description"
+msgstr "Опис"
+
+#: apps/reports/models.py:80
+msgid "Report"
+msgstr "Скарга"
+
+# ── Users / Auth ───────────────────────────────────────────────────────────
+
+#: apps/users/admin.py:48
+msgid "Login Credentials"
+msgstr "Дані для входу"
+
+#: apps/users/admin.py:49
+msgid "Personal info"
+msgstr "Особисті дані"
+
+#: apps/users/admin.py:51
+msgid "Permissions and Groups"
+msgstr "Права та групи"
+
+#: apps/users/admin.py:62
+msgid "Important Dates"
+msgstr "Важливі дати"
+
+#: apps/users/managers.py:26
+msgid "Enter a valid email address"
+msgstr "Введіть коректну електронну адресу"
+
+#: apps/users/managers.py:66
+msgid "The username must be provided."
+msgstr "Необхідно вказати ім'я користувача."
+
+#: apps/users/managers.py:71
+msgid "The email address must be provided."
+msgstr "Необхідно вказати електронну адресу."
+
+#: apps/users/managers.py:146
+msgid "Superuser must have is_staff=True."
+msgstr "Суперкористувач повинен мати is_staff=True."
+
+#: apps/users/managers.py:151
+msgid "Superuser must have is_superuser=True."
+msgstr "Суперкористувач повинен мати is_superuser=True."
+
+#: apps/users/models.py:29
+msgid "Your username is not valid. A username can only contain letters, numbers, a dot, @ symbol, + symbol and a hyphen "
+msgstr "Ім'я користувача недійсне. Дозволені лише літери, цифри, крапка, символ @, + та дефіс."
+
+#: apps/users/models.py:72
+msgid "First Name"
+msgstr "Ім'я"
+
+#: apps/users/models.py:73
+msgid "Last Name"
+msgstr "Прізвище"
+
+#: apps/users/models.py:75
+msgid "Email Address"
+msgstr "Електронна адреса"
+
+#: apps/users/models.py:78
+msgid "Username"
+msgstr "Ім'я користувача"

@@ -3,17 +3,17 @@ import { AuthFormHeader } from "@/components/forms/auth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Create Apartment",
-	description: "Authenticated users can add their apartment details",
+	title: "Alpha Apartments | Додати квартиру",
+	description: "Авторизовані користувачі можуть додати дані своєї квартири",
 };
 
 export default function AddApartmentPage() {
 	return (
 		<div>
 			<AuthFormHeader
-				title="Add Your Apartment"
-				staticText="Want to go back?"
-				linkText="Back to Profile"
+				title="Додати квартиру"
+				staticText="Хочете повернутись?"
+				linkText="До профілю"
 				linkHref="/profile"
 			/>
 			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">

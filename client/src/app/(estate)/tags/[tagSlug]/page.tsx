@@ -2,8 +2,8 @@ import PostTagCard from "@/components/cards/PostTagCard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: " Alpha Apartments | Post Tags",
-	description: "Authenticated users can see the tags details of a post",
+	title: " Alpha Apartments | Теги",
+	description: "Авторизовані користувачі можуть переглядати публікації за тегом",
 };
 
 interface SlugParamsProps {

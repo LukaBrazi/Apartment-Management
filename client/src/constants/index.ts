@@ -9,69 +9,78 @@ type OptionType = {
 };
 
 export const statusOptions: OptionType[] = [
-	{ value: "reported", label: "Reported" },
-	{ value: "resolved", label: "Resolved" },
-	{ value: "in_progress", label: "In Progress" },
+	{ value: "reported", label: "Подано" },
+	{ value: "resolved", label: "Вирішено" },
+	{ value: "in_progress", label: "Виконується" },
 ];
 
 export const priorityOptions: OptionType[] = [
-	{ value: "low", label: "Low" },
-	{ value: "medium", label: "Medium" },
-	{ value: "high", label: "High" },
+	{ value: "low", label: "Низький" },
+	{ value: "medium", label: "Середній" },
+	{ value: "high", label: "Високий" },
 ];
 
 export const occupationOptions = [
-	{ value: "mason", label: "Mason" },
-	{ value: "carpenter", label: "Carpenter" },
-	{ value: "plumber", label: "Plumber" },
-	{ value: "roofer", label: "Roofer" },
-	{ value: "painter", label: "Painter" },
-	{ value: "electrician", label: "Electrician" },
-	{ value: "hvac", label: "HVAC" },
-	{ value: "tenant", label: "Tenant" },
+	{ value: "mason", label: "Муляр" },
+	{ value: "carpenter", label: "Тесляр" },
+	{ value: "plumber", label: "Сантехнік" },
+	{ value: "roofer", label: "Покрівельник" },
+	{ value: "painter", label: "Маляр" },
+	{ value: "electrician", label: "Електрик" },
+	{ value: "hvac", label: "Вентиляція/Кондиціювання" },
+	{ value: "tenant", label: "Мешканець" },
+	{ value: "guard", label: "Охоронець" },
 ];
 
 export const leftNavLinks: LeftNavLink[] = [
 	{
 		path: "/welcome",
-		label: "Home",
+		label: "Головна",
 		imgLocation: "/assets/icons/home.svg",
 	},
 	{
 		path: "/profile",
-		label: "Profile",
+		label: "Профіль",
 		imgLocation: "/assets/icons/user-profile.svg",
 	},
 	{
 		path: "/tenants",
-		label: "Tenants",
+		label: "Мешканці",
 		imgLocation: "/assets/icons/tenants.svg",
 	},
-
 	{
 		path: "/technicians",
-		label: "Technicians",
+		label: "Майстри",
 		imgLocation: "/assets/icons/technician.svg",
 	},
 	{
 		path: "/report-issue",
-		label: "Report an Issue",
+		label: "Подати заявку",
 		imgLocation: "/assets/icons/report.svg",
 	},
-
 	{
 		path: "/report-tenant",
-		label: "Report a Tenant",
+		label: "Поскаржитися",
 		imgLocation: "/assets/icons/speak.svg",
 	},
 	{
 		path: "/bookmark",
-		label: "Bookmarked Posts",
+		label: "Збережені публікації",
 		imgLocation: "/assets/icons/bookmark.svg",
 	},
 	{
 		path: "/add-post",
-		label: "Create a Post....",
+		label: "Написати публікацію",
 		imgLocation: "/assets/icons/question-file.svg",
+	},
+	{
+		path: "/request-pass",
+		label: "Перепустка для авто",
+		imgLocation: "/assets/icons/report.svg",
+	},
+	{
+		path: "/guard-portal",
+		label: "Портал охорони",
+		imgLocation: "/assets/icons/tenants.svg",
 	},
 ];

@@ -50,10 +50,10 @@ export default function UpdatePostForm({ params }: UpdateParamsProps) {
 	const onSubmit = async (formValues: z.infer<typeof postUpdateSchema>) => {
 		try {
 			await updatePost({ postSlug, ...formValues }).unwrap();
-			toast.success("Post updated successfully");
+			toast.success("Публікацію успішно оновлено");
 			router.push(`/post/${postSlug}`);
 		} catch (error) {
-			toast.error(extractErrorMessage(error) || "Failed to update post");
+			toast.error(extractErrorMessage(error) || "Не вдалося оновити публікацію");
 		}
 	};
 
@@ -65,7 +65,7 @@ export default function UpdatePostForm({ params }: UpdateParamsProps) {
 				className="flex w-full max-w-md flex-col gap-4 dark:text-black"
 			>
 				<FormFieldComponent
-					label="Title"
+					label="Заголовок"
 					name="title"
 					register={register}
 					errors={errors}
@@ -73,7 +73,7 @@ export default function UpdatePostForm({ params }: UpdateParamsProps) {
 				/>
 
 				<FormFieldComponent
-					label="Content"
+					label="Текст"
 					name="body"
 					register={register}
 					errors={errors}
@@ -85,7 +85,7 @@ export default function UpdatePostForm({ params }: UpdateParamsProps) {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Update Your Post`}
+					{isLoading ? <Spinner size="sm" /> : "Оновити публікацію"}
 				</Button>
 			</form>
 		</main>

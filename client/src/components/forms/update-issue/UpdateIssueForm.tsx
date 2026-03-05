@@ -46,7 +46,7 @@ export default function UpdateIssueForm({ params }: UpdateParamsProps) {
 			try {
 				await updateIssue(valuesWithIssueId).unwrap();
 				toast.success(
-					"The Issue assigned to you has been updated. A confirmation email has been sent to the tenant",
+					"Заявку оновлено. Мешканець отримає підтвердження електронною поштою",
 				);
 				reset();
 				router.push("/profile");
@@ -65,8 +65,8 @@ export default function UpdateIssueForm({ params }: UpdateParamsProps) {
 			>
 				<div>
 					<label htmlFor="Status" className="h4-semibold dark:text-babyPowder">
-						Status
-					</label>
+					Статус
+				</label>
 					<div className="mt-1 flex items-center space-x-3 text-sm">
 						<ClientOnly>
 							<Controller
@@ -81,7 +81,7 @@ export default function UpdateIssueForm({ params }: UpdateParamsProps) {
 										)}
 										onChange={(val) => onChange(val?.value)}
 										onBlur={onBlur}
-										placeholder="Update the Issue Status"
+										placeholder="Оновити статус заявки"
 										instanceId="issue-status-select"
 										styles={customStyles}
 									/>
@@ -99,7 +99,7 @@ export default function UpdateIssueForm({ params }: UpdateParamsProps) {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin mt-2 w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Update Status`}
+					{isLoading ? <Spinner size="sm" /> : "Оновити статус"}
 				</Button>
 			</form>
 		</main>

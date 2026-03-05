@@ -43,7 +43,7 @@ export default function TechnicianCard() {
 		<div>
 			<UsersSearch />
 			<h1 className="flex-center font-robotoSlab dark:text-pumpkin text-5xl">
-				All Technicians - ({technicians?.results.length})
+				Усі спеціалісти — ({technicians?.results.length})
 			</h1>
 
 			<div className="mt-4 grid cursor-pointer grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -89,7 +89,7 @@ export default function TechnicianCard() {
 											size="sm"
 											className="electricIndigo-gradient text-babyPowder mt-3"
 										>
-											Give me a Rating
+											Залишити оцінку
 										</Button>
 									</Link>
 								</div>
@@ -98,7 +98,7 @@ export default function TechnicianCard() {
 					))
 				) : (
 					<p className="h2-semibold dark:text-lime-500">
-						No technicians(s) found!
+						Спеціалістів не знайдено!
 					</p>
 				)}
 			</div>

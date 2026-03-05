@@ -2,9 +2,9 @@ import TechnicianCard from "@/components/cards/TechnicianCard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Technicians",
+	title: "Alpha Apartments | Спеціалісти",
 	description:
-		"Tenants can see a list of technicians, what they specialize on and their rating",
+		"Мешканці можуть переглядати список технічних спеціалістів та їх рейтинг",
 };
 
 export default function TechniciansPage() {

@@ -29,7 +29,7 @@ export default function Issues() {
 					))
 				) : (
 					<p className="h2-semibold dark:text-lime-500">
-						You have not raised any Issue(s) Yet!
+						Ви ще не подавали жодних заявок!
 					</p>
 				)}
 			</div>

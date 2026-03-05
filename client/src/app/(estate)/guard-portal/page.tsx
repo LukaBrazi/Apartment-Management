@@ -1,0 +1,11 @@
+import GuardPortalView from "@/components/guard/GuardPortalView";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "Alpha Apartments | Портал охорони",
+	description: "Портал охорони — перегляд та управління заявками на в'їзд авто",
+};
+
+export default function GuardPortalPage() {
+	return <GuardPortalView />;
+}

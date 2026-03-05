@@ -33,7 +33,7 @@ export default function CreateReportForm() {
 		try {
 			await reportTenant(values).unwrap();
 			toast.success(
-				"Your report has been received. The management shall take action immediately",
+				"Вашу скаргу отримано. Адміністрація вживе заходів якнайшвидше.",
 			);
 			reset();
 			router.push("/profile");
@@ -50,29 +50,29 @@ export default function CreateReportForm() {
 				className="flex w-full max-w-md flex-col gap-4 dark:text-black"
 			>
 				<FormFieldComponent
-					label="Title"
+					label="Назва"
 					name="title"
 					register={register}
 					errors={errors}
-					placeholder="Title"
+					placeholder="Назва скарги"
 					startIcon={<FlagIcon className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="Tenant's Username"
+					label="Ім'я мешканця"
 					name="reported_user_username"
 					register={register}
 					errors={errors}
-					placeholder="Add Tenants Username"
+					placeholder="Ім'я користувача мешканця"
 					startIcon={<Contact2Icon className="dark:text-babyPowder size-8" />}
 				/>
 
 				<FormFieldComponent
-					label="Description"
+					label="Опис"
 					name="description"
 					register={register}
 					errors={errors}
-					placeholder="Detailed Description of the problem"
+					placeholder="Детальний опис ситуації"
 					isTextArea
 				/>
 
@@ -81,7 +81,7 @@ export default function CreateReportForm() {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin mt-2 w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Send Report`}
+					{isLoading ? <Spinner size="sm" /> : `Надіслати скаргу`}
 				</Button>
 			</form>
 		</main>

@@ -54,7 +54,7 @@ export default function OccupationSelectField({
 	return (
 		<div>
 			<label htmlFor="occupation" className="h4-semibold dark:text-babyPowder">
-				Occupation
+				Рід занять
 			</label>
 			<div className="mt-1 flex items-center space-x-3">
 				<Briefcase className="dark:text-babyPowder size-8" />

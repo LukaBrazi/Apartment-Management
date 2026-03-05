@@ -3,18 +3,18 @@ import CreateReportForm from "@/components/forms/report-tenant/CreateReportForm"
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Report Tenant",
+	title: "Alpha Apartments | Скарга на мешканця",
 	description:
-		"Tenants can report their fellow tenants in cases of misconduct or misbehavior",
+		"Мешканці можуть поскаржитися на інших мешканців у разі неналежної поведінки",
 };
 
 export default function ReportTenantPage() {
 	return (
 		<div>
 			<AuthFormHeader
-				title="Report a Tenant"
-				staticText="All reports shall remain anonymous. We shall act accordingly, but shall not discolose details of who raised the concern."
-				linkText="Back to Profile"
+				title="Поскаржитися на мешканця"
+				staticText="Всі скарги залишаються анонімними. Ми вживемо відповідних заходів, не розкриваючи особу скаржника."
+				linkText="До профілю"
 				linkHref="/profile"
 			/>
 			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">

@@ -47,7 +47,7 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 			try {
 				await deleteIssue(issue.id).unwrap();
 				router.push("/profile");
-				toast.success("Your Issue was deleted");
+				toast.success("Заявку видалено");
 			} catch (e) {
 				const errorMessage = extractErrorMessage(e);
 				toast.error(errorMessage || "An error occurred");
@@ -58,7 +58,7 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 		<Card className="dark:border-gray rounded-xl border border-dashed">
 			<AuthFormHeader
 				title={issue?.title}
-				linkText="Go back to profile"
+				linkText="До профілю"
 				linkHref="/profile"
 			/>
 
@@ -68,7 +68,7 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 						<p className="flex items-center space-x-2">
 							<Hotel className="tab-icon" />
 							<span className="dark:text-babyPowder font-bold">
-								Apartment Number:{" "}
+								Номер квартири:{" "}
 							</span>
 							<span className="text-2xl">{issue?.apartment_unit}</span>
 						</p>
@@ -77,7 +77,7 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 					<CardDescription className="mt-2">
 						<p className="flex items-center space-x-2">
 							<CheckCheck className="tab-icon" />
-							<span className="text-xl-font-baby">Occupied By: </span>
+							<span className="text-xl-font-baby">Мешканець: </span>
 							<span className="text-xl-font-baby">{issue?.reported_by}</span>
 						</p>
 					</CardDescription>
@@ -120,23 +120,23 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 
 			<CardFooter className="mt-2 flex flex-row justify-between dark:text-lime-500">
 				<p className="text-lg">
-					assigned to:
+					Призначено:
 					<span className="dark:text-platinum">
 						{issue?.assigned_to || "Not assigned Yet!"}
 					</span>
 				</p>
 				<p className="text-lg">
-					Status:
+					Статус:
 					<span className="dark:text-platinum">{issue?.status}</span>
 				</p>
 				<p className="text-lg">
-					Priority:
+					Пріоритет:
 					<span className="dark:text-platinum">{issue?.priority}</span>
 				</p>
 				<p className="flex flex-row items-center">
 					<EyeIcon className="mr-1 size-5" />
 					<span className="dark:text-platinum text-lg">
-						View Count: {issue?.view_count}
+						Переглядів: {issue?.view_count}
 					</span>
 				</p>
 			</CardFooter>

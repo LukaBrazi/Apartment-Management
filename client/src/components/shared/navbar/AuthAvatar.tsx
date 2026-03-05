@@ -43,24 +43,24 @@ export default function AuthAvatar() {
 
 					<DropdownMenuContent className="dark:text-platinum">
 						<DropdownMenuLabel className="border-b-2">
-							Manage Account
+							Мій акаунт
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem className="auth-nav">
 							<Link href="/profile" className="flex-row-center">
-								<User className="mr-1" /> My Profile
+								<User className="mr-1" /> Профіль
 							</Link>
 						</DropdownMenuItem>
 
 						<DropdownMenuItem className="auth-nav">
 							<Link href="/tenants" className="flex-row-center">
-								<Users className="mr-1" /> Tenants
+								<Users className="mr-1" /> Мешканці
 							</Link>
 						</DropdownMenuItem>
 
 						<DropdownMenuItem className="auth-nav">
 							<Link href="/bookmarks" className="flex-row-center">
-								<BookMarked className="mr-1" /> My Bookmarks
+								<BookMarked className="mr-1" /> Закладки
 							</Link>
 						</DropdownMenuItem>
 
@@ -68,7 +68,7 @@ export default function AuthAvatar() {
 							onClick={handleLogout}
 							className="flex-row-center auth-nav cursor-pointer"
 						>
-							<LogOut className="mr-1" /> Log Out
+							<LogOut className="mr-1" /> Вийти
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

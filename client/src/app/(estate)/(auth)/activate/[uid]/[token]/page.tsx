@@ -24,10 +24,10 @@ export default function ActivationPage({ params }: ActivationProps) {
 
 	useEffect(() => {
 		if (isSuccess) {
-			toast.success("Account activated successfully!");
+			toast.success("Акаунт успішно активовано!");
 			router.push("/login");
 		} else if (isError && error) {
-			toast.error("Failed to activate your account");
+			toast.error("Не вдалося активувати акаунт");
 		}
 	}, [isSuccess, isError, error, router]);
 
@@ -38,7 +38,7 @@ export default function ActivationPage({ params }: ActivationProps) {
 					{isLoading ? (
 						<div className="flex-center">
 							<span className="mr-2">⏰</span>
-							<span>Activating your account....Please wait</span>
+							<span>Активуємо ваш акаунт... Будь ласка, зачекайте</span>
 							<span className="ml-2">🥱</span>
 						</div>
 					) : isSuccess ? (
@@ -50,7 +50,7 @@ export default function ActivationPage({ params }: ActivationProps) {
 						isError && (
 							<div>
 								<span className="mr-2">❌</span>
-								<span>Your account has already been activated...</span>
+								<span>Ваш акаунт вже було активовано або виникла помилка...</span>
 							</div>
 						)
 					)}

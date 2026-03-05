@@ -2,8 +2,8 @@ import BookmarkedPostCard from "@/components/cards/BookmarkedPostCard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Bookmarks",
-	description: "Authenticated users can see the posts they have bookmarked",
+	title: "Alpha Apartments | Закладки",
+	description: "Авторизовані користувачі можуть переглядати збережені публікації",
 };
 
 export default function BookmarkedPostsPage() {

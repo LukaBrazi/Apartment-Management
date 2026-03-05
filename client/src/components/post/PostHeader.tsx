@@ -46,10 +46,10 @@ export default function PostHeader({
 				<p className="flex items-center space-x-2">
 					<ClockIcon className="tab-icon text-electricIndigo hidden sm:block" />
 					<span className="text-xl-font-baby">
-						<span className="mr-1">Posted</span>
+						<span className="mr-1">Опубліковано</span>
 						{created_at
 							? formatDistanceToNow(parseISO(created_at), { addSuffix: true })
-							: "Loading..."}
+							: "Завантаження..."}
 					</span>
 					<EyeIcon className="tab-icon text-electricIndigo" />
 					<span className="text-xl-font-baby">{getViewText(view_count)}</span>

@@ -39,7 +39,7 @@ export default function CreateReplyForm({ slug }: ReplyFormProps) {
 	const onSubmit = async (values: TReplyCreateSchema) => {
 		try {
 			await replyToPost({ postId, ...values }).unwrap();
-			toast.success("Your reply was created.");
+			toast.success("Відповідь успішно додано.");
 			router.push(`/post/${slug}`);
 			reset();
 		} catch (error) {
@@ -58,7 +58,7 @@ export default function CreateReplyForm({ slug }: ReplyFormProps) {
 					name="body"
 					register={register}
 					errors={errors}
-					placeholder="Add your reply..."
+					placeholder="Додайте відповідь..."
 					isTextArea
 					className="font-semibold"
 				/>
@@ -67,7 +67,7 @@ export default function CreateReplyForm({ slug }: ReplyFormProps) {
 					className="h4-semibold bg-eerieBlack dark:bg-pumpkin w-full text-white"
 					disabled={isLoading}
 				>
-					{isLoading ? <Spinner size="sm" /> : `Add your reply`}
+					{isLoading ? <Spinner size="sm" /> : "Відповісти"}
 				</Button>
 			</form>
 		</main>

@@ -27,19 +27,19 @@ export default function PostActions({
 	return (
 		<CardDescription className="mt-2">
 			<p className="flex items-center space-x-2">
-				<Tooltip content="Upvote this post" position="right">
+				<Tooltip content="Вподобати публікацію" position="right">
 					<button onClick={handleUpvote} disabled={isUpvoteLoading}>
 						<ThumbsUpIcon className="tab-icon text-electricIndigo hidden sm:block" />
 					</button>
 				</Tooltip>
 				<span className="text-xl-font-baby">{upvotes}</span>
-				<Tooltip content="Downvote this post">
+				<Tooltip content="Не вподобати публікацію">
 					<button onClick={handleDownVote} disabled={isDownvoteLoading}>
 						<ThumbsDownIcon className="tab-icon text-electricIndigo hidden sm:block" />
 					</button>
 				</Tooltip>
 				<span className="text-xl-font-baby">{downvotes}</span>
-				<Tooltip content="Bookmark this post">
+				<Tooltip content="Додати до закладок">
 					<button onClick={handleBookmarkPost} disabled={isBookmarkLoading}>
 						<BookMarkedIcon className="tab-icon text-electricIndigo hidden sm:block" />
 					</button>
