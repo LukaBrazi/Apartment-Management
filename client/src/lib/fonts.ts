@@ -1,9 +1,10 @@
 // eslint-disable-next-line camelcase
-import { Open_Sans, Roboto_Slab } from "next/font/google";
+import { Inter, Roboto_Slab } from "next/font/google";
 
-export const openSans = Open_Sans({
+export const inter = Inter({
 	subsets: ["latin"],
-	variable: "--font-openSans",
+	variable: "--font-inter",
+	display: "swap",
 });
 
 export const robotoSlab = Roboto_Slab({

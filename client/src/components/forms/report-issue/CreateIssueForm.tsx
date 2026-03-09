@@ -1,22 +1,25 @@
 "use client";
 
-import { useGetMyApartmentQuery } from "@/lib/redux/features/apartment/apartmentApiSlice";
+import {
+	useGetBuildingsQuery,
+	useGetEntrancesQuery,
+	useGetMyApartmentQuery,
+} from "@/lib/redux/features/apartment/apartmentApiSlice";
 import { useReportIssueMutation } from "@/lib/redux/features/issues/issueApiSlice";
 import { issueCreateSchema, TIssueCreateSchema } from "@/lib/validationSchemas";
 import { extractErrorMessage } from "@/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { FormFieldComponent } from "../FormFieldComponent";
-import { FlagIcon } from "lucide-react";
 import Select from "react-select";
-import { priorityOptions, statusOptions } from "@/constants";
 import customStyles from "../selectStyles";
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/shared/Spinner";
+import { MapPinIcon } from "lucide-react";
 
 const ClientOnly = dynamic<{ children: React.ReactNode }>(
 	() => Promise.resolve(({ children }) => <>{children}</>),
@@ -27,6 +30,15 @@ export default function CreateIssueForm() {
 	const { data } = useGetMyApartmentQuery();
 	const apartment = data?.apartment;
 
+	const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+	const [notBuildingRelated, setNotBuildingRelated] = useState(false);
+
+	const { data: buildingsData, isLoading: buildingsLoading } = useGetBuildingsQuery();
+	const { data: entrancesData, isLoading: entrancesLoading } = useGetEntrancesQuery(
+		selectedBuildingId ?? "",
+		{ skip: !selectedBuildingId },
+	);
+
 	const [reportIssue, { isLoading }] = useReportIssueMutation();
 	const router = useRouter();
 
@@ -35,11 +47,21 @@ export default function CreateIssueForm() {
 		handleSubmit,
 		control,
 		reset,
+		setValue,
 		formState: { errors },
 	} = useForm<TIssueCreateSchema>({
 		resolver: zodResolver(issueCreateSchema),
 		mode: "all",
 	});
+
+	const buildingOptions =
+		buildingsData?.buildings?.map((b) => ({ value: b.id, label: b.name })) ?? [];
+
+	const entranceOptions =
+		entrancesData?.entrances?.map((e) => ({
+			value: e.id,
+			label: `Під'їзд ${e.name}`,
+		})) ?? [];
 
 	const onSubmit = async (formValues: TIssueCreateSchema) => {
 		if (!apartment?.id) {
@@ -49,119 +71,139 @@ export default function CreateIssueForm() {
 			return;
 		}
 
-		const valuesWithApartmentId = {
-			...formValues,
-			apartmentId: apartment.id,
-		};
-
 		try {
-			await reportIssue(valuesWithApartmentId).unwrap();
-			toast.success(
-				"Your Issue has been reported. A confirmation email has been sent to you.",
-			);
+			await reportIssue({ ...formValues, apartmentId: apartment.id }).unwrap();
+			toast.success("Заявку подано. Підтвердження надіслано на вашу пошту.");
 			reset();
+			setSelectedBuildingId(null);
+			setNotBuildingRelated(false);
 			router.push("/profile");
 		} catch (error) {
 			const errorMessage = extractErrorMessage(error);
-			toast.error(errorMessage || "An error occurred");
+			toast.error(errorMessage || "Сталася помилка. Спробуйте ще раз.");
 		}
 	};
 
 	return (
-		<main>
-			<form
-				noValidate
-				onSubmit={handleSubmit(onSubmit)}
-				className="flex w-full max-w-md flex-col gap-4 dark:text-black"
-			>
-				<FormFieldComponent
-					label="Назва"
-					name="title"
-					register={register}
-					errors={errors}
-					placeholder="Назва заявки"
-					startIcon={<FlagIcon className="dark:text-babyPowder size-8" />}
-				/>
-				<FormFieldComponent
-					label="Опис"
-					name="description"
-					register={register}
-					errors={errors}
-					placeholder="Детальний опис проблеми"
-					isTextArea
-					startIcon={<FlagIcon className="dark:text-babyPowder size-8" />}
-				/>
-				<div>
-					<label htmlFor="Status" className="h4-semibold dark:text-babyPowder">
-						Status
-					</label>
-					<div className="mt-1 flex items-center space-x-3 text-sm">
-						<ClientOnly>
-							<Controller
-								name="status"
-								control={control}
-								render={({ field: { onChange, onBlur, value } }) => (
-									<Select
-										className="mt-1 w-full"
-										options={statusOptions}
-										value={statusOptions.find(
-											(option) => option.value === value,
-										)}
-										onChange={(val) => onChange(val?.value)}
-										onBlur={onBlur}
-										placeholder="Оберіть статус"
-										instanceId="status-select"
-										styles={customStyles}
-									/>
-								)}
-							/>
-						</ClientOnly>
-					</div>
-					{errors.status && (
-						<p className="mt-2 text-sm text-red-500">{errors.status.message}</p>
-					)}
+		<form
+			noValidate
+			onSubmit={handleSubmit(onSubmit)}
+			className="flex w-full max-w-md flex-col gap-5"
+		>
+			<FormFieldComponent
+				label="Назва заявки"
+				name="title"
+				register={register}
+				errors={errors}
+				placeholder="Коротко опишіть проблему"
+			/>
+
+			{/* Location section */}
+			<div className="flex flex-col gap-3 rounded-xl border border-[#E2E5E8] bg-[#F7F6F2] p-4 dark:border-[#2D3D4F] dark:bg-[#1E2D3D]">
+				<div className="flex items-center gap-2">
+					<MapPinIcon className="size-5 text-[#3D7A8A] dark:text-[#5BA3B5]" />
+					<span className="text-sm font-semibold text-[#1C2B3A] dark:text-[#F0EDE6]">
+						Місце проблеми
+					</span>
 				</div>
 
-				<div>
-					<label htmlFor="Status" className="h4-semibold dark:text-babyPowder">
-						Priority
-					</label>
-					<div className="mt-1 flex items-center space-x-3 text-sm">
+				<label className="flex cursor-pointer items-center gap-3">
+					<input
+						type="checkbox"
+						checked={notBuildingRelated}
+						onChange={(e) => {
+							setNotBuildingRelated(e.target.checked);
+							if (e.target.checked) {
+								setSelectedBuildingId(null);
+								setValue("location_note", "");
+							}
+						}}
+						className="size-4 rounded border-[#E2E5E8] accent-[#3D7A8A]"
+					/>
+					<span className="text-sm text-[#6B7F8C] dark:text-[#8FA8B8]">
+						Не стосується будинку
+					</span>
+				</label>
+
+				{!notBuildingRelated && (
+					<div className="flex flex-col gap-3">
 						<ClientOnly>
-							<Controller
-								name="priority"
-								control={control}
-								render={({ field: { onChange, onBlur, value } }) => (
-									<Select
-										className="mt-1 w-full"
-										options={priorityOptions}
-										value={priorityOptions.find(
-											(option) => option.value === value,
-										)}
-										onChange={(val) => onChange(val?.value)}
-										onBlur={onBlur}
-										placeholder="Пріоритет заявки"
-										instanceId="priority-select"
-										styles={customStyles}
-									/>
-								)}
+							<Select
+								options={buildingOptions}
+								value={buildingOptions.find((o) => o.value === selectedBuildingId) ?? null}
+								onChange={(val) => {
+									const bid = val?.value ?? null;
+									setSelectedBuildingId(bid);
+									const selected = buildingsData?.buildings?.find((b) => b.id === bid);
+									setValue(
+										"location_note",
+										selected ? selected.name : "",
+									);
+								}}
+								placeholder={buildingsLoading ? "Завантаження..." : "Оберіть будинок"}
+								isLoading={buildingsLoading}
+								instanceId="building-select"
+								styles={customStyles}
+								isClearable
 							/>
 						</ClientOnly>
+
+						{selectedBuildingId && (
+							<ClientOnly>
+								<Controller
+									name="location_note"
+									control={control}
+									render={({ field: { onChange, onBlur, value } }) => (
+										<Select
+											options={entranceOptions}
+											value={entranceOptions.find((o) => {
+												const building = buildingsData?.buildings?.find(
+													(b) => b.id === selectedBuildingId,
+												);
+												return value === `${building?.name} / Під'їзд ${o.label.replace("Під'їзд ", "")}`;
+											}) ?? null}
+											onChange={(val) => {
+												const building = buildingsData?.buildings?.find(
+													(b) => b.id === selectedBuildingId,
+												);
+												if (val && building) {
+													onChange(`${building.name} / Під'їзд ${val.label.replace("Під'їзд ", "")}`);
+												} else {
+													const b = buildingsData?.buildings?.find((b) => b.id === selectedBuildingId);
+													onChange(b?.name ?? "");
+												}
+											}}
+											onBlur={onBlur}
+											placeholder={entrancesLoading ? "Завантаження..." : "Оберіть під'їзд (необов'язково)"}
+											isLoading={entrancesLoading}
+											instanceId="entrance-select"
+											styles={customStyles}
+											isClearable
+										/>
+									)}
+								/>
+							</ClientOnly>
+						)}
 					</div>
-					{errors.priority && (
-						<p className="mt-2 text-sm text-red-500">
-							{errors.priority.message}
-						</p>
-					)}
-				</div>
-				<Button
-					type="submit"
-					className="h4-semibold bg-eerieBlack dark:bg-pumpkin mt-2 w-full text-white"
-					disabled={isLoading}
-				>
-					{isLoading ? <Spinner size="sm" /> : `Подати заявку`}
-				</Button>
-			</form>
-		</main>
+				)}
+			</div>
+
+			<FormFieldComponent
+				label="Детальний опис"
+				name="description"
+				register={register}
+				errors={errors}
+				placeholder="Опишіть проблему докладніше — що сталося, де, коли"
+				isTextArea
+			/>
+
+			<Button
+				type="submit"
+				disabled={isLoading}
+				className="h-11 w-full rounded-xl bg-[#3D7A8A] text-sm font-semibold text-white shadow-none transition-colors hover:bg-[#2E6070] disabled:opacity-60 dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0]"
+			>
+				{isLoading ? <Spinner size="sm" /> : "Подати заявку"}
+			</Button>
+		</form>
 	);
 }

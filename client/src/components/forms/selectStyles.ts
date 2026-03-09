@@ -2,8 +2,15 @@ const customStyles = {
 	control: (provided: any, state: any) => ({
 		...provided,
 		backgroundColor: "var(--select-background-color)",
-		borderColor: "var(--select-border-color)",
+		borderColor: state.isFocused
+			? "var(--select-border-hover-color)"
+			: "var(--select-border-color)",
+		borderRadius: "0.75rem",
+		boxShadow: state.isFocused
+			? "0 0 0 1px var(--select-border-hover-color)"
+			: "none",
 		color: "var(--select-text-color)",
+		minHeight: "44px",
 		"&:hover": {
 			borderColor: "var(--select-border-hover-color)",
 		},
@@ -13,12 +20,12 @@ const customStyles = {
 		backgroundColor: state.isSelected
 			? "var(--select-option-selected-background-color)"
 			: "var(--select-option-background-color)",
-		color: "var(--select-option-text-color)",
+		color: state.isSelected ? "#ffffff" : "var(--select-option-text-color)",
 		"&:hover": {
 			backgroundColor: "var(--select-option-hover-background-color)",
 		},
+		cursor: "pointer",
 	}),
-
 	singleValue: (provided: any) => ({
 		...provided,
 		color: "var(--select-value-text-color)",
@@ -26,6 +33,23 @@ const customStyles = {
 	menu: (provided: any) => ({
 		...provided,
 		backgroundColor: "var(--select-menu-background-color)",
+		borderRadius: "0.75rem",
+		border: "1px solid var(--select-border-color)",
+		boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+		overflow: "hidden",
+	}),
+	menuList: (provided: any) => ({
+		...provided,
+		padding: "4px",
+	}),
+	placeholder: (provided: any) => ({
+		...provided,
+		color: "var(--select-text-color)",
+		opacity: 0.5,
+	}),
+	input: (provided: any) => ({
+		...provided,
+		color: "var(--select-text-color)",
 	}),
 };
 

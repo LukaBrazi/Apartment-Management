@@ -13,8 +13,8 @@ env = environ.Env()
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", env("DJANGO_SETTINGS_MODULE"))
 
 
-# Create a Celery application instance named "alpha_apartments"
-app = Celery("alpha_apartments")
+# Create a Celery application instance named "skandi_apartments"
+app = Celery("skandi_apartments")
 
 
 # Configure Celery to use the settings from the Django settings module

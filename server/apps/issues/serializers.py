@@ -5,9 +5,12 @@ from typing import Dict
 from apps.common.models import ContentView
 from apps.issues.emails import send_resolution_email
 from apps.issues.models import Issue
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from rest_framework import serializers
+
+User = get_user_model()
 
 # Get the logger
 logger = logging.getLogger(__name__)
@@ -98,6 +101,30 @@ class IssueSerializer(serializers.ModelSerializer):
         return views
 
 
+# Issue Create Serializer (tenant-facing — no status/priority, has location_note)
+class IssueCreateSerializer(serializers.ModelSerializer):
+    """Minimal serializer for tenant issue creation.
+
+    Tenants only provide title, description, and an optional location note.
+    Status and priority are set by the admin/dispatcher.
+    The location_note is write-only and gets prepended to the description.
+    """
+
+    location_note = serializers.CharField(
+        required=False, allow_blank=True, write_only=True, default=""
+    )
+
+    class Meta:
+        model = Issue
+        fields = ["title", "description", "location_note"]
+
+    def validate(self, attrs):
+        location_note = attrs.pop("location_note", "")
+        if location_note:
+            attrs["description"] = f"📍 Місце: {location_note}\n\n{attrs['description']}"
+        return attrs
+
+
 # Issue Status Update Serializer
 class IssueStatusUpdateSerializer(serializers.ModelSerializer):
     """Issue status update serializer
@@ -186,3 +213,20 @@ class IssueStatusUpdateSerializer(serializers.ModelSerializer):
 
         # Return the updated issue
         return instance
+
+
+# IssueAdminUpdateSerializer
+class IssueAdminUpdateSerializer(serializers.ModelSerializer):
+    """Admin issue update — allows setting status (direct), priority, and assignee."""
+
+    assigned_to_username = serializers.SlugRelatedField(
+        slug_field="username",
+        queryset=User.objects.all(),
+        source="assigned_to",
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = Issue
+        fields = ["status", "priority", "assigned_to_username"]

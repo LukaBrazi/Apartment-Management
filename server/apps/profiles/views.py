@@ -16,7 +16,7 @@ from django.core.files.base import ContentFile
 from django.db.models import QuerySet
 from django.http import Http404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, status
+from rest_framework import filters, generics, permissions, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -382,3 +382,83 @@ class NonTenantProfileListAPIView(generics.ListAPIView):
             .exclude(user__is_superuser=True)
             .exclude(occupation=Profile.Occupation.TENANT)
         )
+
+
+# ProfileAdminListAPIView Class
+class ProfileAdminListAPIView(generics.ListAPIView):
+    """ProfileAdminListAPIView
+
+    ProfileAdminListAPIView class is used by staff to list all profiles,
+    including staff and superuser profiles.
+
+    Extends:
+        generics.ListAPIView
+
+    Attributes:
+        serializer_class (ProfileSerializer): The profile serializer class.
+        renderer_classes (tuple): The renderer classes.
+        pagination_class (StandardResultSetPagination): The pagination class.
+        object_label (str): The object label.
+        permission_classes (list): The list of permission classes.
+        filter_backends (tuple): The filter backends.
+        search_fields (tuple): The search fields.
+        filterset_fields (tuple): The filter fields.
+
+    Methods:
+        get_queryset() -> List[Profile]: Get the queryset.
+    """
+
+    # Attributes
+    serializer_class = ProfileSerializer
+    renderer_classes = (GenericJSONRenderer,)
+    pagination_class = StandardResultSetPagination
+    object_label = "profiles"
+    permission_classes = [permissions.IsAdminUser]
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    search_fields = (
+        "user__username",
+        "user__first_name",
+        "user__last_name",
+        "user__email",
+    )
+    filterset_fields = ("occupation", "gender", "country_of_origin")
+
+    # Method to get the queryset
+    def get_queryset(self) -> List[Profile]:
+        """Get the queryset.
+
+        Returns:
+            List[Profile]: The queryset of all profiles including staff.
+        """
+
+        # Return all profiles without exclusions
+        return Profile.objects.select_related("user").all()
+
+
+# ProfileAdminUpdateAPIView Class
+class ProfileAdminUpdateAPIView(generics.RetrieveUpdateAPIView):
+    """ProfileAdminUpdateAPIView
+
+    ProfileAdminUpdateAPIView class is used by staff to update any profile
+    identified by slug.
+
+    Extends:
+        generics.RetrieveUpdateAPIView
+
+    Attributes:
+        serializer_class (UpdateProfileSerializer): The update profile serializer class.
+        renderer_classes (tuple): The renderer classes.
+        object_label (str): The object label.
+        permission_classes (list): The list of permission classes.
+        lookup_field (str): The lookup field.
+        http_method_names (list): Allowed HTTP methods.
+    """
+
+    # Attributes
+    queryset = Profile.objects.select_related("user").all()
+    serializer_class = UpdateProfileSerializer
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "profile"
+    permission_classes = [permissions.IsAdminUser]
+    lookup_field = "slug"
+    http_method_names = ["get", "patch"]

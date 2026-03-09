@@ -20,8 +20,8 @@ def test_seed_demo_runs_and_creates_expected_data():
     assert Entrance.objects.count() == 2
     # 20 units (10 per entrance)
     assert Unit.objects.count() == 20
-    # 1 dispatcher + 3 residents = 4
-    assert User.objects.count() == 4
+    # 1 dispatcher + 1 guard + 1 tenant + 3 residents = 6
+    assert User.objects.count() == 6
     # 10 issues
     assert Issue.objects.count() == 10
     # 5 announcements

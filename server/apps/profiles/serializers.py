@@ -40,6 +40,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.ReadOnlyField(source="user.last_name")
     username = serializers.ReadOnlyField(source="user.username")
     full_name = serializers.ReadOnlyField(source="user.full_name")
+    is_staff = serializers.ReadOnlyField(source="user.is_staff")
     country_of_origin = CountryField(name_only=True)
     avatar = serializers.SerializerMethodField()
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True)
@@ -68,6 +69,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "country_of_origin",
             "city_of_origin",
             "bio",
+            "is_staff",
             "occupation",
             "reputation",
             "date_joined",

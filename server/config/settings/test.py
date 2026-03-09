@@ -5,7 +5,7 @@ from .base import INSTALLED_APPS
 SECRET_KEY = "test-secret-key-not-for-production"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
-SITE_NAME = "Alpha Apartments Test"
+SITE_NAME = "Skandi Apartments Test"
 
 # SQLite for fast tests — no Postgres needed
 import os

@@ -31,6 +31,6 @@ urlpatterns += [
 
 
 # Admin configuration
-admin.site.site_header = "Alpha Apartments Admin"
-admin.site.site_title = "Alpha Apartments Admin"
-admin.site.index_title = "Welcome to Alpha Apartments Admin"
+admin.site.site_header = "Skandi Apartments Admin"
+admin.site.site_title = "Skandi Apartments Admin"
+admin.site.index_title = "Welcome to Skandi Apartments Admin"

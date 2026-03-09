@@ -47,13 +47,16 @@ export function FormFieldComponent<TFieldValues extends FieldValues>({
 }: FormFieldComponentProps<TFieldValues>) {
 	const errorMessage = errors[name]?.message as unknown as string;
 
+	const sharedInputClass =
+		"rounded-xl border border-[#E2E5E8] bg-white text-[#1C2B3A] placeholder:text-[#6B7F8C] focus:border-[#3D7A8A] focus:ring-1 focus:ring-[#3D7A8A] dark:border-[#2D3D4F] dark:bg-[#1E2D3D] dark:text-[#F0EDE6] dark:placeholder:text-[#8FA8B8] dark:focus:border-[#5BA3B5] dark:focus:ring-[#5BA3B5] transition-colors";
+
 	const renderInputComponent = () => {
 		if (isTextArea) {
 			return (
 				<Textarea
 					{...register(name, { required })}
 					placeholder={placeholder}
-					className={`dark:text-babyPowder ${className}`}
+					className={`min-h-[100px] ${sharedInputClass} ${className}`}
 				/>
 			);
 		} else if (isPassword) {
@@ -61,6 +64,7 @@ export function FormFieldComponent<TFieldValues extends FieldValues>({
 				<PasswordInput
 					{...register(name, { required })}
 					placeholder={placeholder}
+					className={sharedInputClass}
 				/>
 			);
 		} else {
@@ -73,30 +77,33 @@ export function FormFieldComponent<TFieldValues extends FieldValues>({
 					startIcon={startIcon}
 					endIcon={endIcon}
 					disabled={disabled}
-					className={`dark:text-babyPowder ${className}`}
+					className={`${sharedInputClass} ${className}`}
 				/>
 			);
 		}
 	};
 
 	return (
-		<div>
-			<div className="mb-1 flex justify-between">
-				<label htmlFor={name} className="h4-semibold dark:text-babyPowder mb-1">
+		<div className="flex flex-col gap-1.5">
+			<div className="flex justify-between items-center">
+				<label
+					htmlFor={name}
+					className="text-sm font-medium text-[#1C2B3A] dark:text-[#F0EDE6]"
+				>
 					{label}
 				</label>
 				{link && (
 					<Link
 						href={link.linkUrl}
-						className="h4-semibold cursor-pointer hover:text-indigo-500 dark:text-lime-500 dark:hover:text-indigo-500"
+						className="text-sm text-[#3D7A8A] hover:text-[#2E6070] dark:text-[#5BA3B5] dark:hover:text-[#4A8FA0] underline-offset-4 hover:underline"
 					>
 						{link.linkText}
 					</Link>
 				)}
 			</div>
-			<div className="mt-1">{renderInputComponent()}</div>
+			<div>{renderInputComponent()}</div>
 			{errorMessage && (
-				<span className="mt-2 text-sm text-red-500">{errorMessage}</span>
+				<span className="text-xs text-red-500 font-medium">{errorMessage}</span>
 			)}
 		</div>
 	);

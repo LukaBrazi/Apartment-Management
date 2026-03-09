@@ -1,5 +1,5 @@
 """Announcement API views."""
-from apps.apartments.models import Unit
+from apps.apartments.models import Building, Unit
 from apps.posts.models import Announcement
 from rest_framework import generics, permissions, serializers
 
@@ -33,3 +33,43 @@ class AnnouncementListAPIView(generics.ListAPIView):
             return qs.filter(building=unit.entrance.building)
         # Fallback: no unit linked → no announcements
         return qs.none()
+
+
+class AnnouncementAdminSerializer(serializers.ModelSerializer):
+    """Admin serializer for announcements — building is a writable FK."""
+
+    building = serializers.PrimaryKeyRelatedField(queryset=Building.objects.all())
+    building_name = serializers.ReadOnlyField(source="building.name")
+
+    class Meta:
+        model = Announcement
+        fields = ["id", "building", "building_name", "title", "body", "is_active", "created_at"]
+
+
+class AnnouncementAdminListCreateAPIView(generics.ListCreateAPIView):
+    """Admin view: list all announcements (including inactive) and create new ones."""
+
+    serializer_class = AnnouncementAdminSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        return Announcement.objects.all().order_by("-created_at")
+
+
+class AnnouncementAdminDetailAPIView(generics.RetrieveAPIView):
+    """Admin view: retrieve a single announcement by UUID id."""
+
+    queryset = Announcement.objects.all()
+    serializer_class = AnnouncementAdminSerializer
+    permission_classes = [permissions.IsAdminUser]
+    lookup_field = "id"
+
+
+class AnnouncementAdminUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """Admin view: PATCH or DELETE an announcement by UUID id."""
+
+    queryset = Announcement.objects.all()
+    serializer_class = AnnouncementAdminSerializer
+    permission_classes = [permissions.IsAdminUser]
+    lookup_field = "id"
+    http_method_names = ["get", "patch", "delete"]

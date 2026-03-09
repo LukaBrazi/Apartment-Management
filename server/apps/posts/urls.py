@@ -1,5 +1,10 @@
 # Imports
-from apps.posts.announcement_views import AnnouncementListAPIView
+from apps.posts.announcement_views import (
+    AnnouncementAdminDetailAPIView,
+    AnnouncementAdminListCreateAPIView,
+    AnnouncementAdminUpdateDestroyAPIView,
+    AnnouncementListAPIView,
+)
 from apps.posts.views import (
     BookmarkedPostsListAPIView,
     BookmarkPostAPIView,
@@ -22,6 +27,8 @@ from django.urls import path
 # Set the url patterns
 urlpatterns = [
     path("announcements/", AnnouncementListAPIView.as_view(), name="list-announcements"),
+    path("announcements/admin/", AnnouncementAdminListCreateAPIView.as_view(), name="admin-list-create-announcements"),
+    path("announcements/admin/<uuid:id>/", AnnouncementAdminUpdateDestroyAPIView.as_view(), name="admin-update-destroy-announcement"),
     path("all/", PostListAPIView.as_view(), name="list-posts"),
     path(
         "tags/<str:tag_slug>/",

@@ -1,6 +1,7 @@
 # Imports
 from apps.issues.views import (
     AssignedIssuesListAPIView,
+    IssueAdminUpdateAPIView,
     IssueCreateAPIView,
     IssueDeleteAPIView,
     IssueDetailAPIView,
@@ -24,4 +25,5 @@ urlpatterns = [
     path("<uuid:id>/", IssueDetailAPIView.as_view(), name="detail-issue"),
     path("update/<uuid:id>/", IssueUpdateAPIView.as_view(), name="update-issue"),
     path("delete/<uuid:id>/", IssueDeleteAPIView.as_view(), name="delete-issue"),
+    path("admin/update/<uuid:id>/", IssueAdminUpdateAPIView.as_view(), name="admin-update-issue"),
 ]

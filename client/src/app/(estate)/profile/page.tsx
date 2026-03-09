@@ -14,7 +14,7 @@ import AssignedIssues from "@/components/profile/AssignedIssues";
 import Reports from "@/components/profile/Reports";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | User Profile",
+	title: "Skandi Apartments | User Profile",
 	description: "Signed in users can view all their profile information",
 };
 

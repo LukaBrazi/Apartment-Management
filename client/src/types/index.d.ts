@@ -184,11 +184,32 @@ export interface ReportTenantResponse {
 	report: Report;
 }
 
+export interface Building {
+	id: string;
+	name: string;
+	address: string;
+	city: string;
+}
+
+export interface BuildingsResponse {
+	buildings: Building[];
+}
+
+export interface Entrance {
+	id: string;
+	name: string;
+	building: string;
+	building_name: string;
+}
+
+export interface EntrancesResponse {
+	entrances: Entrance[];
+}
+
 export interface IssueData {
 	title: string;
 	description: string;
-	status: "reported" | "resolved" | "in_progress";
-	priority: "low" | "medium" | "high";
+	location_note?: string;
 }
 
 export interface ReportIssueData extends IssueData {
@@ -201,7 +222,7 @@ export interface Issue {
 	reported_by: string;
 	title: string;
 	description: string;
-	status: "reported" | "resolved" | "in_progress";
+	status: "reported" | "accepted" | "in_progress" | "done" | "rejected";
 	priority: "low" | "medium" | "high";
 	view_count: number;
 	assigned_to?: string;
@@ -217,7 +238,7 @@ export interface UpdateIssueResponse {
 		description: string;
 		apartment: string;
 		reported_by: string;
-		status: "reported" | "resolved" | "in_progress";
+		status: "reported" | "accepted" | "in_progress" | "done" | "rejected";
 		resolved_by: string;
 		resolved_on: string;
 	};
@@ -349,6 +370,7 @@ export interface Profile {
 	country_of_origin: string;
 	city_of_origin: string;
 	bio?: string;
+	is_staff: boolean;
 	occupation:
 		| "mason"
 		| "carpenter"
@@ -478,4 +500,63 @@ export interface VehiclePassCreateResponse {
 	car_number: string;
 	comment: string;
 	visit_date: string;
+}
+
+export interface AdminIssueUpdateData {
+	issueId: string;
+	status?: string;
+	priority?: string;
+	assigned_to_username?: string | null;
+}
+
+export interface Announcement {
+	id: string;
+	building: string;
+	building_name: string;
+	title: string;
+	body: string;
+	is_active: boolean;
+	created_at: string;
+}
+
+export interface AnnouncementsResponse {
+	count: number;
+	next: string | null;
+	previous: string | null;
+	results: Announcement[];
+}
+
+export interface AnnouncementCreateData {
+	building: string;
+	title: string;
+	body: string;
+	is_active: boolean;
+}
+
+export interface AdminIssuesResponse {
+	issues: {
+		count: number;
+		next?: string;
+		previous?: string;
+		results: Issue[];
+	};
+}
+
+export interface AdminProfilesResponse {
+	profiles: {
+		count: number;
+		next?: string;
+		previous?: string;
+		results: Profile[];
+	};
+}
+
+export interface AdminProfileUpdateData {
+	slug: string;
+	first_name?: string;
+	last_name?: string;
+	username?: string;
+	gender?: "male" | "female" | "other";
+	occupation?: Occupation;
+	bio?: string;
 }

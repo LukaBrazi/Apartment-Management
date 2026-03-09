@@ -1,8 +1,8 @@
 # Imports
 from typing import Any
 
-from apps.apartments.models import Apartment
-from apps.apartments.serializers import ApartmentSerializer
+from apps.apartments.models import Apartment, Building, Entrance
+from apps.apartments.serializers import ApartmentSerializer, BuildingSerializer, EntranceSerializer
 from apps.common.renderers import GenericJSONRenderer
 from apps.profiles.models import Profile
 from rest_framework import generics, status
@@ -108,3 +108,24 @@ class ApartmentListAPIView(generics.ListAPIView):
 
         # Return the queryset
         return self.request.user.apartment.all()
+
+
+class BuildingListAPIView(generics.ListAPIView):
+    """List all active buildings."""
+
+    queryset = Building.objects.filter(is_active=True)
+    serializer_class = BuildingSerializer
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "buildings"
+
+
+class EntranceListAPIView(generics.ListAPIView):
+    """List entrances for a given building."""
+
+    serializer_class = EntranceSerializer
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "entrances"
+
+    def get_queryset(self):
+        building_id = self.kwargs.get("building_id")
+        return Entrance.objects.filter(building_id=building_id).order_by("name")

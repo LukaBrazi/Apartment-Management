@@ -2,7 +2,7 @@ import PostTagCard from "@/components/cards/PostTagCard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: " Alpha Apartments | Теги",
+	title: " Skandi Apartments | Теги",
 	description: "Авторизовані користувачі можуть переглядати публікації за тегом",
 };
 

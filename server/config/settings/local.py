@@ -9,13 +9,13 @@ SECRET_KEY = env(
     "DJANGO_SECRET_KEY",
     default="QTMT8ZsZaDOSmVFhCTmJULzMu1DLNxbqoKKAGBsFwUwQKRjIzXYyeKCeRRqvGn23",
 )
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "alpha-apartments.serveo.net"]
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "skandi-apartments.serveo.net"]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",
     "http://0.0.0.0:8080",
     "http://127.0.0.1:8080",
 ]
-SITE_NAME = "Alpha Apartments"
+SITE_NAME = "Skandi Apartments"
 
 
 # Caches
@@ -41,7 +41,7 @@ MINIO_STORAGE_USE_HTTPS = False
 AWS_S3_ENDPOINT_URL = f"http://{MINIO_STORAGE_ENDPOINT}"
 AWS_ACCESS_KEY_ID = MINIO_STORAGE_ACCESS_KEY
 AWS_SECRET_ACCESS_KEY = MINIO_STORAGE_SECRET_KEY
-AWS_STORAGE_BUCKET_NAME = "alpha-apartments"
+AWS_STORAGE_BUCKET_NAME = "skandi-apartments"
 AWS_S3_REGION_NAME = "us-east-1"
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_DEFAULT_ACL = "private"
@@ -52,13 +52,13 @@ AWS_S3_CUSTOM_DOMAIN = f"localhost:8080/minio/storage/{AWS_STORAGE_BUCKET_NAME}"
 
 # Static files settings
 # ------------------------------------------------------------------------------
-STATIC_URL = "http://localhost:8080/alpha-apartments/static/"
+STATIC_URL = "http://localhost:8080/skandi-apartments/static/"
 STATICFILES_STORAGE = "config.settings.storage_backends.StaticStorage"
 
 
 # Media files settings
 # ------------------------------------------------------------------------------
-MEDIA_URL = "http://localhost:8080/alpha-apartments/media/"
+MEDIA_URL = "http://localhost:8080/skandi-apartments/media/"
 DEFAULT_FILE_STORAGE = "config.settings.storage_backends.MediaStorage"
 
 

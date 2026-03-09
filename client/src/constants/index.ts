@@ -39,6 +39,12 @@ export const leftNavLinks: LeftNavLink[] = [
 		imgLocation: "/assets/icons/home.svg",
 	},
 	{
+		// Admin-only: filtered out for non-staff in useAuthNavigation
+		path: "/admin",
+		label: "Адмін панель",
+		imgLocation: "/assets/icons/tenants.svg",
+	},
+	{
 		path: "/profile",
 		label: "Профіль",
 		imgLocation: "/assets/icons/user-profile.svg",
@@ -69,8 +75,9 @@ export const leftNavLinks: LeftNavLink[] = [
 		imgLocation: "/assets/icons/bookmark.svg",
 	},
 	{
+		// Admin-only: filtered out for tenants/guards in useAuthNavigation
 		path: "/add-post",
-		label: "Написати публікацію",
+		label: "Написати новину",
 		imgLocation: "/assets/icons/question-file.svg",
 	},
 	{

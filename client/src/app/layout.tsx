@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@/components/theme-provider";
-import { openSans, robotoSlab } from "@/lib/fonts";
+import { inter, robotoSlab } from "@/lib/fonts";
 import type { Metadata } from "next";
 import React from "react";
 import "./globals.css";
@@ -9,7 +9,7 @@ import ReduxProvider from "@/lib/redux/provider";
 import { PersistAuth } from "@/utils";
 
 export const metadata: Metadata = {
-	title: "Home | Alpha Apartments",
+	title: "Home | Skandi Apartments",
 	description: "Welcome home",
 };
 
@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<body className={`${openSans.variable} ${robotoSlab.variable}`}>
+			<body className={`${inter.variable} ${robotoSlab.variable} font-inter antialiased`}>
 				<Toast />
 				<ReduxProvider>
 					<PersistAuth />

@@ -5,7 +5,7 @@ DB_URL = postgres://alpha_user:alpha_password@postgres:5432/alpha_apartments
         createsuperuser seed minio-init collectstatic celeryworker celerybeat
 
 help:
-	@echo "Alpha Apartments — команди Make"
+	@echo "Skandi Apartments — команди Make"
 	@echo ""
 	@echo "  make up              Запустити всі сервіси (foreground)"
 	@echo "  make up-d            Запустити всі сервіси (background)"
@@ -92,8 +92,8 @@ collectstatic:
 minio-init:
 	@echo "Створення MinIO bucket та налаштування публічного доступу до static..."
 	$(COMPOSE) exec minio mc alias set local http://localhost:9000 minioadmin minioadmin123
-	$(COMPOSE) exec minio mc mb --ignore-existing local/alpha-apartments
-	$(COMPOSE) exec minio mc anonymous set public local/alpha-apartments/static
+	$(COMPOSE) exec minio mc mb --ignore-existing local/skandi-apartments
+	$(COMPOSE) exec minio mc anonymous set public local/skandi-apartments/static
 	@echo "MinIO bucket готовий."
 
 # --- Тести ---

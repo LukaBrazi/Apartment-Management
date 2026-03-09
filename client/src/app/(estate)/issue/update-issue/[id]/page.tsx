@@ -4,7 +4,7 @@ import { AuthFormHeader } from "@/components/forms/auth";
 import UpdateIssueForm from "@/components/forms/update-issue/UpdateIssueForm";
 
 export const metadata: Metadata = {
-	title: "Alpha Apartments | Оновити заявку",
+	title: "Skandi Apartments | Оновити заявку",
 	description:
 		"Призначені спеціалісти можуть оновлювати статус заявки",
 };

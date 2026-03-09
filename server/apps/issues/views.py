@@ -7,7 +7,7 @@ from apps.common.models import ContentView
 from apps.common.renderers import GenericJSONRenderer
 from apps.issues.emails import send_issue_confirmation_email
 from apps.issues.models import Issue
-from apps.issues.serializers import IssueSerializer, IssueStatusUpdateSerializer
+from apps.issues.serializers import IssueAdminUpdateSerializer, IssueCreateSerializer, IssueSerializer, IssueStatusUpdateSerializer
 from django.contrib.contenttypes.models import ContentType
 from django.http import Http404
 from django.utils import timezone
@@ -190,12 +190,12 @@ class IssueCreateAPIView(generics.CreateAPIView):
 
     # Attributes
     queryset = Issue.objects.all()
-    serializer_class = IssueSerializer
+    serializer_class = IssueCreateSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "issue"
 
     # Method to create an issue
-    def perform_create(self, serializer: IssueSerializer) -> None:
+    def perform_create(self, serializer: IssueCreateSerializer) -> None:
         """Create an issue. Supports both apartment_id (legacy) and unit_id."""
 
         apartment_id = self.kwargs.get("apartment_id")
@@ -418,6 +418,36 @@ class IssueUpdateAPIView(generics.UpdateAPIView):
 
         # Return the issue
         return issue
+
+
+# IssueAdminUpdateAPIView Class
+class IssueAdminUpdateAPIView(generics.UpdateAPIView):
+    """IssueAdminUpdateAPIView
+
+    IssueAdminUpdateAPIView allows staff/superusers to directly set status,
+    priority, and assignee on any issue without the normal transition rules.
+
+    Extends:
+        generics.UpdateAPIView
+
+    Attributes:
+        queryset (QuerySet): The queryset of issues.
+        serializer_class (IssueAdminUpdateSerializer): The admin update serializer.
+        renderer_classes (list): The list of renderer classes.
+        permission_classes (list): The list of permission classes.
+        object_label (str): The object label.
+        lookup_field (str): The lookup field.
+        http_method_names (list): Allowed HTTP methods (PATCH only).
+    """
+
+    # Attributes
+    queryset = Issue.objects.all()
+    lookup_field = "id"
+    serializer_class = IssueAdminUpdateSerializer
+    renderer_classes = (GenericJSONRenderer,)
+    permission_classes = (IsStaffOrSuperUser,)
+    object_label = "issue"
+    http_method_names = ["patch"]
 
 
 # IssueDeleteAPIView Class
