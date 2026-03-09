@@ -198,7 +198,7 @@ EMAIL_TIMEOUT = 5
 
 # Admin
 # ------------------------------------------------------------------------------
-ADMIN_URL = "admin/"
+ADMIN_URL = "django-admin/"
 ADMINS = [("Andriienko Dmytro", "d.andriienko@skandi-apartments.local")]
 MANAGERS = ADMINS
 

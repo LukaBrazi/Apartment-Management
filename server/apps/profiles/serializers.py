@@ -185,6 +185,40 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
         ]
 
 
+class AdminCreateUserSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    occupation = serializers.ChoiceField(choices=Profile.Occupation.choices)
+
+    def validate_email(self, value):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("User with this email already exists.")
+        return value
+
+    def validate_username(self, value):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("User with this username already exists.")
+        return value
+
+    def create(self, validated_data):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        occupation = validated_data.pop("occupation")
+        password = validated_data.pop("password")
+        user = User.objects.create(**validated_data, is_active=True)
+        user.set_password(password)
+        user.save()
+        Profile.objects.filter(user=user).update(occupation=occupation)
+        return user
+
+
 # Avatar Upload Serializer
 class AvatarUploadSerializer(serializers.ModelSerializer):
     """Avatar upload serializer

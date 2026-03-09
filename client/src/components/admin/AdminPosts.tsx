@@ -39,7 +39,7 @@ export default function AdminPosts() {
 	const [form, setForm] = useState<AnnouncementFormState>(emptyForm);
 
 	const announcements = announcementsData?.results ?? [];
-	const buildings = buildingsData?.buildings ?? [];
+	const buildings = Array.isArray(buildingsData?.buildings) ? buildingsData.buildings : [];
 
 	const handleOpenCreate = () => {
 		setEditingId(null);

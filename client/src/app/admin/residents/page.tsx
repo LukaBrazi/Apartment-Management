@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ColumnDef } from "@tanstack/react-table";
 import { toast } from "react-toastify";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus, X } from "lucide-react";
 
 import { DataTable } from "@/components/admin/DataTable";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
 import {
 	useGetAdminAllProfilesQuery,
 	useAdminUpdateProfileMutation,
+	useAdminCreateUserMutation,
 } from "@/lib/redux/features/admin/adminApiSlice";
 import { Profile, Occupation } from "@/types";
 import { extractErrorMessage } from "@/utils";
@@ -52,7 +53,16 @@ const editSchema = z.object({
 	bio: z.string().optional(),
 });
 
+const createSchema = z.object({
+	email: z.string().email("Некоректний email"),
+	username: z.string().min(3, "Мінімум 3 символи"),
+	first_name: z.string().min(1, "Обов'язкове поле"),
+	last_name: z.string().min(1, "Обов'язкове поле"),
+	password: z.string().min(6, "Мінімум 6 символів"),
+});
+
 type EditFormValues = z.infer<typeof editSchema>;
+type CreateFormValues = z.infer<typeof createSchema>;
 
 const occupationLabels: Record<Occupation, string> = {
 	mason: "Муляр",
@@ -66,27 +76,41 @@ const occupationLabels: Record<Occupation, string> = {
 	guard: "Охоронець",
 };
 
+const inputCls =
+	"rounded-xl border border-[#E2E5E8] bg-[#F7F6F2] px-3 py-2 text-sm dark:border-[#2D3D4F] dark:bg-[#1C2B3A] dark:text-white focus:outline-none focus:border-[#3D7A8A] focus:ring-1 focus:ring-[#3D7A8A] w-full";
+const labelCls = "text-xs font-medium text-[#6B7F8C]";
+
 export default function AdminResidentsPage() {
 	const { data, isLoading } = useGetAdminAllProfilesQuery();
-	const [updateProfile, { isLoading: isUpdating }] =
-		useAdminUpdateProfileMutation();
+	const [updateProfile, { isLoading: isUpdating }] = useAdminUpdateProfileMutation();
+	const [adminCreateUser, { isLoading: isCreating }] = useAdminCreateUserMutation();
 
 	const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 	const [dialogOpen, setDialogOpen] = useState(false);
+	const [showCreateForm, setShowCreateForm] = useState(false);
 
 	const {
-		register,
-		handleSubmit,
-		setValue,
-		reset,
-		formState: { errors },
+		register: registerEdit,
+		handleSubmit: handleSubmitEdit,
+		setValue: setValueEdit,
+		reset: resetEdit,
+		formState: { errors: errorsEdit },
 	} = useForm<EditFormValues>({
 		resolver: zodResolver(editSchema),
 	});
 
+	const {
+		register: registerCreate,
+		handleSubmit: handleSubmitCreate,
+		reset: resetCreate,
+		formState: { errors: errorsCreate },
+	} = useForm<CreateFormValues>({
+		resolver: zodResolver(createSchema),
+	});
+
 	const openEdit = (profile: Profile) => {
 		setSelectedProfile(profile);
-		reset({
+		resetEdit({
 			first_name: profile.first_name,
 			last_name: profile.last_name,
 			username: profile.username,
@@ -97,7 +121,7 @@ export default function AdminResidentsPage() {
 		setDialogOpen(true);
 	};
 
-	const onSubmit = async (values: EditFormValues) => {
+	const onSubmitEdit = async (values: EditFormValues) => {
 		if (!selectedProfile) return;
 		try {
 			await updateProfile({ slug: selectedProfile.slug, ...values }).unwrap();
@@ -105,6 +129,17 @@ export default function AdminResidentsPage() {
 			setDialogOpen(false);
 		} catch (e) {
 			toast.error(extractErrorMessage(e) || "Помилка оновлення");
+		}
+	};
+
+	const onSubmitCreate = async (values: CreateFormValues) => {
+		try {
+			await adminCreateUser({ ...values, occupation: "tenant" }).unwrap();
+			toast.success("Мешканця створено");
+			resetCreate();
+			setShowCreateForm(false);
+		} catch (e) {
+			toast.error(extractErrorMessage(e) || "Помилка створення");
 		}
 	};
 
@@ -167,14 +202,121 @@ export default function AdminResidentsPage() {
 
 	return (
 		<div className="space-y-6">
-			<div>
-				<h2 className="text-2xl font-bold text-[#1C2B3A] dark:text-white">
-					Мешканці
-				</h2>
-				<p className="text-[#6B7F8C] text-sm mt-1">
-					Усі профілі в системі
-				</p>
+			<div className="flex items-center justify-between">
+				<div>
+					<h2 className="text-2xl font-bold text-[#1C2B3A] dark:text-white">
+						Мешканці
+					</h2>
+					<p className="text-[#6B7F8C] text-sm mt-1">
+						Усі профілі в системі
+					</p>
+				</div>
+				<button
+					onClick={() => {
+						resetCreate();
+						setShowCreateForm((v) => !v);
+					}}
+					className="inline-flex items-center gap-2 rounded-xl bg-[#3D7A8A] px-4 py-2 text-sm font-medium text-white hover:bg-[#2E6070] dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0] transition-colors"
+				>
+					{showCreateForm ? (
+						<>
+							<X className="h-4 w-4" />
+							Скасувати
+						</>
+					) : (
+						<>
+							<Plus className="h-4 w-4" />
+							Додати мешканця
+						</>
+					)}
+				</button>
 			</div>
+
+			{showCreateForm && (
+				<div className="rounded-2xl border border-[#3D7A8A] bg-white p-6 dark:border-[#5BA3B5] dark:bg-[#162032]">
+					<h3 className="text-base font-semibold text-[#1C2B3A] dark:text-white mb-4">
+						Новий мешканець
+					</h3>
+					<form onSubmit={handleSubmitCreate(onSubmitCreate)} className="space-y-4">
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+							<div className="space-y-1">
+								<label className={labelCls}>Email</label>
+								<input
+									{...registerCreate("email")}
+									type="email"
+									placeholder="email@example.com"
+									className={inputCls}
+								/>
+								{errorsCreate.email && (
+									<p className="text-xs text-red-500">{errorsCreate.email.message}</p>
+								)}
+							</div>
+							<div className="space-y-1">
+								<label className={labelCls}>Нікнейм</label>
+								<input
+									{...registerCreate("username")}
+									placeholder="username"
+									className={inputCls}
+								/>
+								{errorsCreate.username && (
+									<p className="text-xs text-red-500">{errorsCreate.username.message}</p>
+								)}
+							</div>
+							<div className="space-y-1">
+								<label className={labelCls}>Ім&apos;я</label>
+								<input
+									{...registerCreate("first_name")}
+									placeholder="Іван"
+									className={inputCls}
+								/>
+								{errorsCreate.first_name && (
+									<p className="text-xs text-red-500">{errorsCreate.first_name.message}</p>
+								)}
+							</div>
+							<div className="space-y-1">
+								<label className={labelCls}>Прізвище</label>
+								<input
+									{...registerCreate("last_name")}
+									placeholder="Петренко"
+									className={inputCls}
+								/>
+								{errorsCreate.last_name && (
+									<p className="text-xs text-red-500">{errorsCreate.last_name.message}</p>
+								)}
+							</div>
+							<div className="space-y-1">
+								<label className={labelCls}>Пароль</label>
+								<input
+									{...registerCreate("password")}
+									type="password"
+									placeholder="Мінімум 6 символів"
+									className={inputCls}
+								/>
+								{errorsCreate.password && (
+									<p className="text-xs text-red-500">{errorsCreate.password.message}</p>
+								)}
+							</div>
+							<div className="space-y-1">
+								<label className={labelCls}>Роль</label>
+								<input
+									value="Мешканець"
+									disabled
+									className={`${inputCls} opacity-60 cursor-not-allowed`}
+								/>
+							</div>
+						</div>
+						<div className="flex justify-end">
+							<button
+								type="submit"
+								disabled={isCreating}
+								className="inline-flex items-center gap-2 rounded-xl bg-[#3D7A8A] px-5 py-2 text-sm font-medium text-white hover:bg-[#2E6070] dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0] disabled:opacity-60 transition-colors"
+							>
+								{isCreating ? "Створення..." : "Створити мешканця"}
+							</button>
+						</div>
+					</form>
+				</div>
+			)}
 
 			<div className="bg-white dark:bg-[#162032] rounded-xl border border-[#E2E5E8] dark:border-[#2D3D4F] p-6 shadow-sm">
 				<DataTable
@@ -185,7 +327,6 @@ export default function AdminResidentsPage() {
 				/>
 			</div>
 
-			{/* Edit Dialog */}
 			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 				<DialogContent className="bg-white dark:bg-[#162032] border-[#E2E5E8] dark:border-[#2D3D4F] max-w-md">
 					<DialogHeader>
@@ -194,19 +335,19 @@ export default function AdminResidentsPage() {
 						</DialogTitle>
 					</DialogHeader>
 
-					<form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
+					<form onSubmit={handleSubmitEdit(onSubmitEdit)} className="space-y-4 mt-2">
 						<div className="grid grid-cols-2 gap-3">
 							<div className="space-y-1">
 								<label className="text-xs font-medium text-[#6B7F8C]">
 									Ім&apos;я
 								</label>
 								<Input
-									{...register("first_name")}
+									{...registerEdit("first_name")}
 									className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A]"
 								/>
-								{errors.first_name && (
+								{errorsEdit.first_name && (
 									<p className="text-xs text-red-500">
-										{errors.first_name.message}
+										{errorsEdit.first_name.message}
 									</p>
 								)}
 							</div>
@@ -215,12 +356,12 @@ export default function AdminResidentsPage() {
 									Прізвище
 								</label>
 								<Input
-									{...register("last_name")}
+									{...registerEdit("last_name")}
 									className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A]"
 								/>
-								{errors.last_name && (
+								{errorsEdit.last_name && (
 									<p className="text-xs text-red-500">
-										{errors.last_name.message}
+										{errorsEdit.last_name.message}
 									</p>
 								)}
 							</div>
@@ -231,11 +372,11 @@ export default function AdminResidentsPage() {
 								Нікнейм
 							</label>
 							<Input
-								{...register("username")}
+								{...registerEdit("username")}
 								className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A]"
 							/>
-							{errors.username && (
-								<p className="text-xs text-red-500">{errors.username.message}</p>
+							{errorsEdit.username && (
+								<p className="text-xs text-red-500">{errorsEdit.username.message}</p>
 							)}
 						</div>
 
@@ -246,7 +387,7 @@ export default function AdminResidentsPage() {
 							<Select
 								defaultValue={selectedProfile?.gender}
 								onValueChange={(val) =>
-									setValue("gender", val as "male" | "female" | "other")
+									setValueEdit("gender", val as "male" | "female" | "other")
 								}
 							>
 								<SelectTrigger className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A]">
@@ -266,7 +407,7 @@ export default function AdminResidentsPage() {
 							</label>
 							<Select
 								defaultValue={selectedProfile?.occupation}
-								onValueChange={(val) => setValue("occupation", val as Occupation)}
+								onValueChange={(val) => setValueEdit("occupation", val as Occupation)}
 							>
 								<SelectTrigger className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A]">
 									<SelectValue placeholder="Оберіть роль" />
@@ -286,7 +427,7 @@ export default function AdminResidentsPage() {
 								Про себе
 							</label>
 							<Textarea
-								{...register("bio")}
+								{...registerEdit("bio")}
 								rows={3}
 								className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A] resize-none"
 							/>

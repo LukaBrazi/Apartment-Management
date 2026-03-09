@@ -1,5 +1,6 @@
 import { baseApiSlice } from "../api/baseApiSlice";
 import {
+	AdminCreateUserData,
 	AdminIssueUpdateData,
 	AdminIssuesResponse,
 	AdminProfilesResponse,
@@ -7,7 +8,12 @@ import {
 	Announcement,
 	AnnouncementCreateData,
 	AnnouncementsResponse,
+	Building,
+	BuildingCreateData,
+	BuildingUpdateData,
+	BuildingsResponse,
 	NonTenantResponse,
+	Profile,
 	ProfileResponse,
 	VehiclePass,
 	VehiclePassesResponse,
@@ -102,6 +108,30 @@ export const adminApiSlice = baseApiSlice.injectEndpoints({
 			query: () => "/profiles/non-tenant-profiles/",
 			providesTags: ["User"],
 		}),
+
+		// Admin user creation
+		adminCreateUser: builder.mutation<{ profile: Profile }, AdminCreateUserData>({
+			query: (data) => ({ url: "/profiles/admin/create-user/", method: "POST", body: data }),
+			invalidatesTags: ["AdminProfiles", "AdminWorkers"],
+		}),
+
+		// Buildings
+		adminGetBuildings: builder.query<BuildingsResponse, void>({
+			query: () => "/apartments/buildings/admin/",
+			providesTags: ["AdminBuildings"],
+		}),
+		adminCreateBuilding: builder.mutation<{ building: Building }, BuildingCreateData>({
+			query: (data) => ({ url: "/apartments/buildings/create/", method: "POST", body: data }),
+			invalidatesTags: ["AdminBuildings"],
+		}),
+		adminUpdateBuilding: builder.mutation<{ building: Building }, BuildingUpdateData>({
+			query: ({ pkid, ...data }) => ({ url: `/apartments/buildings/${pkid}/`, method: "PATCH", body: data }),
+			invalidatesTags: ["AdminBuildings"],
+		}),
+		adminDeleteBuilding: builder.mutation<void, number>({
+			query: (pkid) => ({ url: `/apartments/buildings/${pkid}/`, method: "DELETE" }),
+			invalidatesTags: ["AdminBuildings"],
+		}),
 	}),
 });
 
@@ -117,4 +147,9 @@ export const {
 	useGetAdminPassesQuery,
 	useClosePassMutation,
 	useGetAdminWorkersQuery,
+	useAdminCreateUserMutation,
+	useAdminGetBuildingsQuery,
+	useAdminCreateBuildingMutation,
+	useAdminUpdateBuildingMutation,
+	useAdminDeleteBuildingMutation,
 } = adminApiSlice;

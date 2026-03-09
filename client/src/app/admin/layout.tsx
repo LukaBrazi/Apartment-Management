@@ -10,6 +10,7 @@ import {
 	ClipboardList,
 	Car,
 	Newspaper,
+	Building2,
 	ExternalLink,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ const adminNavLinks = [
 	{ path: "/admin/workers", label: "Працівники", icon: Wrench },
 	{ path: "/admin/issues", label: "Заявки", icon: ClipboardList },
 	{ path: "/admin/passes", label: "Перепустки", icon: Car },
+	{ path: "/admin/buildings", label: "Будинки", icon: Building2 },
 	{ path: "/admin/posts", label: "Новини", icon: Newspaper },
 ];
 

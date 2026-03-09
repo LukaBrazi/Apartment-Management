@@ -24,8 +24,8 @@ def test_seed_demo_runs_and_creates_expected_data():
     assert User.objects.count() == 6
     # 10 issues
     assert Issue.objects.count() == 10
-    # 5 announcements
-    assert Announcement.objects.count() == 5
+    # 8 announcements
+    assert Announcement.objects.count() == 8
 
 
 @pytest.mark.django_db

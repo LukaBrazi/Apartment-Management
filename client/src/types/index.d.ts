@@ -185,10 +185,13 @@ export interface ReportTenantResponse {
 }
 
 export interface Building {
+	pkid: number;
 	id: string;
 	name: string;
 	address: string;
 	city: string;
+	is_active: boolean;
+	created_at: string;
 }
 
 export interface BuildingsResponse {
@@ -559,4 +562,24 @@ export interface AdminProfileUpdateData {
 	gender?: "male" | "female" | "other";
 	occupation?: Occupation;
 	bio?: string;
+}
+
+export interface AdminCreateUserData {
+	email: string;
+	username: string;
+	first_name: string;
+	last_name: string;
+	password: string;
+	occupation: Occupation;
+}
+
+export interface BuildingCreateData {
+	name: string;
+	address: string;
+	city: string;
+	is_active: boolean;
+}
+
+export interface BuildingUpdateData extends Partial<BuildingCreateData> {
+	pkid: number;
 }

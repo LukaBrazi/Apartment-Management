@@ -12,7 +12,7 @@ interface AdminGuardProps {
 
 export default function AdminGuard({ children }: AdminGuardProps) {
 	const router = useRouter();
-	const { isAuthenticated } = useAppSelector((state) => state.auth);
+	const { isAuthenticated, isInitialized } = useAppSelector((state) => state.auth);
 
 	const { data: profileData, isLoading } = useGetUserProfileQuery(undefined, {
 		skip: !isAuthenticated,
@@ -21,14 +21,15 @@ export default function AdminGuard({ children }: AdminGuardProps) {
 	const isStaff = profileData?.profile?.is_staff ?? false;
 
 	useEffect(() => {
+		if (!isInitialized) return;
 		if (!isLoading) {
-			if (!isAuthenticated || (!isLoading && profileData && !isStaff)) {
+			if (!isAuthenticated || (profileData && !isStaff)) {
 				router.push("/welcome");
 			}
 		}
-	}, [isAuthenticated, isLoading, isStaff, profileData, router]);
+	}, [isAuthenticated, isInitialized, isLoading, isStaff, profileData, router]);
 
-	if (isLoading || !profileData) {
+	if (!isInitialized || isLoading || (isAuthenticated && !profileData)) {
 		return (
 			<div className="flex min-h-screen items-center justify-center bg-[#F7F6F2] dark:bg-[#0F1923]">
 				<Spinner size="lg" />

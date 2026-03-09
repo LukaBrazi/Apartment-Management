@@ -6,6 +6,7 @@ from typing import Dict, List
 from apps.common.renderers import GenericJSONRenderer
 from apps.profiles.models import Profile
 from apps.profiles.serializers import (
+    AdminCreateUserSerializer,
     AvatarUploadSerializer,
     ProfileSerializer,
     UpdateProfileSerializer,
@@ -462,3 +463,18 @@ class ProfileAdminUpdateAPIView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAdminUser]
     lookup_field = "slug"
     http_method_names = ["get", "patch"]
+
+
+class AdminCreateUserAPIView(generics.CreateAPIView):
+    serializer_class = AdminCreateUserSerializer
+    permission_classes = [permissions.IsAdminUser]
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "profile"
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        profile = Profile.objects.get(user=user)
+        profile_data = ProfileSerializer(profile, context={"request": request}).data
+        return Response(profile_data, status=status.HTTP_201_CREATED)

@@ -80,6 +80,10 @@ class GenericJSONRenderer(JSONRenderer):
         # Get the status code
         status_code = response.status_code
 
+        # Handle empty body (e.g. 204 No Content)
+        if data is None:
+            return b""
+
         # Get the errors
         errors = data.get("errors", None)
 

@@ -15,9 +15,11 @@ class ApartmentSerializer(serializers.ModelSerializer):
 # ── New domain serializers ─────────────────────────────────────────────────
 
 class BuildingSerializer(serializers.ModelSerializer):
+    pkid = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Building
-        fields = ["id", "name", "address", "city", "is_active", "created_at"]
+        fields = ["pkid", "id", "name", "address", "city", "is_active", "created_at"]
 
 
 class EntranceSerializer(serializers.ModelSerializer):

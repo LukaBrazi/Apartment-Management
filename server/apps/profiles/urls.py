@@ -1,5 +1,6 @@
 # Imports
 from apps.profiles.views import (
+    AdminCreateUserAPIView,
     AvatarUploadAPIView,
     NonTenantProfileListAPIView,
     ProfileAdminListAPIView,
@@ -27,5 +28,6 @@ urlpatterns = [
         name="upload-user-avatar",
     ),
     path("admin/all/", ProfileAdminListAPIView.as_view(), name="admin-list-all-profiles"),
+    path("admin/create-user/", AdminCreateUserAPIView.as_view(), name="admin-create-user"),
     path("admin/<slug:slug>/update/", ProfileAdminUpdateAPIView.as_view(), name="admin-update-profile"),
 ]

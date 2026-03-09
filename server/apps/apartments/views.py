@@ -6,6 +6,7 @@ from apps.apartments.serializers import ApartmentSerializer, BuildingSerializer,
 from apps.common.renderers import GenericJSONRenderer
 from apps.profiles.models import Profile
 from rest_framework import generics, status
+from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -129,3 +130,27 @@ class EntranceListAPIView(generics.ListAPIView):
     def get_queryset(self):
         building_id = self.kwargs.get("building_id")
         return Entrance.objects.filter(building_id=building_id).order_by("name")
+
+
+class AdminBuildingListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Building.objects.all()
+    serializer_class = BuildingSerializer
+    permission_classes = [IsAdminUser]
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "buildings"
+
+
+class BuildingCreateAPIView(generics.CreateAPIView):
+    serializer_class = BuildingSerializer
+    permission_classes = [IsAdminUser]
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "building"
+
+
+class BuildingUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Building.objects.all()
+    serializer_class = BuildingSerializer
+    permission_classes = [IsAdminUser]
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "building"
+    lookup_field = "pkid"
