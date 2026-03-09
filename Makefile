@@ -37,11 +37,20 @@ help:
 
 # --- Запуск ---
 
-up:
+up: docker-start
 	$(COMPOSE) up
 
-up-d:
+up-d: docker-start
 	$(COMPOSE) up -d
+
+docker-start:
+	@if ! docker info > /dev/null 2>&1; then \
+		echo "Docker не запущений. Запускаємо Docker Desktop..."; \
+		open -a Docker; \
+		echo "Чекаємо поки Docker запуститься..."; \
+		while ! docker info > /dev/null 2>&1; do sleep 2; done; \
+		echo "Docker готовий."; \
+	fi
 
 down:
 	$(COMPOSE) down

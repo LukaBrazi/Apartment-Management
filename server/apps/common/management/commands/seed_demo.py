@@ -70,6 +70,40 @@ class Command(BaseCommand):
             dispatcher.save()
             self.stdout.write(f"  ✓ Dispatcher: {dispatcher.email} / Demo1234!")
 
+        # ── 4b. Guard user ───────────────────────────────────────────────
+        from apps.profiles.models import Profile
+
+        guard, created = User.objects.get_or_create(
+            email="guard@demo.com",
+            defaults={
+                "username": "guard",
+                "first_name": "Микола",
+                "last_name": "Охоронець",
+                "is_active": True,
+            },
+        )
+        if created:
+            guard.set_password("Demo1234!")
+            guard.save()
+        Profile.objects.filter(user=guard).update(occupation=Profile.Occupation.GUARD)
+        self.stdout.write(f"  ✓ Guard: {guard.email} / Demo1234!")
+
+        # ── 4c. Test tenant user ─────────────────────────────────────────
+        tenant_user, created = User.objects.get_or_create(
+            email="tenant@demo.com",
+            defaults={
+                "username": "tenant",
+                "first_name": "Іван",
+                "last_name": "Тестовий",
+                "is_active": True,
+            },
+        )
+        if created:
+            tenant_user.set_password("Demo1234!")
+            tenant_user.save()
+        Profile.objects.filter(user=tenant_user).update(occupation=Profile.Occupation.TENANT)
+        self.stdout.write(f"  ✓ Tenant: {tenant_user.email} / Demo1234!")
+
         # ── 5. Resident users (3) linked to units ────────────────────────
         residents_data = [
             ("resident1@demo.com", "Іван", "Петренко", "resident1", units[0]),
@@ -185,6 +219,8 @@ class Command(BaseCommand):
             f"   Announcements: {Announcement.objects.count()}\n"
             "\n   Login credentials:\n"
             "   dispatcher@demo.com / Demo1234! (staff)\n"
+            "   guard@demo.com / Demo1234! (guard)\n"
+            "   tenant@demo.com / Demo1234! (tenant)\n"
             "   resident1@demo.com / Demo1234!\n"
             "   resident2@demo.com / Demo1234!\n"
             "   resident3@demo.com / Demo1234!\n"
