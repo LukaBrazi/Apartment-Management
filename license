@@ -1,9 +1,49 @@
+Business Source License 1.1
 
-The MIT License (MIT)
-Copyright (c) 2024, Rohit Vilas Ingole
+Licensor: Andriienko Dmytro
+Licensed Work: Django Apartment Management (Alpha Apartments Portal)
+Additional Use Grant: None
+Change Date: 2029-01-01
+Change License: MIT License
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+-----------------------------------------------------------------------------
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+Parameters
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Licensor: Andriienko Dmytro
+Licensed Work: The Licensed Work is (c) 2024–2026 Andriienko Dmytro.
+
+Use Limitation:
+The Licensed Work may NOT be used, copied, modified, merged, published,
+distributed, sublicensed, or sold — in whole or in part — without prior
+written permission from the Licensor.
+
+This includes, but is not limited to:
+  - Running the software in production or staging environments
+  - Offering the software (or any derivative) as a service to third parties
+  - Incorporating the software into commercial or non-commercial products
+
+Permitted Uses (without explicit permission):
+  - Personal local evaluation and study of the source code
+  - Contributing to this repository via pull requests (subject to CLA)
+  - Running tests in a local development environment
+
+To obtain a license or permission, contact: dimas130790@gmail.com
+
+-----------------------------------------------------------------------------
+
+Change Date and Future License:
+On 2029-01-01, this software will be made available under the MIT License
+(https://opensource.org/licenses/MIT) automatically and without further
+action required from the Licensor.
+
+-----------------------------------------------------------------------------
+
+Disclaimer:
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER
+DEALINGS IN THE LICENSED WORK.

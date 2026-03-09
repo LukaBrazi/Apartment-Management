@@ -93,7 +93,8 @@ make createsuperuser
 | Сервіс | URL |
 |--------|-----|
 | Frontend | http://localhost:8080/ |
-| Django Admin | http://localhost:8080/admin/ |
+| Кастомна адмін-панель | http://localhost:8080/admin |
+| Django Admin | http://localhost:8080/django-admin/ |
 | REST API | http://localhost:8080/api/v1/ |
 | Swagger UI | http://localhost:8080/swagger/redoc/ |
 | MinIO Console | http://localhost:9090/ |
@@ -106,6 +107,19 @@ make createsuperuser
 |--------|-------|--------|
 | Django Admin | admin@admin.com | admin123 |
 | MinIO | minioadmin | minioadmin123 |
+
+### Тестові користувачі (після `make seed`)
+
+Усі тестові акаунти мають пароль: **`Demo1234!`**
+
+| Роль | Email | Ім'я | Доступ |
+|------|-------|------|--------|
+| Диспетчер (staff) | dispatcher@demo.com | Олена Коваль | Кастомна адмін-панель `/admin` |
+| Охоронник | guard@demo.com | — | Портал охорони `/guard-portal` |
+| Мешканець | tenant@demo.com | — | Портал мешканця |
+| Мешканець (кв. 1) | resident1@demo.com | Іван Петренко | Портал мешканця |
+| Мешканець (кв. 3) | resident2@demo.com | Марія Шевченко | Портал мешканця |
+| Мешканець (кв. 5) | resident3@demo.com | Андрій Бондаренко | Портал мешканця |
 
 ## Тестування
 
@@ -134,7 +148,7 @@ make test-cov
 
 ## Ліцензія
 
-MIT License
+Business Source License 1.1 (BSL-1.1) — використання потребує письмового дозволу автора.
 
 ---
 
