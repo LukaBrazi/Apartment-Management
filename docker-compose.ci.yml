@@ -38,6 +38,9 @@ services:
         condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.ci
+      # Set DATABASE_URL directly so `docker exec` picks it up too
+      # (entrypoint only exports it for the server's own process)
+      DATABASE_URL: postgres://ci_user:ci_pass@postgres:5432/ci_db
       POSTGRES_USER: ci_user
       POSTGRES_PASSWORD: ci_pass
       POSTGRES_HOST: postgres
