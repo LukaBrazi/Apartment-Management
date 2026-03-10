@@ -1,3 +1,4 @@
+import RoleGuard from "@/components/shared/RoleGuard";
 import GuardPortalView from "@/components/guard/GuardPortalView";
 import type { Metadata } from "next";
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function GuardPortalPage() {
-	return <GuardPortalView />;
+	return (
+		<RoleGuard role="guard">
+			<GuardPortalView />
+		</RoleGuard>
+	);
 }

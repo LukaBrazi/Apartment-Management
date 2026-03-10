@@ -92,9 +92,10 @@ jobs:
       - name: Checkout E2E repo
         uses: actions/checkout@v4
         with:
-          # If the repo is private, add: token: ${{ secrets.E2E_REPO_TOKEN }}
-          repository: ${{ github.repository_owner }}/sckandi-e2e
+          repository: LukaBrazi/sckandi-e2e
           path: e2e
+          # Uncomment if repo is private:
+          # token: ${{ secrets.E2E_REPO_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

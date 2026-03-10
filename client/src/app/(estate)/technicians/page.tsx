@@ -1,3 +1,4 @@
+import RoleGuard from "@/components/shared/RoleGuard";
 import TechnicianCard from "@/components/cards/TechnicianCard";
 import type { Metadata } from "next";
 
@@ -9,8 +10,8 @@ export const metadata: Metadata = {
 
 export default function TechniciansPage() {
 	return (
-		<>
+		<RoleGuard role="staff">
 			<TechnicianCard />
-		</>
+		</RoleGuard>
 	);
 }
