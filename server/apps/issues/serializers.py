@@ -40,8 +40,6 @@ class IssueSerializer(serializers.ModelSerializer):
     """
 
     # Attributes
-    apartment_unit = serializers.ReadOnlyField(source="apartment.unit_number")
-    # New aliases using Building/Unit terminology
     unit_number = serializers.ReadOnlyField(source="unit.number")
     unit_id = serializers.UUIDField(source="unit.id", read_only=True)
     building_name = serializers.ReadOnlyField(source="unit.entrance.building.name")
@@ -57,9 +55,6 @@ class IssueSerializer(serializers.ModelSerializer):
         model = Issue
         fields = [
             "id",
-            # Legacy field kept for backward compat
-            "apartment_unit",
-            # New preferred fields
             "unit_id",
             "unit_number",
             "building_name",
@@ -151,25 +146,17 @@ class IssueStatusUpdateSerializer(serializers.ModelSerializer):
     """
 
     # Attributes
-    apartment = serializers.ReadOnlyField(source="apartment.unit_number")
+    unit_number = serializers.ReadOnlyField(source="unit.number")
     reported_by = serializers.ReadOnlyField(source="reported_by.full_name")
     resolved_by = serializers.ReadOnlyField(source="assigned_to.full_name")
 
     # Meta Class
     class Meta:
-        """Meta Class
-
-        Attributes:
-            model (Issue): The issue model.
-            fields (list): The fields to include in the serialized data.
-        """
-
-        # Attributes
         model = Issue
         fields = [
             "title",
             "description",
-            "apartment",
+            "unit_number",
             "reported_by",
             "status",
             "resolved_by",

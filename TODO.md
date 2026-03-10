@@ -678,6 +678,6 @@ Redux: додай `assignApiSlice` або розшир `issueApiSlice` мута�
 
 ### Технічний борг
 
-- [ ] Видалити `apartment_unit` (legacy field) після переходу фронту на `unit_number`
-- [ ] Замінити `apartment` FK в `IssueStatusUpdateSerializer` на `unit`
-- [ ] Health checks для Docker контейнерів
+- [x] Видалити `apartment_unit` (legacy field) — фронт перейшов на `unit_number`
+- [x] Замінити `apartment` FK в `IssueStatusUpdateSerializer` на `unit_number`
+- [x] Health checks для Docker контейнерів (postgres, redis, minio, server, celery)

@@ -221,13 +221,16 @@ export interface ReportIssueData extends IssueData {
 
 export interface Issue {
 	id: string;
-	apartment_unit: string;
+	unit_number: string | null;
+	unit_id: string | null;
+	building_name: string | null;
 	reported_by: string;
 	title: string;
 	description: string;
 	status: "reported" | "accepted" | "in_progress" | "done" | "rejected";
 	priority: "low" | "medium" | "high";
 	view_count: number;
+	is_overdue: boolean;
 	assigned_to?: string;
 }
 
@@ -239,7 +242,7 @@ export interface UpdateIssueResponse {
 	issue: {
 		title: string;
 		description: string;
-		apartment: string;
+		unit_number: string | null;
 		reported_by: string;
 		status: "reported" | "accepted" | "in_progress" | "done" | "rejected";
 		resolved_by: string;

@@ -85,7 +85,7 @@ export default function AdminIssues() {
 						{row.original.title}
 					</p>
 					<p className="text-xs text-[#6B7F8C]">
-						{row.original.apartment_unit || "—"}
+						{row.original.unit_number ?? "—"}
 					</p>
 				</div>
 			),

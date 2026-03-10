@@ -15,11 +15,14 @@ services:
             dockerfile: ./compose/local/server/Dockerfile # Dockerfile path for the server
         container_name: alpha_apartments_local_server # Container name
         depends_on:
-            # Dependencies for the server service
-            - postgres
-            - redis
-            - mailpit
-            - minio
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            mailpit:
+                condition: service_started
+            minio:
+                condition: service_healthy
         volumes:
             - ./server:/app:z # Mount the server directory to the container
         env_file:
@@ -29,6 +32,12 @@ services:
         command: /start # Command to run when the container starts
         networks:
             - alpha_apartments_network # Network for the server service
+        healthcheck:
+            test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/profiles/')\" || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
 
     # Define the PostgreSQL service
     postgres:
@@ -43,6 +52,12 @@ services:
             - ./.envs/.local/.postgres.env # Environment file for PostgreSQL
         networks:
             - alpha_apartments_network # Network for PostgreSQL
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
 
     # Define the MinIO service
     minio:
@@ -57,6 +72,12 @@ services:
         command: server --console-address :9090 --address :9000 /data # Command to start MinIO
         networks:
             - alpha_apartments_network # Network for MinIO
+        healthcheck:
+            test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+            interval: 15s
+            timeout: 5s
+            retries: 3
+            start_period: 15s
 
     # Define the Mailpit service
     mailpit:
@@ -79,30 +100,46 @@ services:
             - local_redis_data:/data # Mount the Redis data volume
         networks:
             - alpha_apartments_network # Network for Redis
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 5s
 
     # Define the Celery worker service
     celeryworker:
         <<: *server # Use the server configuration
         container_name: alpha_apartments_local_celeryworker # Container name
         depends_on:
-            # Dependencies for the Celery worker service
-            - redis
-            - postgres
-            - mailpit
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            mailpit:
+                condition: service_started
         ports: []
         command: /start-celeryworker # Command to start the Celery worker
         networks:
             - alpha_apartments_network # Network for the Celery worker service
+        healthcheck:
+            test: ["CMD-SHELL", "celery -A config.celery_app inspect ping || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
 
     # Define the Celery beat service
     celerybeat:
         <<: *server # Use the server configuration
         container_name: alpha_apartments_local_celerybeat # Container name
         depends_on:
-            # Dependencies for the Celery beat service
-            - redis
-            - postgres
-            - mailpit
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            mailpit:
+                condition: service_started
         ports: []
         command: /start-celerybeat # Command to start the Celery beat
         networks:

@@ -15,7 +15,7 @@ interface Issue {
 	id: string;
 	title: string;
 	description: string;
-	apartment_unit: string;
+	unit_number: string | null;
 	status: string;
 	priority: string;
 }
@@ -53,7 +53,7 @@ export default function IssueCard({ issue }: IssueCardProps) {
 						<p className="flex items-center space-x-2">
 							<Hotel className="tab-icon" />
 							<span className="tab-font">Номер квартири: </span>
-							<span className="text-lg">{issue.apartment_unit}</span>
+							<span className="text-lg">{issue.unit_number ?? "—"}</span>
 						</p>
 					</CardDescription>
 				</CardContent>

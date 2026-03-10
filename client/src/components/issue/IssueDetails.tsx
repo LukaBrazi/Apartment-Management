@@ -70,7 +70,7 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 							<span className="dark:text-babyPowder font-bold">
 								Номер квартири:{" "}
 							</span>
-							<span className="text-2xl">{issue?.apartment_unit}</span>
+							<span className="text-2xl">{issue?.unit_number ?? "—"}</span>
 						</p>
 					</CardTitle>
 
