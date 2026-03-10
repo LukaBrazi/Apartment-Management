@@ -1,0 +1,76 @@
+# Lightweight stack for CI E2E testing.
+# No MinIO, no Mailpit, no Celery workers — just the services Playwright needs.
+# Used by .github/workflows/ci.yml docker-e2e job.
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ci_user
+      POSTGRES_PASSWORD: ci_pass
+      POSTGRES_DB: ci_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ci_user -d ci_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks: [ci_net]
+
+  redis:
+    image: redis:6-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ci_net]
+
+  server:
+    build:
+      context: .
+      dockerfile: ./compose/local/server/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.ci
+      POSTGRES_USER: ci_user
+      POSTGRES_PASSWORD: ci_pass
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ci_db
+      REDIS_URL: redis://redis:6379/0
+    command: /start
+    healthcheck:
+      # site-settings is AllowAny — safe to poll without auth
+      test:
+        - "CMD-SHELL"
+        - "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/site-settings/')\" || exit 1"
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks: [ci_net]
+
+  client:
+    build:
+      context: .
+      dockerfile: ./compose/local/client/Dockerfile
+    depends_on: [server]
+    networks: [ci_net]
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./compose/ci/nginx/Dockerfile
+    depends_on: [server, client]
+    ports:
+      - "8080:80"
+    networks: [ci_net]
+
+networks:
+  ci_net:

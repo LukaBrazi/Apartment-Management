@@ -39,22 +39,60 @@ jobs:
           DJANGO_SETTINGS_MODULE: config.settings.test
         run: python -m pytest apps/tests/ -v --tb=short
 
-  # ── 2. Playwright E2E tests ─────────────────────────────────────────────────
-  # Runs only when E2E_BASE_URL variable is set in repo settings.
-  # Set it under: Settings → Secrets and variables → Actions → Variables
-  # Example value: https://your-staging-url.vercel.app
+  # ── 2. Playwright E2E tests (Docker stack — no staging server needed) ────────
+  # Spins up postgres + redis + server + client + nginx via docker-compose.ci.yml,
+  # seeds demo data, then runs the sckandi-e2e Playwright suite against localhost.
   e2e:
-    name: E2E Tests (Playwright)
+    name: E2E Tests (Docker + Playwright)
     needs: test
     runs-on: ubuntu-latest
-    if: vars.E2E_BASE_URL != ''
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Docker layer cache ──────────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # ── Start services ──────────────────────────────────────────────────────
+      - name: Build and start CI stack
+        run: docker compose -f docker-compose.ci.yml up -d --build
+
+      - name: Wait for server to become healthy
+        run: |
+          echo "Waiting for Django server (up to 5 min)..."
+          for i in $(seq 1 60); do
+            STATUS=$(docker inspect \
+              --format='{{.State.Health.Status}}' \
+              "$(docker compose -f docker-compose.ci.yml ps -q server)" 2>/dev/null || echo "unknown")
+            echo "  attempt $i/60 — status: $STATUS"
+            [ "$STATUS" = "healthy" ] && echo "Server ready!" && exit 0
+            sleep 5
+          done
+          echo "Timeout: server never became healthy"
+          docker compose -f docker-compose.ci.yml logs server
+          exit 1
+
+      # ── Seed demo users ─────────────────────────────────────────────────────
+      - name: Seed demo data
+        run: |
+          docker compose -f docker-compose.ci.yml exec -T server \
+            python manage.py seed_demo
+
+      # ── Checkout E2E repo ───────────────────────────────────────────────────
       - name: Checkout E2E repo
         uses: actions/checkout@v4
         with:
-          # Adjust to your GitHub username/org if the repo is private add a token:
-          # token: ${{ secrets.E2E_REPO_TOKEN }}
+          # If the repo is private, add: token: ${{ secrets.E2E_REPO_TOKEN }}
           repository: ${{ github.repository_owner }}/sckandi-e2e
           path: e2e
 
@@ -73,12 +111,14 @@ jobs:
         working-directory: e2e
         run: npx playwright install --with-deps chromium
 
+      # ── Run tests ───────────────────────────────────────────────────────────
       - name: Run Playwright tests
         working-directory: e2e
-        run: npx playwright test
+        run: npx playwright test --workers=1
         env:
-          BASE_URL: ${{ vars.E2E_BASE_URL }}
+          BASE_URL: http://localhost:8080
 
+      # ── Artifacts ───────────────────────────────────────────────────────────
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
@@ -86,6 +126,10 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report/
           retention-days: 7
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.ci.yml logs
 
   # ─── CD (розкоментуй коли буде прод-сервер) ──────────────────────────────
   #

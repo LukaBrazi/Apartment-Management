@@ -1,8 +1,12 @@
-COMPOSE = docker compose -f docker-compose.local.yml
+
+
+COMPOSE    = docker compose -f docker-compose.local.yml
+COMPOSE_CI = docker compose -f docker-compose.ci.yml
 DB_URL = postgres://alpha_user:alpha_password@postgres:5432/alpha_apartments
 
 .PHONY: help up down restart build logs shell test test-cov migrate makemigrations \
-        createsuperuser seed minio-init collectstatic celeryworker celerybeat
+        createsuperuser seed minio-init collectstatic celeryworker celerybeat \
+        ci-up ci-down ci-seed e2e
 
 help:
 	@echo "Skandi Apartments — команди Make"
@@ -26,6 +30,11 @@ help:
 	@echo ""
 	@echo "  make test            Запустити тести"
 	@echo "  make test-cov        Тести з покриттям коду"
+	@echo ""
+	@echo "  make ci-up           Підняти CI-стек (без MinIO/Mailpit/Celery)"
+	@echo "  make ci-down         Зупинити CI-стек"
+	@echo "  make ci-seed         Наповнити CI БД демо-даними"
+	@echo "  make e2e             Запустити Playwright E2E тести (проти CI-стеку)"
 	@echo ""
 	@echo "  Доступні адреси після make up:"
 	@echo "    http://localhost:8080        — Frontend"
@@ -103,3 +112,17 @@ test:
 
 test-cov:
 	cd server && ../.venv/bin/pytest apps/tests/ -v --cov=apps --cov-report=term-missing
+
+# --- CI / E2E ---
+
+ci-up:
+	$(COMPOSE_CI) up -d --build
+
+ci-down:
+	$(COMPOSE_CI) down
+
+ci-seed:
+	$(COMPOSE_CI) exec -T server python manage.py seed_demo
+
+e2e:
+	cd ../sckandi-e2e && npx playwright test --workers=1
