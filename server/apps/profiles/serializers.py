@@ -46,6 +46,10 @@ class ProfileSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True)
     apartment = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
+    unit_number = serializers.ReadOnlyField(source="unit.number")
+    unit_id = serializers.IntegerField(source="unit.pk", read_only=True)
+    building_name = serializers.ReadOnlyField(source="unit.entrance.building.name")
+    managed_building = serializers.ReadOnlyField(source="building.name")
 
     # Meta Class
     class Meta:
@@ -75,6 +79,10 @@ class ProfileSerializer(serializers.ModelSerializer):
             "date_joined",
             "avatar",
             "apartment",
+            "unit_id",
+            "unit_number",
+            "building_name",
+            "managed_building",
             "average_rating",
         ]
 

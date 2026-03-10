@@ -128,6 +128,23 @@ class Profile(TimeStampedModel):
     city_of_origin = models.CharField(
         _("City of Origin"), max_length=180, default="Nagpur"
     )
+    unit = models.ForeignKey(
+        "apartments.Unit",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="residents",
+        verbose_name=_("Unit"),
+    )
+    building = models.ForeignKey(
+        "apartments.Building",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="staff_profiles",
+        verbose_name=_("Managed Building"),
+        help_text=_("For staff/dispatcher: the building they manage. Leave empty for all buildings."),
+    )
     report_count = models.PositiveIntegerField(_("Report Count"), default=0)
     reputation = models.PositiveIntegerField(_("Reputation"), default=100)
     slug = AutoSlugField(

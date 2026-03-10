@@ -6,12 +6,14 @@ from apps.apartments.models import Apartment, Unit
 from apps.common.models import ContentView
 from apps.common.renderers import GenericJSONRenderer
 from apps.issues.emails import send_issue_confirmation_email
+from apps.issues.filters import IssueFilter
 from apps.issues.models import Issue
 from apps.issues.serializers import IssueAdminUpdateSerializer, IssueCreateSerializer, IssueSerializer, IssueStatusUpdateSerializer
 from django.contrib.contenttypes.models import ContentType
 from django.http import Http404
 from django.utils import timezone
-from rest_framework import generics, permissions, status
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics, permissions, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -68,27 +70,38 @@ class IsStaffOrSuperUser(permissions.BasePermission):
 
 # IssueListAPIView Class
 class IssueListAPIView(generics.ListAPIView):
-    """IssueListAPIView
-
-    IssueListAPIView class is used to list all the issues.
-
-    Extends:
-        generics.ListAPIView
-
-    Attributes:
-        queryset (QuerySet): The queryset of issues.
-        serializer_class (IssueSerializer): The issue serializer class.
-        renderer_classes (list): The list of renderer classes.
-        permission_classes (list): The list of permission classes.
-        object_label (str): The object label.
+    """List issues. Superuser sees all; staff sees issues scoped to their managed
+    building (profile.building); if no building is set for staff — sees all.
+    Tenants are blocked (IsStaffOrSuperUser).
+    Supports filtering by status, priority, category, building, is_overdue.
     """
 
-    # Attributes
-    queryset = Issue.objects.all()
     serializer_class = IssueSerializer
     renderer_classes = (GenericJSONRenderer,)
     permission_classes = (IsStaffOrSuperUser,)
     object_label = "issues"
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    filterset_class = IssueFilter
+    search_fields = ("title", "description")
+    ordering_fields = ("created_at", "due_at", "priority", "status")
+    ordering = ("-created_at",)
+
+    def get_queryset(self):
+        user = self.request.user
+        base_qs = Issue.objects.select_related(
+            "apartment", "unit__entrance__building", "category",
+            "reported_by", "assigned_to",
+        )
+        if user.is_superuser:
+            return base_qs
+        # Staff scoped to their managed building if one is set
+        try:
+            building = user.profile.building
+            if building:
+                return base_qs.filter(unit__entrance__building=building)
+        except AttributeError:
+            pass
+        return base_qs
 
 
 # AssignedIssuesListAPIView Class
@@ -130,39 +143,22 @@ class AssignedIssuesListAPIView(generics.ListAPIView):
 
 # MyIssuesListAPIView Class
 class MyIssuesListAPIView(generics.ListAPIView):
-    """MyIssuesListAPIView
-
-    MyIssuesListAPIView class is used to list the issues reported by the user.
-
-    Extends:
-        generics.ListAPIView
-
-    Attributes:
-        queryset (QuerySet): The queryset of issues.
-        serializer_class (IssueSerializer): The issue serializer class.
-        renderer_classes (list): The list of renderer classes.
-        object_label (str): The object label.
-
-    Methods:
-        get_queryset: Method to get the queryset of issues.
+    """List issues reported by the current user (tenant view).
+    Supports filtering by status, priority, is_overdue and ordering.
     """
 
-    # Attributes
-    queryset = Issue.objects.all()
     serializer_class = IssueSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "my_issues"
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
+    filterset_class = IssueFilter
+    ordering_fields = ("created_at", "due_at", "priority", "status")
+    ordering = ("-created_at",)
 
-    # Method to get the queryset of issues
     def get_queryset(self):
-        """Method to get the queryset of issues.
-
-        Returns:
-            QuerySet: The queryset of issues reported by the user.
-        """
-
-        # Return the queryset of issues reported by the user
-        return self.queryset.filter(reported_by=self.request.user)
+        return Issue.objects.filter(reported_by=self.request.user).select_related(
+            "apartment", "unit__entrance__building", "category", "assigned_to",
+        )
 
 
 # IssueCreateAPIView Class

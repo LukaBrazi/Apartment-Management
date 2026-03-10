@@ -662,10 +662,10 @@ Redux: додай `assignApiSlice` або розшир `issueApiSlice` мута�
 
 ### Критичне
 
-- [ ] **Перейменувати `TIME_ZONE`** з `"Asia/Kolkata"` на `"Europe/Kyiv"` у `base.py`
-- [ ] **Вʼязка Unit ↔ Profile**: додати FK `unit` до `Profile`
-- [ ] **Права доступу на заявки**: диспетчер — усі заявки свого будинку; мешканець — тільки свої
-- [ ] **Фільтрація та сортування заявок**: за статусом, пріоритетом, категорією, будинком, `is_overdue`
+- [x] **Перейменувати `TIME_ZONE`** з `"Asia/Kolkata"` на `"Europe/Kyiv"` у `base.py` (вже було)
+- [x] **Вʼязка Unit ↔ Profile**: `unit` FK (для мешканця) + `building` FK (для диспетчера) у Profile + міграція 0006
+- [x] **Права доступу на заявки**: суперюзер — всі; staff з building → тільки свій будинок; мешканець → тільки власні (`/my-issues/`)
+- [x] **Фільтрація та сортування заявок**: `IssueFilter` по status/priority/category/building/is_overdue + search + ordering
 
 ### DevOps / Інфраструктура
 
