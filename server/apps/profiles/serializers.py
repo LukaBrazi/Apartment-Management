@@ -49,7 +49,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     unit_number = serializers.ReadOnlyField(source="unit.number")
     unit_id = serializers.IntegerField(source="unit.pk", read_only=True)
     building_name = serializers.ReadOnlyField(source="unit.entrance.building.name")
-    managed_building = serializers.ReadOnlyField(source="building.name")
+    managed_buildings = serializers.SerializerMethodField()
 
     # Meta Class
     class Meta:
@@ -82,7 +82,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "unit_id",
             "unit_number",
             "building_name",
-            "managed_building",
+            "managed_buildings",
             "average_rating",
         ]
 
@@ -127,6 +127,9 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         # Return None
         return None
+
+    def get_managed_buildings(self, obj: Profile) -> list:
+        return list(obj.buildings.values("id", "name", "address"))
 
     # Method to get the average rating
     def get_average_rating(self, obj: Profile) -> float:

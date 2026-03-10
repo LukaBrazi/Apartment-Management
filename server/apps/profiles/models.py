@@ -136,14 +136,12 @@ class Profile(TimeStampedModel):
         related_name="residents",
         verbose_name=_("Unit"),
     )
-    building = models.ForeignKey(
+    buildings = models.ManyToManyField(
         "apartments.Building",
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name="staff_profiles",
-        verbose_name=_("Managed Building"),
-        help_text=_("For staff/dispatcher: the building they manage. Leave empty for all buildings."),
+        verbose_name=_("Managed Buildings"),
+        help_text=_("For staff/dispatcher: buildings they manage. Leave empty to manage all buildings."),
     )
     report_count = models.PositiveIntegerField(_("Report Count"), default=0)
     reputation = models.PositiveIntegerField(_("Reputation"), default=100)

@@ -71,7 +71,7 @@ class IsStaffOrSuperUser(permissions.BasePermission):
 # IssueListAPIView Class
 class IssueListAPIView(generics.ListAPIView):
     """List issues. Superuser sees all; staff sees issues scoped to their managed
-    building (profile.building); if no building is set for staff — sees all.
+    buildings (profile.buildings M2M); if no buildings assigned — sees all.
     Tenants are blocked (IsStaffOrSuperUser).
     Supports filtering by status, priority, category, building, is_overdue.
     """
@@ -94,11 +94,11 @@ class IssueListAPIView(generics.ListAPIView):
         )
         if user.is_superuser:
             return base_qs
-        # Staff scoped to their managed building if one is set
+        # Staff scoped to their assigned buildings (M2M); if none — sees all
         try:
-            building = user.profile.building
-            if building:
-                return base_qs.filter(unit__entrance__building=building)
+            managed = user.profile.buildings.all()
+            if managed.exists():
+                return base_qs.filter(unit__entrance__building__in=managed).distinct()
         except AttributeError:
             pass
         return base_qs

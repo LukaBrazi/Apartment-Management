@@ -106,57 +106,77 @@ class TestIssuePermissions:
 
 @pytest.mark.django_db
 class TestIssueStaffBuildingScope:
-    def test_staff_with_building_sees_only_building_issues(self):
-        """Staff assigned to a building should only see issues from that building."""
+    def test_staff_with_one_building_sees_only_that_building(self):
+        """Staff assigned to one building sees only issues from it."""
         building_a = BuildingFactory()
         building_b = BuildingFactory()
 
-        entrance_a = EntranceFactory(building=building_a)
-        entrance_b = EntranceFactory(building=building_b)
-        unit_a = UnitFactory(entrance=entrance_a)
-        unit_b = UnitFactory(entrance=entrance_b)
+        unit_a = UnitFactory(entrance=EntranceFactory(building=building_a))
+        unit_b = UnitFactory(entrance=EntranceFactory(building=building_b))
 
         issue_a = IssueFactory(unit=unit_a)
         IssueFactory(unit=unit_b)  # should NOT appear
 
         staff_user = UserFactory(is_staff=True)
-        staff_user.profile.building = building_a
-        staff_user.profile.save()
+        staff_user.profile.buildings.add(building_a)
 
         client = APIClient()
         client.force_authenticate(user=staff_user)
 
         resp = client.get(LIST_URL)
         assert resp.status_code == 200
-        data = resp.json()
-        results = data.get("issues", {}).get("results", [])
-        ids = [r["id"] for r in results]
-        assert str(issue_a.id) in ids
-        assert len(ids) == 1
+        results = resp.json().get("issues", {}).get("results", [])
+        assert len(results) == 1
+        assert str(results[0]["id"]) == str(issue_a.id)
 
-    def test_staff_without_building_sees_all_issues(self):
-        """Staff with no building assigned sees all issues."""
+    def test_staff_with_multiple_buildings_sees_all_assigned(self):
+        """Dispatcher assigned to multiple buildings sees all their issues."""
+        building_a = BuildingFactory()
+        building_b = BuildingFactory()
+        building_c = BuildingFactory()
+
+        unit_a = UnitFactory(entrance=EntranceFactory(building=building_a))
+        unit_b = UnitFactory(entrance=EntranceFactory(building=building_b))
+        unit_c = UnitFactory(entrance=EntranceFactory(building=building_c))
+
+        issue_a = IssueFactory(unit=unit_a)
+        issue_b = IssueFactory(unit=unit_b)
+        IssueFactory(unit=unit_c)  # building_c — NOT assigned, should not appear
+
+        staff_user = UserFactory(is_staff=True)
+        staff_user.profile.buildings.add(building_a, building_b)
+
+        client = APIClient()
+        client.force_authenticate(user=staff_user)
+
+        resp = client.get(LIST_URL)
+        assert resp.status_code == 200
+        results = resp.json().get("issues", {}).get("results", [])
+        ids = {r["id"] for r in results}
+        assert str(issue_a.id) in ids
+        assert str(issue_b.id) in ids
+        assert len(ids) == 2
+
+    def test_staff_without_buildings_sees_all_issues(self):
+        """Staff with no buildings assigned sees all issues."""
         IssueFactory.create_batch(3)
         staff_user = UserFactory(is_staff=True)
-        # no building assigned (profile.building = None by default)
+        # no buildings (M2M empty)
 
         client = APIClient()
         client.force_authenticate(user=staff_user)
 
         resp = client.get(LIST_URL)
         assert resp.status_code == 200
-        data = resp.json()
-        results = data.get("issues", {}).get("results", [])
+        results = resp.json().get("issues", {}).get("results", [])
         assert len(results) == 3
 
-    def test_superuser_sees_all_despite_building(self):
-        """Superuser always sees all issues regardless of building."""
+    def test_superuser_sees_all_regardless_of_buildings(self):
+        """Superuser always sees all issues regardless of buildings."""
         building = BuildingFactory()
-        entrance = EntranceFactory(building=building)
-        unit = UnitFactory(entrance=entrance)
-
+        unit = UnitFactory(entrance=EntranceFactory(building=building))
         IssueFactory(unit=unit)
-        IssueFactory()  # no unit / different building
+        IssueFactory()
 
         superuser = AdminUserFactory()
         client = APIClient()
@@ -164,8 +184,7 @@ class TestIssueStaffBuildingScope:
 
         resp = client.get(LIST_URL)
         assert resp.status_code == 200
-        data = resp.json()
-        results = data.get("issues", {}).get("results", [])
+        results = resp.json().get("issues", {}).get("results", [])
         assert len(results) == 2
 
 
@@ -270,9 +289,9 @@ class TestProfileUnitBuilding:
         user = UserFactory()
         assert user.profile.unit is None
 
-    def test_profile_building_field_null_by_default(self):
+    def test_profile_buildings_empty_by_default(self):
         user = UserFactory()
-        assert user.profile.building is None
+        assert user.profile.buildings.count() == 0
 
     def test_assign_unit_to_profile(self):
         user = UserFactory()
@@ -282,10 +301,15 @@ class TestProfileUnitBuilding:
         user.profile.refresh_from_db()
         assert user.profile.unit == unit
 
-    def test_assign_building_to_staff_profile(self):
+    def test_assign_one_building_to_staff_profile(self):
         staff = UserFactory(is_staff=True)
         building = BuildingFactory()
-        staff.profile.building = building
-        staff.profile.save()
-        staff.profile.refresh_from_db()
-        assert staff.profile.building == building
+        staff.profile.buildings.add(building)
+        assert staff.profile.buildings.count() == 1
+        assert building in staff.profile.buildings.all()
+
+    def test_assign_multiple_buildings_to_staff_profile(self):
+        staff = UserFactory(is_staff=True)
+        b1, b2, b3 = BuildingFactory(), BuildingFactory(), BuildingFactory()
+        staff.profile.buildings.add(b1, b2, b3)
+        assert staff.profile.buildings.count() == 3
