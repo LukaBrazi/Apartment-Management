@@ -32,3 +32,4 @@ def test_create_admin_user():
 def test_user_full_name():
     user = UserFactory(first_name="Іван", last_name="Петренко")
     assert user.full_name == "Іван Петренко"
+
