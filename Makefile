@@ -1,12 +1,15 @@
 
 
+
+
+
 COMPOSE    = docker compose -f docker-compose.local.yml
 COMPOSE_CI = docker compose -f docker-compose.ci.yml
 DB_URL = postgres://alpha_user:alpha_password@postgres:5432/alpha_apartments
 
 .PHONY: help up down restart build logs shell test test-cov migrate makemigrations \
         createsuperuser seed minio-init collectstatic celeryworker celerybeat \
-        ci-up ci-down ci-seed e2e
+        ci-up ci-down ci-seed ci-reseed e2e e2e-ui e2e-full e2e-dev
 
 help:
 	@echo "Skandi Apartments — команди Make"
@@ -34,7 +37,11 @@ help:
 	@echo "  make ci-up           Підняти CI-стек (без MinIO/Mailpit/Celery)"
 	@echo "  make ci-down         Зупинити CI-стек"
 	@echo "  make ci-seed         Наповнити CI БД демо-даними"
+	@echo "  make ci-reseed       Скинути і переналити демо-дані в CI БД"
 	@echo "  make e2e             Запустити Playwright E2E тести (проти CI-стеку)"
+	@echo "  make e2e-ui          Playwright у режимі UI (покрокова відладка)"
+	@echo "  make e2e-full        Підняти стек + seed + тести + прибрати"
+	@echo "  make e2e-dev         Підняти стек + seed + тести (стек залишається)"
 	@echo ""
 	@echo "  Доступні адреси після make up:"
 	@echo "    http://localhost:8080        — Frontend"
@@ -124,5 +131,40 @@ ci-down:
 ci-seed:
 	$(COMPOSE_CI) exec -T server python manage.py seed_demo
 
+ci-reseed:
+	$(COMPOSE_CI) exec -T server python manage.py flush --no-input
+	$(COMPOSE_CI) exec -T server python manage.py migrate --no-input
+	$(COMPOSE_CI) exec -T server python manage.py seed_demo
+
 e2e:
+	cd ../sckandi-e2e && npx playwright test --workers=1
+
+e2e-ui:
+	cd ../sckandi-e2e && npx playwright test --ui
+
+# Повний цикл: підняти → seed → тести → прибрати
+e2e-full:
+	$(MAKE) ci-up
+	@echo "Чекаємо готовності сервера..."
+	@for i in $$(seq 1 60); do \
+		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
+		  $$($(COMPOSE_CI) ps -q server) 2>/dev/null || echo "unknown"); \
+		[ "$$STATUS" = "healthy" ] && echo "Сервер готовий!" && break; \
+		echo "  $$i/60 — $$STATUS"; sleep 5; \
+	done
+	$(MAKE) ci-seed
+	cd ../sckandi-e2e && npx playwright test --workers=1; E2E_EXIT=$$?; \
+	  $(MAKE) ci-down; exit $$E2E_EXIT
+
+# Розробницький цикл: підняти → seed → тести (стек залишається для повторних запусків)
+e2e-dev:
+	$(MAKE) ci-up
+	@echo "Чекаємо готовності сервера..."
+	@for i in $$(seq 1 60); do \
+		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
+		  $$($(COMPOSE_CI) ps -q server) 2>/dev/null || echo "unknown"); \
+		[ "$$STATUS" = "healthy" ] && echo "Сервер готовий!" && break; \
+		echo "  $$i/60 — $$STATUS"; sleep 5; \
+	done
+	$(MAKE) ci-reseed
 	cd ../sckandi-e2e && npx playwright test --workers=1
