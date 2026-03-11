@@ -42,6 +42,25 @@
     --select-option-hover-background-color: #EBF3F5;
     --select-value-text-color:              #1C2B3A;
     --select-menu-background-color:         #FFFFFF;
+
+    /* SaaS Dashboard Design System */
+    --primary: #2F6FED;
+    --primary-hover: #2460d4;
+    --primary-light: #EEF3FD;
+    --bg: #F7F8FA;
+    --card: #FFFFFF;
+    --text: #111827;
+    --muted: #6B7280;
+    --saas-border: #E5E7EB;
+    --success: #2E7D6B;
+    --success-light: #EDFAF6;
+    --warning: #D6A14A;
+    --warning-light: #FEF9EE;
+    --danger: #D64545;
+    --danger-light: #FFF0F0;
+    --radius: 16px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
   }
 
   .dark {

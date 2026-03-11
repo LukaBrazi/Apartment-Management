@@ -33,61 +33,14 @@ export const occupationOptions = [
 ];
 
 export const leftNavLinks: LeftNavLink[] = [
-	{
-		path: "/welcome",
-		label: "Головна",
-		imgLocation: "/assets/icons/home.svg",
-	},
-	{
-		// Admin-only: filtered out for non-staff in useAuthNavigation
-		path: "/admin",
-		label: "Адмін панель",
-		imgLocation: "/assets/icons/tenants.svg",
-	},
-	{
-		path: "/profile",
-		label: "Профіль",
-		imgLocation: "/assets/icons/user-profile.svg",
-	},
-	{
-		path: "/tenants",
-		label: "Мешканці",
-		imgLocation: "/assets/icons/tenants.svg",
-	},
-	{
-		path: "/technicians",
-		label: "Майстри",
-		imgLocation: "/assets/icons/technician.svg",
-	},
-	{
-		path: "/report-issue",
-		label: "Подати заявку",
-		imgLocation: "/assets/icons/report.svg",
-	},
-	{
-		path: "/report-tenant",
-		label: "Поскаржитися",
-		imgLocation: "/assets/icons/speak.svg",
-	},
-	{
-		path: "/bookmark",
-		label: "Збережені публікації",
-		imgLocation: "/assets/icons/bookmark.svg",
-	},
-	{
-		// Admin-only: filtered out for tenants/guards in useAuthNavigation
-		path: "/add-post",
-		label: "Написати новину",
-		imgLocation: "/assets/icons/question-file.svg",
-	},
-	{
-		path: "/request-pass",
-		label: "Перепустка для авто",
-		imgLocation: "/assets/icons/report.svg",
-	},
-	{
-		path: "/guard-portal",
-		label: "Портал охорони",
-		imgLocation: "/assets/icons/tenants.svg",
-	},
+	{ path: "/welcome",       label: "Мій будинок",    imgLocation: "/assets/icons/home.svg" },
+	{ path: "/profile",       label: "Мої заявки",     imgLocation: "/assets/icons/report.svg" },
+	{ path: "/payments",      label: "Платежі",        imgLocation: "/assets/icons/bookmark.svg" },
+	{ path: "/announcements", label: "Оголошення",     imgLocation: "/assets/icons/speak.svg" },
+	{ path: "/contacts",      label: "Контакти",       imgLocation: "/assets/icons/user-profile.svg" },
+	// Staff/guard only (filtered in useAuthNavigation):
+	{ path: "/admin",         label: "Адмін панель",   imgLocation: "/assets/icons/tenants.svg" },
+	{ path: "/request-pass",  label: "Перепустка",     imgLocation: "/assets/icons/report.svg" },
+	{ path: "/guard-portal",  label: "Портал охорони", imgLocation: "/assets/icons/tenants.svg" },
+	{ path: "/report-issue",  label: "Подати заявку",  imgLocation: "/assets/icons/report.svg" },
 ];

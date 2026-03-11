@@ -7,6 +7,7 @@ import {
 	SheetFooter,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import { NavIcon } from "@/components/shared/NavIcon";
 import { leftNavLinks } from "@/constants";
 import { useAuthNavigation } from "@/hooks";
 import { HomeModernIcon } from "@heroicons/react/24/solid";
@@ -29,16 +30,13 @@ function LeftNavContent() {
 							href={linkItem.path}
 							className={`flex items-center justify-start gap-3 rounded-xl px-4 py-3 transition-all duration-150 ${
 								isActive
-									? "bg-[#EBF3F5] text-[#3D7A8A] dark:bg-[#1A2E3A] dark:text-[#5BA3B5]"
-									: "text-[#6B7F8C] hover:bg-[#F7F6F2] hover:text-[#1C2B3A] dark:text-[#8FA8B8] dark:hover:bg-[#1E2D3D] dark:hover:text-[#F0EDE6]"
+									? "bg-[#EEF3FD] text-[#2F6FED] dark:bg-[#1A2E3A] dark:text-[#5BA3B5]"
+									: "text-[#6B7280] hover:bg-[#F7F8FA] hover:text-[#111827] dark:text-[#8FA8B8] dark:hover:bg-[#1E2D3D] dark:hover:text-[#F0EDE6]"
 							}`}
 						>
-							<Image
-								src={linkItem.imgLocation}
-								alt={linkItem.label}
-								width={20}
-								height={20}
-								className={`${isActive ? "opacity-100" : "opacity-60 dark:invert"}`}
+							<NavIcon
+								path={linkItem.path}
+								className={`size-5 ${isActive ? "text-[#2F6FED] dark:text-[#5BA3B5]" : "text-[#6B7280] dark:text-[#8FA8B8]"}`}
 							/>
 							<p className={`${isActive ? "base-semibold" : "base-medium"}`}>
 								{linkItem.label}
@@ -66,12 +64,12 @@ export default function MobileNavbar() {
 			</SheetTrigger>
 			<SheetContent
 				side="left"
-				className="border-r border-[#E2E5E8] bg-white dark:border-[#2D3D4F] dark:bg-[#162032]"
+				className="border-r border-[#E5E7EB] bg-white dark:border-[#2D3D4F] dark:bg-[#162032]"
 			>
 				<Link href="/" className="flex items-center gap-2">
-					<HomeModernIcon className="size-9 text-[#3D7A8A]" />
-					<p className="h2-semibold font-robotoSlab text-[#1C2B3A] dark:text-[#F0EDE6] tracking-tight">
-						Skandi <span className="text-[#3D7A8A]">Apartments</span>
+					<HomeModernIcon className="size-9 text-[#2F6FED]" />
+					<p className="h2-semibold font-robotoSlab text-[#111827] dark:text-[#F0EDE6] tracking-tight">
+						Skandi <span className="text-[#2F6FED]">Apartments</span>
 					</p>
 				</Link>
 
@@ -79,23 +77,23 @@ export default function MobileNavbar() {
 					<LeftNavContent />
 
 					<SheetClose asChild>
-						<SheetFooter className="flex flex-col gap-3 border-t border-[#E2E5E8] pt-4 dark:border-[#2D3D4F]">
+						<SheetFooter className="flex flex-col gap-3 border-t border-[#E5E7EB] pt-4 dark:border-[#2D3D4F]">
 							{isAuthenticated ? (
 								<Button
 									onClick={handleLogout}
-									className="small-medium w-full rounded-xl border border-[#E2E5E8] bg-transparent text-[#1C2B3A] shadow-none hover:bg-[#EBF3F5] hover:text-[#3D7A8A] dark:border-[#2D3D4F] dark:text-[#F0EDE6] dark:hover:bg-[#1A2E3A] dark:hover:text-[#5BA3B5]"
+									className="small-medium w-full rounded-xl border border-[#E5E7EB] bg-transparent text-[#111827] shadow-none hover:bg-[#EEF3FD] hover:text-[#2F6FED] dark:border-[#2D3D4F] dark:text-[#F0EDE6] dark:hover:bg-[#1A2E3A] dark:hover:text-[#5BA3B5]"
 								>
 									Вийти
 								</Button>
 							) : (
 								<>
 									<Link href="/register" className="w-full">
-										<Button className="small-medium w-full rounded-xl bg-[#3D7A8A] text-white shadow-none hover:bg-[#2E6070] dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0]">
+										<Button className="small-medium w-full rounded-xl bg-[#2F6FED] text-white shadow-none hover:bg-[#2460d4] dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0]">
 											Реєстрація
 										</Button>
 									</Link>
 									<Link href="/login" className="w-full">
-										<Button className="small-medium w-full rounded-xl border border-[#3D7A8A] bg-transparent text-[#3D7A8A] shadow-none hover:bg-[#EBF3F5] dark:border-[#5BA3B5] dark:text-[#5BA3B5] dark:hover:bg-[#1A2E3A]">
+										<Button className="small-medium w-full rounded-xl border border-[#2F6FED] bg-transparent text-[#2F6FED] shadow-none hover:bg-[#EEF3FD] dark:border-[#5BA3B5] dark:text-[#5BA3B5] dark:hover:bg-[#1A2E3A]">
 											Увійти
 										</Button>
 									</Link>

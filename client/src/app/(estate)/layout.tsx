@@ -9,7 +9,7 @@ interface LayoutProps {
 
 export default function layout({ children }: LayoutProps) {
 	return (
-		<main className="relative min-h-screen bg-[#F7F6F2] dark:bg-[#0F1923]">
+		<main className="relative min-h-screen bg-[#F7F8FA] dark:bg-[#0F1923]">
 			<Navbar />
 			<div className="flex">
 				{/* placeholder LeftNavbar component */}

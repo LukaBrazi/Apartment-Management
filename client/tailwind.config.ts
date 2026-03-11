@@ -19,6 +19,9 @@ const config = {
 		},
 		extend: {
 			colors: {
+				// SaaS Dashboard Design System
+				primary: { DEFAULT: '#2F6FED', hover: '#2460d4', light: '#EEF3FD' },
+				saas: { bg: '#F7F8FA', card: '#FFFFFF', text: '#111827', muted: '#6B7280', border: '#E5E7EB' },
 				// Legacy (kept for backward compat)
 				googleBlue: "#4285F4",
 				electricIndigo: "#6610F2",
