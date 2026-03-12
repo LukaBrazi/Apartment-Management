@@ -22,6 +22,7 @@ const adminNavLinks = [
 	{ path: "/admin/passes", label: "Перепустки", icon: Car },
 	{ path: "/admin/buildings", label: "Будинки", icon: Building2 },
 	{ path: "/admin/posts", label: "Новини", icon: Newspaper },
+	{ path: "/admin/news", label: "Новини (портал)", icon: Newspaper },
 ];
 
 export default function AdminLayout({

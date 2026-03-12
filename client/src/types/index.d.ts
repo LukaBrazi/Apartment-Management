@@ -586,3 +586,49 @@ export interface BuildingCreateData {
 export interface BuildingUpdateData extends Partial<BuildingCreateData> {
 	pkid: number;
 }
+
+export interface NewsCategory {
+	id: string;
+	name: string;
+	slug: string;
+	color: string;
+}
+
+export interface NewsItem {
+	id: string;
+	title: string;
+	slug: string;
+	excerpt: string;
+	body?: string;
+	cover_image: string | null;
+	category: NewsCategory | null;
+	tags: string[];
+	author_name: string;
+	published_at: string | null;
+	is_published: boolean;
+	pinned: boolean;
+	views_count: number;
+	external_url: string;
+	created_at: string;
+}
+
+export interface NewsResponse {
+	status_code: number;
+	news: NewsItem[];
+}
+
+export interface NewsItemResponse {
+	status_code: number;
+	news_item: NewsItem;
+}
+
+export interface NewsCreateData {
+	title: string;
+	excerpt: string;
+	body: string;
+	is_published: boolean;
+	pinned: boolean;
+	category?: string | null;
+	external_url?: string;
+	published_at?: string | null;
+}

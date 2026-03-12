@@ -11,7 +11,7 @@ import { NavIcon } from "@/components/shared/NavIcon";
 import { leftNavLinks } from "@/constants";
 import { useAuthNavigation } from "@/hooks";
 import { HomeModernIcon } from "@heroicons/react/24/solid";
-import Image from "next/image";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -53,14 +53,10 @@ export default function MobileNavbar() {
 	const { handleLogout, isAuthenticated } = useAuthNavigation();
 	return (
 		<Sheet>
-			<SheetTrigger asChild className="cursor-pointer">
-				<Image
-					src="/assets/icons/mobile-menu.svg"
-					alt="Mobile Menu"
-					width={36}
-					height={36}
-					className="invert-colors sm:hidden"
-				/>
+			<SheetTrigger asChild className="cursor-pointer sm:hidden">
+				<button aria-label="Відкрити меню">
+					<Menu className="size-7 text-[#111827] dark:text-[#F0EDE6]" />
+				</button>
 			</SheetTrigger>
 			<SheetContent
 				side="left"

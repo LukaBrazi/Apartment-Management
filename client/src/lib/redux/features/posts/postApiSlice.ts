@@ -1,4 +1,5 @@
 import {
+	AnnouncementsResponse,
 	BookmarkedPostsResponse,
 	BookmarkResponse,
 	MyPostsResponse,
@@ -109,6 +110,10 @@ export const postApiSlice = baseApiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Post"],
 		}),
+		getTenantAnnouncements: builder.query<AnnouncementsResponse, void>({
+			query: () => "/posts/announcements/",
+			providesTags: ["Post"],
+		}),
 	}),
 });
 
@@ -128,4 +133,5 @@ export const {
 	useUnBookmarkPostMutation,
 	useReplyToPostMutation,
 	useGetAllRepliesQuery,
+	useGetTenantAnnouncementsQuery,
 } = postApiSlice;

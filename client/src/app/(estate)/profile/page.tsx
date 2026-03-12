@@ -4,14 +4,9 @@ import React from "react";
 
 import type { Metadata } from "next";
 import Header from "@/components/profile/Header";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import About from "@/components/profile/About";
-import Posts from "@/components/profile/Posts";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Issues from "@/components/profile/Issues";
-import AssignedIssues from "@/components/profile/AssignedIssues";
-import Reports from "@/components/profile/Reports";
+import ProfileTabs from "@/components/profile/ProfileTabs";
 
 export const metadata: Metadata = {
 	title: "Skandi Apartments | User Profile",
@@ -23,45 +18,7 @@ function ProfilePageContent() {
 		<>
 			<div className="grid items-start gap-4 px-4 pb-4 md:gap-6 md:px-6">
 				<Header />
-
-				{/* the tabs */}
-				<div className="w-full">
-					<Tabs
-						className="dark:border-eerieBlack rounded-lg border"
-						defaultValue="about"
-					>
-						<TabsList className="bg-baby_rich flex space-x-4">
-							<TabsTrigger value="about" className="h3-semibold tab">
-								Про мене
-							</TabsTrigger>
-							<TabsTrigger value="posts" className="h3-semibold tab">
-								Публікації
-							</TabsTrigger>
-							<TabsTrigger value="my-issues" className="h3-semibold tab">
-								Мої заявки
-							</TabsTrigger>
-							<TabsTrigger value="my-reports" className="h3-semibold tab">
-								Мої скарги
-							</TabsTrigger>
-							<TabsTrigger value="assigned-issues" className="h3-semibold tab">
-								Призначені заявки
-							</TabsTrigger>
-						</TabsList>
-
-						{/* about tabs content */}
-						<About />
-
-						{/* posts tab content */}
-						<Posts />
-
-						{/* issue tab content */}
-						<Issues />
-						{/* report tab content */}
-						<Reports />
-						{/* assigned Issue tab content */}
-						<AssignedIssues />
-					</Tabs>
-				</div>
+				<ProfileTabs />
 			</div>
 			<div className="flex cursor-pointer flex-row justify-between">
 				<Link href="/profile/edit">

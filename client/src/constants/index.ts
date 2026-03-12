@@ -4,14 +4,16 @@ import { LeftNavLink } from "@/types";
 // import { IssueData } from '@/types';
 
 type OptionType = {
-	value: "reported" | "resolved" | "in_progress" | "low" | "medium" | "high";
+	value: "reported" | "accepted" | "in_progress" | "done" | "rejected" | "low" | "medium" | "high";
 	label: string;
 };
 
 export const statusOptions: OptionType[] = [
 	{ value: "reported", label: "Подано" },
-	{ value: "resolved", label: "Вирішено" },
-	{ value: "in_progress", label: "Виконується" },
+	{ value: "accepted", label: "Прийнято" },
+	{ value: "in_progress", label: "В роботі" },
+	{ value: "done", label: "Виконано" },
+	{ value: "rejected", label: "Відхилено" },
 ];
 
 export const priorityOptions: OptionType[] = [
@@ -34,9 +36,9 @@ export const occupationOptions = [
 
 export const leftNavLinks: LeftNavLink[] = [
 	{ path: "/welcome",       label: "Мій будинок",    imgLocation: "/assets/icons/home.svg" },
-	{ path: "/profile",       label: "Мої заявки",     imgLocation: "/assets/icons/report.svg" },
+	{ path: "/profile?tab=my-issues", label: "Мої заявки", imgLocation: "/assets/icons/report.svg" },
 	{ path: "/payments",      label: "Платежі",        imgLocation: "/assets/icons/bookmark.svg" },
-	{ path: "/announcements", label: "Оголошення",     imgLocation: "/assets/icons/speak.svg" },
+	{ path: "/news", label: "Новини", imgLocation: "/assets/icons/speak.svg" },
 	{ path: "/contacts",      label: "Контакти",       imgLocation: "/assets/icons/user-profile.svg" },
 	// Staff/guard only (filtered in useAuthNavigation):
 	{ path: "/admin",         label: "Адмін панель",   imgLocation: "/assets/icons/tenants.svg" },

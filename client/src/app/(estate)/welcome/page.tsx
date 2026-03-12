@@ -1,16 +1,11 @@
-import PostCard from "@/components/cards/PostCard";
 import type { Metadata } from "next";
+import ResidentDashboard from "@/components/dashboard/ResidentDashboard";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Ласкаво просимо",
-	description:
-		"Ласкаво просимо до Skandi Apartments. Платформа для мешканців: подавайте заявки, залишайте оголошення та спілкуйтесь.",
+	title: "Skandi Apartments | Кабінет мешканця",
+	description: "Ваш особистий кабінет мешканця — заявки, оголошення та платіжки.",
 };
 
 export default function WelcomePage() {
-	return (
-		<>
-			<PostCard />
-		</>
-	);
+	return <ResidentDashboard />;
 }

@@ -2,6 +2,10 @@ export default function extractErrorMessage(error: unknown): string | null {
 	if (typeof error === "object" && error !== null && "data" in error) {
 		const errorData = (error as { data: any }).data;
 
+		if (typeof errorData !== "object" || errorData === null) {
+			return null;
+		}
+
 		if ("detail" in errorData && typeof errorData.detail === "string") {
 			return errorData.detail;
 		}
