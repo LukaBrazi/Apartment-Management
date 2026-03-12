@@ -1,155 +1,114 @@
-# ОСББ / Керуюча в кишені — Alpha Apartments
+# Skandi Apartments — ОСББ Портал
 
-Веб-портал для керування багатоквартирними будинками (ОСББ). Мешканці повідомляють про проблеми, отримують оголошення від управляючої компанії та стежать за статусом ремонтних заявок з дотриманням SLA.
+Веб-портал для управління ОСББ та житловими комплексами. Мешканці подають заявки на обслуговування, переглядають новини та оголошення свого будинку, охорона керує перепустками для відвідувачів.
 
-## Особливості
+> **Архітектурний принцип:** Цей репозиторій — **ядро платформи**. Нові модулі (платежі, контакти, нотифікації) підключаються як окремі мікросервіси через змінні середовища.
 
-### Автентифікація
-- JWT cookie-аутентифікація
-- Реєстрація та вхід за email/паролем
-- Google OAuth (конфігурується)
+## Можливості
 
 ### Ієрархія нерухомості
 - **Будинок (Building)** → **Під'їзд (Entrance)** → **Квартира (Unit)**
-- Зворотна сумісність із старою моделлю `Apartment`
 
-### Заявки на обслуговування (Service Requests / Issues)
-- Категорії із SLA (норматив часу виконання в годинах)
-- Автоматичний розрахунок `due_at` та флаг `is_overdue`
-- Чіткий потік статусів: `reported → accepted → in_progress → done | rejected`
-- Email-сповіщення при вирішенні заявки
+### Заявки на обслуговування
+- Категорії з SLA (норматив часу виконання у годинах)
+- Автоматичний `due_at` та прапорець `is_overdue`
+- Статуси: `reported → accepted → in_progress → done | rejected`
+- Email-сповіщення при призначенні та вирішенні
 
-### Оголошення (Announcements)
-- Оголошення прив'язані до конкретного будинку
+### Новини порталу
+- Портальні новини (адмін створює, всі мешканці бачать)
+- Категорії, теги, обкладинка, закріплені новини, лічильник переглядів
+- Підтримка зовнішніх посилань
+
+### Оголошення будинку
+- Прив'язані до конкретного будинку
 - Мешканці бачать лише оголошення свого будинку
 
-### Профілі та рейтинги
-- Профілі мешканців і технічних спеціалістів
-- Рейтингова система технічного персоналу
+### Портал охорани
+- Перепустки для відвідувачів (VehiclePass)
+- Охорана закриває перепустку при в'їзді
 
-### Публікації (Posts)
-- Стрічка публікацій з тегами, голосуванням, закладками
-- Коментарі та перегляди
+### Профілі та соціальні функції
+- Рейтинги технічного персоналу
+- Публікації з тегами, голосуванням, закладками
+- Звіти про порушення (5 скарг → блокування)
 
-### Звіти про порушення (Reports)
-- Перша скарга — попередження
-- Після 5 скарг обліковий запис деактивується
+### Мікросервісна готовність
+- Сторінки Платежі, Контакти — заглушки `<ComingSoon>` з `microserviceKey`
+- Встановіть `NEXT_PUBLIC_{KEY}_URL` → сторінка автоматично підключить сервіс
 
 ## Технічний стек
 
-### Backend
-- **Django 4.2** + **Django REST Framework**
-- **PostgreSQL** — основна СУБД
-- **Celery** + **Redis** — черга задач
-- **MinIO** — S3-сумісне сховище статичних і медіа-файлів
-- **Mailpit** — SMTP-перехоплювач для розробки
-- **pytest** + **factory_boy** — тестування
-
-### Frontend
-- **Next.js** — React-фреймворк
-- **TailwindCSS** + **Heroicons**
-- **Redux** — управління станом
-- **Zod** — валідація даних
-- **Axios** — HTTP-запити
-
-### Інфраструктура
-- **Docker Compose** — локальна оркестрація
-- **Nginx** — зворотний проксі
+| Шар | Технологія |
+|-----|-----------|
+| Backend | Django 4.2 + DRF |
+| Database | PostgreSQL |
+| Queue | Celery + Redis |
+| Storage | MinIO (S3-compatible) |
+| Frontend | Next.js 14 + TailwindCSS |
+| State | Redux Toolkit + RTK Query |
+| Forms | react-hook-form + Zod |
+| Tests (unit) | pytest + factory_boy |
+| Tests (E2E) | Playwright |
+| Dev infra | Docker Compose + Nginx |
 
 ## Швидкий старт
 
-### Залежності
-- Docker та Docker Compose
-
-### Запуск
-
 ```bash
-# Клонувати репозиторій
-git clone <repo-url>
-cd Django-Apartment-Management
+# Клонувати
+git clone <repo-url> && cd Django-Apartment-Management
 
 # Запустити всі сервіси
 make up
 
-# Або вручну
-docker compose -f docker-compose.local.yml up --build
+# Після першого запуску
+make migrate && make seed
 ```
 
-### Після першого запуску
-
-```bash
-# Створити MinIO bucket (тільки при першому запуску)
-make minio-init
-
-# Наповнити демо-даними
-make seed
-
-# Створити суперкористувача
-make createsuperuser
-```
-
-### Доступні адреси
+## Адреси після `make up`
 
 | Сервіс | URL |
 |--------|-----|
-| Frontend | http://localhost:8080/ |
-| Кастомна адмін-панель | http://localhost:8080/admin |
+| Frontend | http://localhost:8080 |
 | Django Admin | http://localhost:8080/django-admin/ |
 | REST API | http://localhost:8080/api/v1/ |
-| Swagger UI | http://localhost:8080/swagger/redoc/ |
-| MinIO Console | http://localhost:9090/ |
-| Mailpit | http://localhost:8025/ |
-| Flower (Celery) | http://localhost:5555/ |
-
-### Облікові дані для розробки
-
-| Сервіс | Логін | Пароль |
-|--------|-------|--------|
-| Django Admin | admin@admin.com | admin123 |
-| MinIO | minioadmin | minioadmin123 |
-
-### Тестові користувачі (після `make seed`)
-
-Усі тестові акаунти мають пароль: **`Demo1234!`**
-
-| Роль | Email | Ім'я | Доступ |
-|------|-------|------|--------|
-| Диспетчер (staff) | dispatcher@demo.com | Олена Коваль | Кастомна адмін-панель `/admin` |
-| Охоронник | guard@demo.com | — | Портал охорони `/guard-portal` |
-| Мешканець | tenant@demo.com | — | Портал мешканця |
-| Мешканець (кв. 1) | resident1@demo.com | Іван Петренко | Портал мешканця |
-| Мешканець (кв. 3) | resident2@demo.com | Марія Шевченко | Портал мешканця |
-| Мешканець (кв. 5) | resident3@demo.com | Андрій Бондаренко | Портал мешканця |
+| API Docs | http://localhost:8080/api/v1/redoc/ |
+| MinIO | http://localhost:9090 |
+| Mailpit | http://localhost:8025 |
+| Flower | http://localhost:5555 |
 
 ## Тестування
 
 ```bash
-# Запустити всі тести
-make test
-
-# З покриттям
-make test-cov
+make test        # unit тести (pytest)
+make e2e-dev     # E2E тести (Playwright, піднімає стек)
+make e2e         # повторно запустити E2E (стек вже живий)
 ```
 
-## Сервіси Docker
+## Облікові дані (seed)
 
-| Сервіс | Опис |
-|--------|------|
-| `server` | Django backend |
-| `client` | Next.js frontend |
-| `postgres` | PostgreSQL база даних |
-| `minio` | MinIO сховище файлів |
-| `mailpit` | SMTP-перехоплювач |
-| `redis` | Брокер повідомлень |
-| `celeryworker` | Celery воркер |
-| `celerybeat` | Celery планувальник |
-| `flower` | Моніторинг Celery |
-| `nginx` | Зворотний проксі |
+| Роль | Email | Пароль |
+|------|-------|--------|
+| Диспетчер (staff) | dispatcher@demo.com | Demo1234! |
+| Охоронець | guard@demo.com | Demo1234! |
+| Мешканець | tenant@demo.com | Demo1234! |
+| Мешканець 1 | resident1@demo.com | Demo1234! |
+
+## Структура API
+
+```
+/api/v1/auth/        — аутентифікація (JWT cookie)
+/api/v1/profiles/    — профілі користувачів
+/api/v1/apartments/  — будинки, під'їзди, квартири
+/api/v1/issues/      — заявки на обслуговування
+/api/v1/news/        — новини порталу
+/api/v1/posts/       — публікації + оголошення будинку
+/api/v1/passes/      — перепустки охорани
+/api/v1/ratings/     — рейтинги
+/api/v1/reports/     — звіти про порушення
+/api/v1/site-settings/ — налаштування сайту
+```
 
 ## Ліцензія
 
-Business Source License 1.1 (BSL-1.1) — використання потребує письмового дозволу автора.
-
----
-
-Розробник: **Andriienko Dmytro**
+BSL-1.1 — дивіться LICENSE.
