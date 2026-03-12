@@ -82,6 +82,7 @@ THIRD_PARTY_APPS = [
     "phonenumber_field",
     "djoser",
     "social_django",
+    "autoslug",
     "taggit",
     "django_filters",
     "djcelery_email",
@@ -98,6 +99,7 @@ LOCAL_APPS = [
     "apps.ratings",
     "apps.posts",
     "apps.passes",
+    "apps.news",
     "apps.site_settings",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

@@ -1,3 +1,4 @@
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -29,8 +30,8 @@ class NewsDetailAPIView(APIView):
 
     def get(self, request, slug, *args, **kwargs):
         news = get_object_or_404(News, slug=slug, is_published=True)
-        News.objects.filter(pk=news.pk).update(views_count=news.views_count + 1)
-        news.views_count += 1
+        News.objects.filter(pk=news.pk).update(views_count=F("views_count") + 1)
+        news.refresh_from_db()
         serializer = NewsDetailSerializer(news, context={"request": request})
         return Response({"news_item": serializer.data})
 

@@ -90,3 +90,27 @@ class IssueFactory(DjangoModelFactory):
     description = factory.Faker("text", max_nb_chars=200)
     status = "reported"
     priority = "low"
+
+
+# ── News ──────────────────────────────────────────────────────────────────────
+
+class NewsCategoryFactory(DjangoModelFactory):
+    class Meta:
+        model = "news.NewsCategory"
+
+    name = factory.Sequence(lambda n: f"Category {n}")
+    color = "#2F6FED"
+
+
+class NewsFactory(DjangoModelFactory):
+    class Meta:
+        model = "news.News"
+
+    title = factory.Sequence(lambda n: f"News Article {n}")
+    excerpt = factory.Faker("sentence", nb_words=10)
+    body = factory.Faker("paragraph", nb_sentences=5)
+    author = factory.SubFactory(AdminUserFactory)
+    is_published = False
+    pinned = False
+    views_count = 0
+    external_url = ""
