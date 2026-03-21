@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#FFF8F7"/>
+  <!-- Ground -->
+  <rect x="0" y="240" width="400" height="60" fill="#FDECEA"/>
+  <!-- Broken gear (main) -->
+  <path d="M180 80 L188 68 L196 76 L207 71 L210 82 L222 83 L224 94 L235 99 L231 110 L240 118 L234 128 L239 139 L229 145 L228 157 L217 160 L213 171 L202 169 L196 178 L186 173 L180 180 L168 177 L162 186 L151 181 L148 170 L136 168 L134 156 L122 151 L124 140 L115 132 L121 121 L116 111 L126 105 L127 93 L139 91 L141 79 L153 76 L158 66 L170 70 Z" fill="#FDECEA" stroke="#C0392B" stroke-width="2.5"/>
+  <!-- Inner broken circle -->
+  <circle cx="180" cy="123" r="30" fill="white" stroke="#C0392B" stroke-width="2.5"/>
+  <!-- Crack in gear -->
+  <path d="M163 108 L175 118 L170 130 L182 138" stroke="#C0392B" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="0"/>
+  <!-- Warning triangle -->
+  <path d="M278 110 L320 180 L236 180 Z" fill="#C0392B" opacity="0.85"/>
+  <path d="M278 110 L320 180 L236 180 Z" fill="none" stroke="#8B0000" stroke-width="2"/>
+  <!-- Exclamation in triangle -->
+  <rect x="273" y="128" width="10" height="28" rx="5" fill="white"/>
+  <circle cx="278" cy="168" r="5" fill="white"/>
+  <!-- Small gears (broken fragments) -->
+  <circle cx="120" cy="200" r="14" fill="none" stroke="#C0392B" stroke-width="2" opacity="0.4"/>
+  <circle cx="330" cy="90" r="10" fill="none" stroke="#C0392B" stroke-width="2" opacity="0.35"/>
+  <!-- Smoke/steam lines -->
+  <path d="M155 65 Q150 55 155 45 Q160 35 155 25" stroke="#C0392B" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.3" stroke-dasharray="4 3"/>
+  <path d="M175 58 Q170 48 175 38 Q180 28 175 18" stroke="#C0392B" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.2" stroke-dasharray="4 3"/>
+</svg>

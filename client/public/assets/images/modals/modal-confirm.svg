@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" fill="none">
+  <!-- Soft green bg circle -->
+  <circle cx="100" cy="72" r="60" fill="#DCFCE7" opacity="0.7"/>
+  <!-- Big checkmark circle -->
+  <circle cx="100" cy="72" r="40" fill="#2D8A4E"/>
+  <!-- Checkmark -->
+  <path d="M82 72 L94 84 L120 56" stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Person silhouette (thumbs up) -->
+  <!-- Head -->
+  <circle cx="152" cy="48" r="14" fill="#F59E0B"/>
+  <!-- Smiley -->
+  <circle cx="148" cy="45" r="2" fill="#1C2B3A"/>
+  <circle cx="156" cy="45" r="2" fill="#1C2B3A"/>
+  <path d="M146 52 Q152 57 158 52" stroke="#1C2B3A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <!-- Body -->
+  <path d="M140 62 Q140 88 148 96 L158 96 Q166 88 166 62" fill="#3D7A8A" opacity="0.8"/>
+  <!-- Thumbs up arm -->
+  <path d="M140 70 L120 68" stroke="#F59E0B" stroke-width="7" stroke-linecap="round"/>
+  <!-- Thumb fist shape -->
+  <rect x="108" y="58" width="14" height="18" rx="5" fill="#F59E0B"/>
+  <!-- Thumb up part -->
+  <rect x="116" y="50" width="8" height="12" rx="4" fill="#F59E0B"/>
+  <!-- Small sparkles -->
+  <path d="M58 32 L60 26 L62 32 L68 34 L62 36 L60 42 L58 36 L52 34 Z" fill="#2D8A4E" opacity="0.4"/>
+  <path d="M170 100 L171.5 96 L173 100 L177 101.5 L173 103 L171.5 107 L170 103 L166 101.5 Z" fill="#2D8A4E" opacity="0.4"/>
+</svg>

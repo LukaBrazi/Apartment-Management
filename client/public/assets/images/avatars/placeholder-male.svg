@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="64" fill="#EBF3F5"/>
+  <!-- Border ring -->
+  <circle cx="64" cy="64" r="62" stroke="#CBD5E1" stroke-width="2" fill="none"/>
+  <!-- Head -->
+  <circle cx="64" cy="44" r="22" fill="#3D7A8A"/>
+  <!-- Slight hair detail (flat cap line) -->
+  <rect x="42" y="30" width="44" height="8" rx="4" fill="#1C2B3A" opacity="0.6"/>
+  <!-- Body / shoulders (broader for male) -->
+  <path d="M16 112 C16 82 38 70 64 70 C90 70 112 82 112 112" fill="#3D7A8A"/>
+  <!-- Collar / shirt detail -->
+  <path d="M52 70 L64 82 L76 70" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</svg>

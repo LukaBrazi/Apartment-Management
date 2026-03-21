@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <!-- Soft background circle -->
+  <circle cx="120" cy="115" r="90" fill="#F8FAFC"/>
+  <!-- Magnifying glass circle -->
+  <circle cx="104" cy="100" r="52" fill="white" stroke="#E2E5E8" stroke-width="3"/>
+  <circle cx="104" cy="100" r="44" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2"/>
+  <!-- Handle -->
+  <line x1="140" y1="136" x2="172" y2="168" stroke="#94A3B8" stroke-width="10" stroke-linecap="round"/>
+  <!-- X inside magnifying glass -->
+  <line x1="90" y1="86" x2="118" y2="114" stroke="#94A3B8" stroke-width="5" stroke-linecap="round"/>
+  <line x1="118" y1="86" x2="90" y2="114" stroke="#94A3B8" stroke-width="5" stroke-linecap="round"/>
+  <!-- Small dots to suggest "no results" -->
+  <circle cx="50" cy="60" r="5" fill="#E2E5E8"/>
+  <circle cx="170" cy="55" r="4" fill="#E2E5E8"/>
+  <circle cx="185" cy="90" r="3" fill="#E2E5E8"/>
+  <circle cx="40" cy="160" r="4" fill="#E2E5E8"/>
+  <circle cx="195" cy="155" r="5" fill="#E2E5E8"/>
+</svg>

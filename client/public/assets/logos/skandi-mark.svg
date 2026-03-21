@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <!-- Building body -->
+  <rect x="4" y="18" width="32" height="20" rx="2" fill="#3D7A8A"/>
+  <!-- Windows row 1 -->
+  <rect x="8" y="22" width="6" height="5" rx="0.5" fill="white" opacity="0.85"/>
+  <rect x="17" y="22" width="6" height="5" rx="0.5" fill="white" opacity="0.85"/>
+  <rect x="26" y="22" width="6" height="5" rx="0.5" fill="white" opacity="0.85"/>
+  <!-- Windows row 2 -->
+  <rect x="8" y="30" width="6" height="5" rx="0.5" fill="white" opacity="0.65"/>
+  <rect x="26" y="30" width="6" height="5" rx="0.5" fill="white" opacity="0.65"/>
+  <!-- Door -->
+  <rect x="17" y="30" width="6" height="8" rx="0.5" fill="#EBF3F5" opacity="0.9"/>
+  <!-- Roof -->
+  <path d="M2 19 L20 5 L38 19" stroke="#1C2B3A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Chimney -->
+  <rect x="25" y="8" width="4" height="7" rx="1" fill="#1C2B3A"/>
+</svg>

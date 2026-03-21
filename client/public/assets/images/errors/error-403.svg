@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#F7F6F2"/>
+  <!-- Ground -->
+  <rect x="0" y="240" width="400" height="60" fill="#EBF3F5"/>
+  <!-- Door frame -->
+  <rect x="140" y="100" width="120" height="150" rx="6" fill="#1C2B3A" opacity="0.9"/>
+  <!-- Door -->
+  <rect x="150" y="110" width="100" height="130" rx="4" fill="#3D7A8A"/>
+  <!-- Door panels decorative -->
+  <rect x="158" y="118" width="40" height="50" rx="3" fill="#2D6577" opacity="0.6"/>
+  <rect x="202" y="118" width="40" height="50" rx="3" fill="#2D6577" opacity="0.6"/>
+  <rect x="158" y="176" width="40" height="50" rx="3" fill="#2D6577" opacity="0.6"/>
+  <rect x="202" y="176" width="40" height="50" rx="3" fill="#2D6577" opacity="0.6"/>
+  <!-- Door handle -->
+  <circle cx="236" cy="188" r="6" fill="#F59E0B"/>
+  <!-- Large lock icon centered on door -->
+  <!-- Lock body -->
+  <rect x="188" y="148" width="24" height="18" rx="3" fill="#1C2B3A"/>
+  <!-- Lock shackle -->
+  <path d="M193 148 L193 141 Q200 134 207 141 L207 148" stroke="#1C2B3A" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Keyhole -->
+  <circle cx="200" cy="156" r="3" fill="#3D7A8A"/>
+  <rect x="198" y="156" width="4" height="5" rx="1" fill="#3D7A8A"/>
+  <!-- Prohibition circle overlay -->
+  <circle cx="288" cy="85" r="42" fill="white" stroke="#C0392B" stroke-width="4" opacity="0.9"/>
+  <!-- Diagonal line in prohibition -->
+  <line x1="259" y1="56" x2="317" y2="114" stroke="#C0392B" stroke-width="6" stroke-linecap="round"/>
+  <!-- Chain hanging from lock -->
+  <path d="M188 166 Q175 175 165 186" stroke="#94A3B8" stroke-width="3" stroke-dasharray="5 3" stroke-linecap="round" fill="none"/>
+  <!-- Steps / floor detail -->
+  <rect x="118" y="248" width="164" height="6" rx="2" fill="#CBD5E1"/>
+  <rect x="126" y="242" width="148" height="8" rx="2" fill="#E2E8F0"/>
+</svg>

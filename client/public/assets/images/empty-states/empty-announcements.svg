@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <!-- Soft background circle -->
+  <circle cx="120" cy="115" r="90" fill="#F1F5F9"/>
+  <!-- Mailbox post -->
+  <rect x="112" y="155" width="16" height="50" rx="2" fill="#94A3B8"/>
+  <!-- Mailbox body -->
+  <rect x="60" y="105" width="120" height="70" rx="8" fill="#CBD5E1" stroke="#94A3B8" stroke-width="2"/>
+  <!-- Mailbox arch top -->
+  <path d="M60 125 Q60 105 80 105 L160 105 Q180 105 180 125" fill="#94A3B8"/>
+  <!-- Mail slot -->
+  <rect x="80" y="140" width="80" height="8" rx="4" fill="#64748B"/>
+  <!-- Flag (down = empty) -->
+  <rect x="180" y="115" width="4" height="25" rx="1" fill="#64748B"/>
+  <rect x="184" y="115" width="14" height="10" rx="1" fill="#94A3B8"/>
+  <!-- Flying envelope (going away = nothing) -->
+  <g opacity="0.35" transform="translate(130, 50) rotate(15)">
+    <rect x="0" y="0" width="50" height="36" rx="4" fill="#CBD5E1" stroke="#94A3B8" stroke-width="1.5"/>
+    <path d="M0 0 L25 20 L50 0" stroke="#94A3B8" stroke-width="1.5" fill="none"/>
+  </g>
+  <!-- Dotted line (flying path) -->
+  <path d="M145 80 Q160 70 170 60" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+</svg>

@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" fill="none">
+  <!-- Gradient background -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F7F6F2"/>
+      <stop offset="100%" stop-color="#EBF3F5"/>
+    </linearGradient>
+    <linearGradient id="buildingGrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#3D7A8A"/>
+      <stop offset="100%" stop-color="#1C2B3A"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="400" fill="url(#bgGrad)"/>
+  <!-- Ground / horizon -->
+  <ellipse cx="600" cy="420" rx="800" ry="80" fill="#EBF3F5" opacity="0.8"/>
+  <!-- Sun / warm light from left -->
+  <circle cx="120" cy="100" r="60" fill="#F59E0B" opacity="0.15"/>
+  <circle cx="120" cy="100" r="40" fill="#F59E0B" opacity="0.2"/>
+
+  <!-- MAIN APARTMENT BUILDING (center-left) -->
+  <!-- Building body -->
+  <rect x="380" y="100" width="280" height="280" rx="6" fill="#3D7A8A"/>
+  <!-- Building top / roof line -->
+  <rect x="360" y="94" width="320" height="12" rx="3" fill="#1C2B3A"/>
+  <!-- Balconies + windows (floor pattern) -->
+  <!-- Floor 1 windows -->
+  <rect x="396" y="120" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <rect x="446" y="120" width="36" height="28" rx="3" fill="#F59E0B" opacity="0.6"/>
+  <rect x="496" y="120" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <rect x="546" y="120" width="36" height="28" rx="3" fill="white" opacity="0.7"/>
+  <rect x="596" y="120" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <!-- Floor 2 windows -->
+  <rect x="396" y="166" width="36" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="446" y="166" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <rect x="496" y="166" width="36" height="28" rx="3" fill="#F59E0B" opacity="0.5"/>
+  <rect x="546" y="166" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <rect x="596" y="166" width="36" height="28" rx="3" fill="white" opacity="0.7"/>
+  <!-- Floor 3 windows -->
+  <rect x="396" y="212" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <rect x="446" y="212" width="36" height="28" rx="3" fill="white" opacity="0.75"/>
+  <rect x="496" y="212" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <rect x="546" y="212" width="36" height="28" rx="3" fill="white" opacity="0.85"/>
+  <rect x="596" y="212" width="36" height="28" rx="3" fill="#F59E0B" opacity="0.55"/>
+  <!-- Resident silhouette in highlighted window (floor 2, window 2) -->
+  <rect x="446" y="166" width="36" height="28" rx="3" fill="#F59E0B" opacity="0.7"/>
+  <!-- Silhouette in window -->
+  <ellipse cx="464" cy="176" rx="7" ry="8" fill="#1C2B3A" opacity="0.6"/>
+  <path d="M452 194 Q452 184 464 182 Q476 184 476 194" fill="#1C2B3A" opacity="0.5"/>
+  <!-- Ground floor / entrance -->
+  <rect x="460" y="316" width="80" height="64" rx="4" fill="#2D6577"/>
+  <rect x="480" y="316" width="40" height="64" rx="4" fill="#EBF3F5" opacity="0.7"/>
+  <!-- Building columns -->
+  <rect x="380" y="100" width="8" height="280" fill="#1C2B3A" opacity="0.15"/>
+  <rect x="652" y="100" width="8" height="280" fill="#1C2B3A" opacity="0.15"/>
+
+  <!-- SECONDARY BUILDING (left, shorter) -->
+  <rect x="160" y="170" width="180" height="210" rx="4" fill="#5BA3B5" opacity="0.7"/>
+  <rect x="145" y="164" width="210" height="10" rx="2" fill="#3D7A8A" opacity="0.8"/>
+  <!-- Windows small building -->
+  <rect x="174" y="186" width="26" height="20" rx="2" fill="white" opacity="0.7"/>
+  <rect x="210" y="186" width="26" height="20" rx="2" fill="white" opacity="0.65"/>
+  <rect x="246" y="186" width="26" height="20" rx="2" fill="white" opacity="0.7"/>
+  <rect x="174" y="218" width="26" height="20" rx="2" fill="white" opacity="0.6"/>
+  <rect x="210" y="218" width="26" height="20" rx="2" fill="#F59E0B" opacity="0.4"/>
+  <rect x="246" y="218" width="26" height="20" rx="2" fill="white" opacity="0.7"/>
+  <rect x="174" y="250" width="26" height="20" rx="2" fill="white" opacity="0.7"/>
+  <rect x="210" y="250" width="26" height="20" rx="2" fill="white" opacity="0.65"/>
+  <rect x="246" y="250" width="26" height="20" rx="2" fill="white" opacity="0.7"/>
+
+  <!-- FLOATING UI ELEMENTS (right side) -->
+  <!-- Phone card -->
+  <rect x="760" y="80" width="120" height="200" rx="16" fill="white" opacity="0.95" filter="drop-shadow(0 4px 16px rgba(28,43,58,0.12))"/>
+  <rect x="770" y="100" width="100" height="160" rx="8" fill="#F7F6F2"/>
+  <!-- Phone screen mini UI -->
+  <rect x="778" y="108" width="84" height="12" rx="6" fill="#3D7A8A" opacity="0.7"/>
+  <rect x="778" y="126" width="60" height="8" rx="4" fill="#E2E5E8"/>
+  <rect x="778" y="140" width="84" height="8" rx="4" fill="#E2E5E8"/>
+  <rect x="778" y="154" width="50" height="8" rx="4" fill="#E2E5E8"/>
+  <!-- Checkmark badge on phone -->
+  <circle cx="860" cy="98" r="14" fill="#2D8A4E"/>
+  <path d="M853 98 L858 103 L867 90" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Calendar card (floating) -->
+  <rect x="900" y="140" width="140" height="110" rx="12" fill="white" opacity="0.95" filter="drop-shadow(0 4px 16px rgba(28,43,58,0.1))"/>
+  <!-- Calendar header -->
+  <rect x="900" y="140" width="140" height="32" rx="12" fill="#3D7A8A"/>
+  <rect x="900" y="158" width="140" height="14" rx="0" fill="#3D7A8A"/>
+  <text x="918" y="162" font-family="Inter, system-ui, sans-serif" font-size="11" fill="white" font-weight="600" opacity="0.9">Березень 2026</text>
+  <!-- Calendar grid dots -->
+  <circle cx="918" cy="186" r="4" fill="#E2E5E8"/>
+  <circle cx="938" cy="186" r="4" fill="#E2E5E8"/>
+  <circle cx="958" cy="186" r="4" fill="#3D7A8A"/>
+  <circle cx="978" cy="186" r="4" fill="#E2E5E8"/>
+  <circle cx="998" cy="186" r="4" fill="#E2E5E8"/>
+  <circle cx="918" cy="206" r="4" fill="#E2E5E8"/>
+  <circle cx="938" cy="206" r="4" fill="#F59E0B"/>
+  <circle cx="958" cy="206" r="4" fill="#E2E5E8"/>
+  <circle cx="978" cy="206" r="4" fill="#E2E5E8"/>
+  <circle cx="998" cy="206" r="4" fill="#E2E5E8"/>
+  <circle cx="1018" cy="206" r="4" fill="#E2E5E8"/>
+  <!-- Calendar checkmark highlight -->
+  <circle cx="958" cy="186" r="9" fill="#3D7A8A"/>
+  <path d="M954 186 L957 189 L963 182" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Checkmark floating bubble -->
+  <circle cx="860" cy="300" r="28" fill="#2D8A4E" opacity="0.15" filter="drop-shadow(0 2px 8px rgba(45,138,78,0.2))"/>
+  <circle cx="860" cy="300" r="20" fill="#2D8A4E"/>
+  <path d="M851 300 L857 306 L870 290" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Trees / greenery (decorative) -->
+  <ellipse cx="100" cy="350" rx="35" ry="20" fill="#2D8A4E" opacity="0.25"/>
+  <rect x="96" y="330" width="8" height="30" rx="2" fill="#1C2B3A" opacity="0.2"/>
+  <ellipse cx="1100" cy="345" rx="30" ry="18" fill="#2D8A4E" opacity="0.2"/>
+  <rect x="1096" y="327" width="8" height="28" rx="2" fill="#1C2B3A" opacity="0.15"/>
+  <!-- Path / sidewalk -->
+  <rect x="380" y="376" width="280" height="20" rx="4" fill="#CBD5E1" opacity="0.5"/>
+</svg>

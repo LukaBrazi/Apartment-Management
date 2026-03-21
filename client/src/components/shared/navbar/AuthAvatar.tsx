@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthNavigation } from "@/hooks";
 import { useUserProfile } from "@/hooks/useUseProfile";
-import { BookMarked, CircleUser, LogOut, User, Users } from "lucide-react";
+import { BookMarked, LogOut, User, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
@@ -36,7 +37,13 @@ export default function AuthAvatar() {
 						<Avatar className="border-pumpkin cursor-pointer border-2">
 							<AvatarImage alt="auth image" src={profile.avatar} />
 							<AvatarFallback>
-								<CircleUser className="dark:text-platinum size-8" />
+								<Image
+									src="/assets/images/avatars/placeholder-neutral.svg"
+									alt="Avatar"
+									width={32}
+									height={32}
+									className="rounded-full"
+								/>
 							</AvatarFallback>
 						</Avatar>
 					</DropdownMenuTrigger>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Sky background -->
+  <rect width="400" height="300" fill="#F7F6F2"/>
+  <!-- Ground -->
+  <rect x="0" y="240" width="400" height="60" rx="0" fill="#EBF3F5"/>
+  <!-- Building (slightly leaning/confused) -->
+  <g transform="rotate(-4, 140, 200)">
+    <rect x="80" y="120" width="120" height="130" rx="4" fill="#3D7A8A" opacity="0.8"/>
+    <rect x="90" y="134" width="20" height="18" rx="2" fill="white" opacity="0.7"/>
+    <rect x="120" y="134" width="20" height="18" rx="2" fill="white" opacity="0.7"/>
+    <rect x="150" y="134" width="20" height="18" rx="2" fill="white" opacity="0.7"/>
+    <rect x="90" y="162" width="20" height="18" rx="2" fill="white" opacity="0.5"/>
+    <rect x="120" y="162" width="20" height="18" rx="2" fill="white" opacity="0.7"/>
+    <rect x="150" y="162" width="20" height="18" rx="2" fill="white" opacity="0.5"/>
+    <!-- Door -->
+    <rect x="125" y="200" width="30" height="50" rx="2" fill="white" opacity="0.8"/>
+    <!-- Roof -->
+    <path d="M72 122 L140 80 L208 122" fill="#1C2B3A" opacity="0.7"/>
+  </g>
+  <!-- Large "404" text -->
+  <text x="230" y="160" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="700" fill="#1C2B3A" opacity="0.12">404</text>
+  <!-- Question marks floating -->
+  <text x="290" y="110" font-family="Inter, system-ui, sans-serif" font-size="36" font-weight="700" fill="#F59E0B" opacity="0.8">?</text>
+  <text x="330" y="80" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="700" fill="#3D7A8A" opacity="0.6">?</text>
+  <text x="260" y="75" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="#F59E0B" opacity="0.5">?</text>
+  <!-- Confused character (simple flat figure) -->
+  <!-- Head -->
+  <circle cx="320" cy="168" r="28" fill="#F59E0B" opacity="0.85"/>
+  <!-- Confused face -->
+  <circle cx="312" cy="164" r="3" fill="#1C2B3A"/>
+  <circle cx="328" cy="164" r="3" fill="#1C2B3A"/>
+  <!-- Wavy confused mouth -->
+  <path d="M310 178 Q316 174 320 178 Q324 182 330 178" stroke="#1C2B3A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Raised eyebrow (confused) -->
+  <path d="M309 157 Q314 153 318 157" stroke="#1C2B3A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Squished eyebrow -->
+  <path d="M323 155 Q328 158 332 155" stroke="#1C2B3A" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Body -->
+  <path d="M300 196 Q300 230 310 240 L330 240 Q340 230 340 196" fill="#3D7A8A" opacity="0.7"/>
+  <!-- Arms (shrugging up) -->
+  <path d="M300 205 Q280 185 270 178" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.85"/>
+  <path d="M340 205 Q360 185 370 178" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.85"/>
+</svg>

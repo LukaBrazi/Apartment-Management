@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="64" fill="#EBF3F5"/>
+  <!-- Border ring -->
+  <circle cx="64" cy="64" r="62" stroke="#CBD5E1" stroke-width="2" fill="none"/>
+  <!-- Hair (longer, behind head) -->
+  <ellipse cx="64" cy="50" rx="26" ry="28" fill="#1C2B3A" opacity="0.5"/>
+  <rect x="38" y="50" width="8" height="26" rx="4" fill="#1C2B3A" opacity="0.5"/>
+  <rect x="82" y="50" width="8" height="26" rx="4" fill="#1C2B3A" opacity="0.5"/>
+  <!-- Head -->
+  <circle cx="64" cy="46" r="20" fill="#3D7A8A"/>
+  <!-- Body / shoulders (narrower for female) -->
+  <path d="M22 112 C22 84 42 72 64 72 C86 72 106 84 106 112" fill="#3D7A8A"/>
+</svg>

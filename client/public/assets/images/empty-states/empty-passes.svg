@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <!-- Soft background circle -->
+  <circle cx="120" cy="110" r="90" fill="#F1F5F9"/>
+  <!-- Road / surface -->
+  <ellipse cx="120" cy="175" rx="75" ry="12" fill="#E2E8F0"/>
+  <!-- Car body -->
+  <rect x="60" y="130" width="120" height="44" rx="8" fill="#CBD5E1"/>
+  <!-- Car roof -->
+  <path d="M80 130 L90 108 L150 108 L160 130" fill="#94A3B8" stroke="#64748B" stroke-width="1.5"/>
+  <!-- Windshields -->
+  <rect x="94" y="112" width="52" height="18" rx="3" fill="#EBF3F5" opacity="0.8"/>
+  <!-- Wheels -->
+  <circle cx="88" cy="174" r="16" fill="#475569"/>
+  <circle cx="88" cy="174" r="9" fill="#CBD5E1"/>
+  <circle cx="88" cy="174" r="4" fill="#475569"/>
+  <circle cx="152" cy="174" r="16" fill="#475569"/>
+  <circle cx="152" cy="174" r="9" fill="#CBD5E1"/>
+  <circle cx="152" cy="174" r="4" fill="#475569"/>
+  <!-- Headlights -->
+  <rect x="60" y="142" width="12" height="8" rx="2" fill="#FEF3C7" stroke="#D97706" stroke-width="1"/>
+  <rect x="168" y="142" width="12" height="8" rx="2" fill="#FEE2E2" stroke="#C0392B" stroke-width="1"/>
+  <!-- No-entry / empty state circle overlay -->
+  <circle cx="170" cy="75" r="36" fill="white" stroke="#94A3B8" stroke-width="3"/>
+  <circle cx="170" cy="75" r="28" fill="#F1F5F9"/>
+  <!-- Horizontal no-entry bar -->
+  <rect x="149" y="69" width="42" height="12" rx="6" fill="#94A3B8"/>
+</svg>

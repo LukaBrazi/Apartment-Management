@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none">
+  <!-- Soft multi-color bg -->
+  <circle cx="120" cy="95" r="72" fill="#DCFCE7" opacity="0.5"/>
+  <!-- Large checkmark -->
+  <circle cx="120" cy="95" r="44" fill="#2D8A4E"/>
+  <path d="M100 95 L114 110 L142 74" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Celebrating person -->
+  <!-- Head -->
+  <circle cx="188" cy="62" r="16" fill="#F59E0B"/>
+  <!-- Happy face -->
+  <circle cx="183" cy="59" r="2.5" fill="#1C2B3A"/>
+  <circle cx="193" cy="59" r="2.5" fill="#1C2B3A"/>
+  <path d="M181 67 Q188 74 195 67" stroke="#1C2B3A" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Body -->
+  <path d="M174 78 Q174 108 182 116 L196 116 Q204 108 202 78" fill="#3D7A8A" opacity="0.8"/>
+  <!-- Arms raised in celebration -->
+  <path d="M174 84 L158 66" stroke="#F59E0B" stroke-width="8" stroke-linecap="round"/>
+  <path d="M202 84 L218 66" stroke="#F59E0B" stroke-width="8" stroke-linecap="round"/>
+  <!-- Confetti particles -->
+  <rect x="55" y="35" width="10" height="6" rx="2" fill="#F59E0B" transform="rotate(30 55 35)"/>
+  <rect x="80" y="22" width="8" height="5" rx="2" fill="#4A90D9" transform="rotate(-20 80 22)"/>
+  <rect x="155" y="28" width="10" height="5" rx="2" fill="#2D8A4E" transform="rotate(15 155 28)"/>
+  <rect x="210" y="42" width="8" height="5" rx="2" fill="#F59E0B" transform="rotate(-35 210 42)"/>
+  <rect x="36" y="70" width="8" height="5" rx="2" fill="#4A90D9" transform="rotate(20 36 70)"/>
+  <rect x="220" y="110" width="10" height="5" rx="2" fill="#C0392B" transform="rotate(-10 220 110)"/>
+  <!-- Round confetti dots -->
+  <circle cx="50" cy="52" r="4" fill="#C0392B" opacity="0.7"/>
+  <circle cx="195" cy="30" r="3" fill="#4A90D9" opacity="0.7"/>
+  <circle cx="68" cy="100" r="3" fill="#F59E0B" opacity="0.7"/>
+  <circle cx="214" cy="78" r="4" fill="#2D8A4E" opacity="0.7"/>
+  <circle cx="40" cy="125" r="3" fill="#F59E0B" opacity="0.5"/>
+  <!-- Stars/sparkles -->
+  <path d="M170 148 L172 142 L174 148 L180 150 L174 152 L172 158 L170 152 L164 150 Z" fill="#F59E0B" opacity="0.6"/>
+  <path d="M58 144 L59.5 140 L61 144 L65 145.5 L61 147 L59.5 151 L58 147 L54 145.5 Z" fill="#4A90D9" opacity="0.5"/>
+</svg>

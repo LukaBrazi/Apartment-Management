@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" fill="none">
+  <!-- Background -->
+  <rect width="320" height="200" rx="12" fill="#F0FDF4"/>
+  <!-- Soft circle bg -->
+  <circle cx="160" cy="90" r="64" fill="#2D8A4E" opacity="0.1"/>
+  <!-- Large checkmark circle -->
+  <circle cx="160" cy="90" r="42" fill="#2D8A4E"/>
+  <!-- Inner ring -->
+  <circle cx="160" cy="90" r="38" fill="none" stroke="white" stroke-width="1.5" opacity="0.3"/>
+  <!-- Big checkmark -->
+  <path d="M140 90 L153 104 L180 72" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Small stars/sparkles decoration -->
+  <path d="M106 56 L108 50 L110 56 L116 58 L110 60 L108 66 L106 60 L100 58 Z" fill="#2D8A4E" opacity="0.4"/>
+  <path d="M208 62 L209.5 58 L211 62 L215 63.5 L211 65 L209.5 69 L208 65 L204 63.5 Z" fill="#2D8A4E" opacity="0.4"/>
+  <path d="M218 108 L219 105 L220 108 L223 109 L220 110 L219 113 L218 110 L215 109 Z" fill="#2D8A4E" opacity="0.3"/>
+  <!-- Status label -->
+  <rect x="100" y="156" width="120" height="28" rx="14" fill="#2D8A4E"/>
+  <text x="160" y="175" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="white" text-anchor="middle">Виконано</text>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <!-- Soft background circle -->
+  <circle cx="120" cy="110" r="90" fill="#DCFCE7"/>
+  <!-- Building outline (apartment) -->
+  <rect x="70" y="80" width="100" height="80" rx="4" fill="#F7F6F2" stroke="#2D8A4E" stroke-width="2"/>
+  <!-- Roof -->
+  <path d="M62 82 L120 50 L178 82" stroke="#2D8A4E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Windows (happy faces peeking) -->
+  <!-- Left window -->
+  <rect x="78" y="92" width="24" height="22" rx="2" fill="#EBF3F5" stroke="#2D8A4E" stroke-width="1.5"/>
+  <!-- Happy face left -->
+  <circle cx="86" cy="100" r="2" fill="#2D8A4E"/>
+  <circle cx="94" cy="100" r="2" fill="#2D8A4E"/>
+  <path d="M84 106 Q90 111 96 106" stroke="#2D8A4E" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <!-- Right window -->
+  <rect x="138" y="92" width="24" height="22" rx="2" fill="#EBF3F5" stroke="#2D8A4E" stroke-width="1.5"/>
+  <!-- Happy face right -->
+  <circle cx="146" cy="100" r="2" fill="#2D8A4E"/>
+  <circle cx="154" cy="100" r="2" fill="#2D8A4E"/>
+  <path d="M144 106 Q150 111 156 106" stroke="#2D8A4E" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <!-- Door -->
+  <rect x="108" y="120" width="24" height="40" rx="2" fill="#EBF3F5" stroke="#2D8A4E" stroke-width="1.5"/>
+  <!-- Big checkmark -->
+  <circle cx="120" cy="170" r="28" fill="#2D8A4E"/>
+  <path d="M108 170 L117 179 L134 160" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Small decorative tools -->
+  <g opacity="0.4">
+    <!-- Wrench left -->
+    <path d="M52 150 C48 146 48 140 52 136 L60 144 L56 148 Z" stroke="#2D8A4E" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <rect x="54" y="144" width="14" height="4" rx="1" transform="rotate(45 54 144)" fill="#2D8A4E" opacity="0.6"/>
+    <!-- Screwdriver right -->
+    <line x1="182" y1="136" x2="196" y2="150" stroke="#2D8A4E" stroke-width="2" stroke-linecap="round"/>
+    <rect x="179" y="132" width="6" height="9" rx="1" transform="rotate(45 179 132)" fill="#2D8A4E" opacity="0.6"/>
+  </g>
+</svg>
