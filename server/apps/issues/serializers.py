@@ -77,23 +77,23 @@ class IssueSerializer(serializers.ModelSerializer):
     def get_view_count(self, obj: Issue) -> int:
         """Get the number of views the issue has.
 
+        Uses pre-annotated `view_count` if available (set by list views),
+        otherwise falls back to a direct query (used on detail views).
+
         Args:
             obj (Issue): The issue.
 
         Returns:
             int: The number of views the issue has.
         """
+        if hasattr(obj, "view_count"):
+            return obj.view_count
 
-        # Get the content type
+        # Fallback for detail view (single query, acceptable)
         content_type = ContentType.objects.get_for_model(obj)
-
-        # Get the number of views
-        views = ContentView.objects.filter(
+        return ContentView.objects.filter(
             content_type=content_type, object_id=obj.pkid
         ).count()
-
-        # Return the number of views
-        return views
 
 
 # Issue Create Serializer (tenant-facing — no status/priority, has location_note)
@@ -217,3 +217,16 @@ class IssueAdminUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Issue
         fields = ["status", "priority", "assigned_to_username"]
+
+    def validate_assigned_to_username(self, user):
+        if user is not None:
+            from apps.profiles.models import Profile
+
+            try:
+                if user.profile.occupation == Profile.Occupation.TENANT:
+                    raise serializers.ValidationError(
+                        "Мешканця не можна призначити виконавцем заявки."
+                    )
+            except Profile.DoesNotExist:
+                pass
+        return user

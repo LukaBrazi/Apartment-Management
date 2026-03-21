@@ -194,6 +194,7 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
             "occupation",
             "phone_number",
         ]
+        read_only_fields = ["occupation"]
 
 
 class AdminCreateUserSerializer(serializers.Serializer):
@@ -256,3 +257,32 @@ class AvatarUploadSerializer(serializers.ModelSerializer):
         # Attributes
         model = Profile
         fields = ["avatar"]
+
+    def validate_avatar(self, value):
+        """Validate avatar file: type and size constraints."""
+        allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+        max_size_mb = 5
+
+        # Check content type
+        if hasattr(value, "content_type") and value.content_type not in allowed_types:
+            raise serializers.ValidationError(
+                f"Unsupported file type: {value.content_type}. "
+                "Allowed types: JPEG, PNG, WebP, GIF."
+            )
+
+        # Check extension as fallback
+        import os
+        ext = os.path.splitext(value.name)[1].lower()
+        allowed_exts = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+        if ext not in allowed_exts:
+            raise serializers.ValidationError(
+                f"Invalid file extension '{ext}'. Allowed: .jpg, .jpeg, .png, .webp, .gif"
+            )
+
+        # Check file size
+        if value.size > max_size_mb * 1024 * 1024:
+            raise serializers.ValidationError(
+                f"File too large. Maximum size is {max_size_mb} MB."
+            )
+
+        return value

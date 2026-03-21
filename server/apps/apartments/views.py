@@ -118,6 +118,7 @@ class BuildingListAPIView(generics.ListAPIView):
     serializer_class = BuildingSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "buildings"
+    pagination_class = None
 
 
 class EntranceListAPIView(generics.ListAPIView):
@@ -126,6 +127,7 @@ class EntranceListAPIView(generics.ListAPIView):
     serializer_class = EntranceSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "entrances"
+    pagination_class = None
 
     def get_queryset(self):
         building_id = self.kwargs.get("building_id")

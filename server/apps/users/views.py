@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 # Get the logger
@@ -293,6 +295,16 @@ class LogoutAPIView(APIView):
         Returns:
             Response: The response object.
         """
+
+        # Blacklist the refresh token so it can't be reused after logout
+        refresh_token = request.COOKIES.get("refresh")
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                # Token already invalid or expired — safe to ignore
+                pass
 
         # Create a response object
         res = Response(status=status.HTTP_204_NO_CONTENT)

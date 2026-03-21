@@ -33,7 +33,7 @@ services:
         networks:
             - alpha_apartments_network # Network for the server service
         healthcheck:
-            test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/profiles/')\" || exit 1"]
+            test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/schema/')\" || exit 1"]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -144,6 +144,12 @@ services:
         command: /start-celerybeat # Command to start the Celery beat
         networks:
             - alpha_apartments_network # Network for the Celery beat service
+        healthcheck:
+            test: ["CMD-SHELL", "cat /proc/1/cmdline | grep -q celery || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
 
     # Define the Flower service
     flower:
@@ -185,6 +191,25 @@ services:
             - local_logs_nginx:/var/log/nginx # Mount the Nginx logs volume
         networks:
             - alpha_apartments_network # Network for Nginx
+
+    # Telegram Bot (polling mode for local dev)
+    # Start with: docker compose --profile telegram up telegrambot
+    telegrambot:
+        <<: *server
+        container_name: alpha_apartments_local_telegrambot
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            server:
+                condition: service_healthy
+        ports: []
+        command: python manage.py run_bot
+        networks:
+            - alpha_apartments_network
+        profiles:
+            - telegram  # opt-in: only starts when --profile telegram is passed
 
 networks:
     alpha_apartments_network: # Define a network for all services

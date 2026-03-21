@@ -98,3 +98,8 @@ class Rating(TimeStampedModel):
         # Attributes
         verbose_name = _("Rating")
         verbose_name_plural = _("Ratings")
+        unique_together = [["rating_user", "rated_user"]]
+        indexes = [
+            models.Index(fields=["rated_user"], name="rating_rated_user_idx"),
+            models.Index(fields=["rating_user"], name="rating_rating_user_idx"),
+        ]

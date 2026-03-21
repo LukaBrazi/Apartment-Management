@@ -53,6 +53,11 @@ class VehiclePass(TimeStampedModel):
         verbose_name = _("Vehicle Pass")
         verbose_name_plural = _("Vehicle Passes")
         ordering = ["-visit_date", "-created_at"]
+        indexes = [
+            models.Index(fields=["status"], name="pass_status_idx"),
+            models.Index(fields=["tenant", "status"], name="pass_tenant_status_idx"),
+            models.Index(fields=["visit_date"], name="pass_visit_date_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"Pass for {self.tenant} on {self.visit_date} [{self.status}]"

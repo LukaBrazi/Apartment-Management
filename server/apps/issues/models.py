@@ -4,9 +4,10 @@ from datetime import timedelta
 from typing import Dict
 
 from apps.apartments.models import Apartment, Unit
-from apps.common.models import TimeStampedModel
+from apps.common.models import ContentView, TimeStampedModel
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.template.loader import render_to_string
@@ -38,6 +39,9 @@ class Category(TimeStampedModel):
         verbose_name = _("Category")
         verbose_name_plural = _("Categories")
         ordering = ["name"]
+        indexes = [
+            models.Index(fields=["name"], name="category_name_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.name} (SLA: {self.sla_hours}h)"
@@ -155,6 +159,18 @@ class Issue(TimeStampedModel):
         default=Priority.LOW,
     )
     resolved_on = models.DateField(_("Resolved On"), null=True, blank=True)
+    content_views = GenericRelation(ContentView, related_query_name="issues")
+
+    class Meta(TimeStampedModel.Meta):
+        verbose_name = _("Issue")
+        verbose_name_plural = _("Issues")
+        indexes = [
+            models.Index(fields=["status"], name="issue_status_idx"),
+            models.Index(fields=["priority"], name="issue_priority_idx"),
+            models.Index(fields=["status", "priority"], name="issue_status_priority_idx"),
+            models.Index(fields=["reported_by", "status"], name="issue_reporter_status_idx"),
+            models.Index(fields=["assigned_to", "status"], name="issue_assignee_status_idx"),
+        ]
 
     # String Representation
     def __str__(self) -> str:

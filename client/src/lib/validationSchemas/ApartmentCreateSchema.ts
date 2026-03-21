@@ -1,12 +1,12 @@
 import * as z from "zod";
 
 export const apartmentCreateSchema = z.object({
-	unit_number: z.string().trim().min(1, "An Apartment unit number is required"),
-	building: z.string().trim().min(1, "A building name is required"),
+	unit_number: z.string().trim().min(1, "Номер квартири є обов'язковим"),
+	building: z.string().trim().min(1, "Оберіть будинок зі списку"),
 	floor: z
 		.number()
-		.nonnegative({ message: "The building floor can't be negative" })
-		.max(5, { message: "The Floor in the building can't be more than 5" }),
+		.nonnegative({ message: "Поверх не може бути від'ємним" })
+		.max(50, { message: "Поверх не може бути більше 50" }),
 });
 
 export type TApartmentCreateSchema = z.infer<typeof apartmentCreateSchema>;

@@ -98,5 +98,13 @@ RUN chmod +x /start-flower
 COPY server ${APP_HOME}
 
 
+# Create a non-root user and transfer ownership (prevents root exploit if container is compromised)
+RUN addgroup --system django \
+    && adduser --system --ingroup django django \
+    && chown -R django:django ${APP_HOME}
+
+USER django
+
+
 # Define entrypoint
 ENTRYPOINT ["/entrypoint"]

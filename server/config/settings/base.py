@@ -77,6 +77,7 @@ THIRD_PARTY_APPS = [
     "storages",
     "django_celery_beat",
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_countries",
     "phonenumber_field",
@@ -101,6 +102,7 @@ LOCAL_APPS = [
     "apps.passes",
     "apps.news",
     "apps.site_settings",
+    "apps.notifications",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -311,9 +313,11 @@ SPECTACULAR_SETTINGS = {
 # -------------------------------------------------------------------------------
 SIMPLE_JWT = {
     "SIGNING_KEY": env.str("DJANGO_SECRET_KEY", default="test-signing-key-change-in-production"),
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }

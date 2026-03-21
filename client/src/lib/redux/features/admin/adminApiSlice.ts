@@ -112,7 +112,7 @@ export const adminApiSlice = baseApiSlice.injectEndpoints({
 		// Admin user creation
 		adminCreateUser: builder.mutation<{ profile: Profile }, AdminCreateUserData>({
 			query: (data) => ({ url: "/profiles/admin/create-user/", method: "POST", body: data }),
-			invalidatesTags: ["AdminProfiles", "AdminWorkers"],
+			invalidatesTags: ["User"],
 		}),
 
 		// Buildings

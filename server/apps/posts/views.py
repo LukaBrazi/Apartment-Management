@@ -84,10 +84,11 @@ class PostListAPIView(generics.ListAPIView):
         Returns:
             QuerySet: A queryset of Post objects, annotated with reply count and ordered.
         """
-        # Annotate posts with reply count and order by upvotes and creation date
-        return Post.objects.annotate(replies_count=Count("replies")).order_by(
-            "-upvotes", "-created_at"
-        )
+        # Annotate posts with reply count and view count; prefetch related for N+1 avoidance
+        return Post.objects.select_related("author__profile").annotate(
+            replies_count=Count("replies", distinct=True),
+            view_count=Count("content_views", distinct=True),
+        ).order_by("-upvotes", "-created_at")
 
 
 # MyPostListAPIView class
@@ -121,9 +122,12 @@ class MyPostListAPIView(generics.ListAPIView):
             QuerySet: A queryset of Post objects created by the current user.
         """
         # Filter posts by the current user and order by upvotes and creation date
-        return Post.objects.filter(author=self.request.user).order_by(
-            "-upvotes", "-created_at"
-        )
+        return Post.objects.select_related("author__profile").filter(
+            author=self.request.user
+        ).annotate(
+            replies_count=Count("replies", distinct=True),
+            view_count=Count("content_views", distinct=True),
+        ).order_by("-upvotes", "-created_at")
 
 
 # PostDetailAPIView class
@@ -161,8 +165,11 @@ class PostDetailAPIView(generics.RetrieveAPIView):
             QuerySet: A queryset of Post objects, annotated with reply count.
         """
 
-        # Return the queryset of posts, annotated with reply count
-        return Post.objects.annotate(replies_count=Count("replies"))
+        # Return the queryset of posts, annotated with reply count and view count
+        return Post.objects.select_related("author__profile").annotate(
+            replies_count=Count("replies", distinct=True),
+            view_count=Count("content_views", distinct=True),
+        )
 
     # Method to get the object
     def get_object(self):
@@ -479,7 +486,12 @@ class BookmarkedPostsListAPIView(generics.ListAPIView):
         user = self.request.user
 
         # Return the queryset of bookmarked posts
-        return Post.objects.filter(bookmarked_by=user)
+        return Post.objects.select_related("author__profile").filter(
+            bookmarked_by=user
+        ).annotate(
+            replies_count=Count("replies", distinct=True),
+            view_count=Count("content_views", distinct=True),
+        )
 
 
 # ReplyCreateAPIView class
@@ -557,7 +569,9 @@ class ReplyListAPIView(generics.ListAPIView):
         post_id = self.kwargs.get("post_id")
 
         # Return the queryset of replies for the given post
-        return Reply.objects.filter(post__id=post_id).order_by("-created_at")
+        return Reply.objects.select_related("author__profile").filter(
+            post__id=post_id
+        ).order_by("-created_at")
 
 
 # UpvotePostAPIView class

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthNavigation } from "@/hooks";
 import About from "@/components/profile/About";
@@ -12,13 +13,19 @@ import { useSearchParams } from "next/navigation";
 export default function ProfileTabs() {
 	const { isTenant } = useAuthNavigation();
 	const searchParams = useSearchParams();
-	const defaultTab = searchParams.get("tab") ?? "about";
+	const tabFromUrl = searchParams.get("tab") ?? "about";
+	const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+	useEffect(() => {
+		setActiveTab(tabFromUrl);
+	}, [tabFromUrl]);
 
 	return (
 		<div className="w-full">
 			<Tabs
 				className="dark:border-eerieBlack rounded-lg border"
-				defaultValue={defaultTab}
+				value={activeTab}
+				onValueChange={setActiveTab}
 			>
 				<TabsList className="bg-baby_rich flex space-x-4">
 					<TabsTrigger value="about" className="h3-semibold tab">

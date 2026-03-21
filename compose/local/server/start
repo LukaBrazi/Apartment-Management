@@ -9,8 +9,7 @@ set -o pipefail
 set -o nounset
 
 
-# Apply database migrations
-python manage.py makemigrations --no-input
+# Apply database migrations (never auto-generate migrations in a running container)
 python manage.py migrate --no-input
 
 

@@ -84,8 +84,8 @@ class GenericJSONRenderer(JSONRenderer):
         if data is None:
             return b""
 
-        # Get the errors
-        errors = data.get("errors", None)
+        # Get the errors (only possible when data is a dict, not a list)
+        errors = data.get("errors", None) if isinstance(data, dict) else None
 
         # If errors is not None
         if errors is not None:

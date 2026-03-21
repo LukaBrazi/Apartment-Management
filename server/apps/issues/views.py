@@ -10,6 +10,7 @@ from apps.issues.filters import IssueFilter
 from apps.issues.models import Issue
 from apps.issues.serializers import IssueAdminUpdateSerializer, IssueCreateSerializer, IssueSerializer, IssueStatusUpdateSerializer
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count
 from django.http import Http404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -20,6 +21,19 @@ from rest_framework.response import Response
 
 # Get the logger
 logger = logging.getLogger(__name__)
+
+
+def _issue_base_qs():
+    """Return the standard optimised Issue queryset used by all views."""
+    return (
+        Issue.objects.select_related(
+            "apartment",
+            "unit__entrance__building",
+            "category",
+            "reported_by",
+            "assigned_to",
+        ).annotate(view_count=Count("content_views", distinct=True))
+    )
 
 
 # Custom permission class to check if the user is staff or superuser
@@ -88,10 +102,7 @@ class IssueListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        base_qs = Issue.objects.select_related(
-            "apartment", "unit__entrance__building", "category",
-            "reported_by", "assigned_to",
-        )
+        base_qs = _issue_base_qs()
         if user.is_superuser:
             return base_qs
         # Staff scoped to their assigned buildings (M2M); if none — sees all
@@ -124,7 +135,6 @@ class AssignedIssuesListAPIView(generics.ListAPIView):
     """
 
     # Attributes
-    queryset = Issue.objects.all()
     serializer_class = IssueSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "assigned_issues"
@@ -138,7 +148,7 @@ class AssignedIssuesListAPIView(generics.ListAPIView):
         """
 
         # Return the queryset of issues assigned to the user
-        return self.queryset.filter(assigned_to=self.request.user)
+        return _issue_base_qs().filter(assigned_to=self.request.user)
 
 
 # MyIssuesListAPIView Class
@@ -156,9 +166,7 @@ class MyIssuesListAPIView(generics.ListAPIView):
     ordering = ("-created_at",)
 
     def get_queryset(self):
-        return Issue.objects.filter(reported_by=self.request.user).select_related(
-            "apartment", "unit__entrance__building", "category", "assigned_to",
-        )
+        return _issue_base_qs().filter(reported_by=self.request.user)
 
 
 # IssueCreateAPIView Class
@@ -267,7 +275,7 @@ class IssueDetailAPIView(generics.RetrieveAPIView):
     """
 
     # Attributes
-    queryset = Issue.objects.all()
+    queryset = _issue_base_qs()
     serializer_class = IssueSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "issue"
@@ -379,7 +387,7 @@ class IssueUpdateAPIView(generics.UpdateAPIView):
     """
 
     # Attributes
-    queryset = Issue.objects.all()
+    queryset = _issue_base_qs()
     lookup_field = "id"
     serializer_class = IssueStatusUpdateSerializer
     renderer_classes = (GenericJSONRenderer,)
@@ -437,7 +445,7 @@ class IssueAdminUpdateAPIView(generics.UpdateAPIView):
     """
 
     # Attributes
-    queryset = Issue.objects.all()
+    queryset = _issue_base_qs()
     lookup_field = "id"
     serializer_class = IssueAdminUpdateSerializer
     renderer_classes = (GenericJSONRenderer,)
@@ -470,7 +478,7 @@ class IssueDeleteAPIView(generics.DestroyAPIView):
     """
 
     # Attributes
-    queryset = Issue.objects.all()
+    queryset = _issue_base_qs()
     lookup_field = "id"
     serializer_class = IssueSerializer
 

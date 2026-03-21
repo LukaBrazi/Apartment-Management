@@ -1,5 +1,8 @@
 "use client";
-import { useCreateApartmentMutation } from "@/lib/redux/features/apartment/apartmentApiSlice";
+import {
+	useCreateApartmentMutation,
+	useGetBuildingsQuery,
+} from "@/lib/redux/features/apartment/apartmentApiSlice";
 import {
 	apartmentCreateSchema,
 	TApartmentCreateSchema,
@@ -10,13 +13,22 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import * as z from "zod";
 import { FormFieldComponent } from "../FormFieldComponent";
-import { BuildingOfficeIcon, HomeIcon } from "@heroicons/react/24/outline";
+import { HomeIcon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/shared/Spinner";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 export default function ApartmentCreateForm() {
 	const [createApartment, { isLoading }] = useCreateApartmentMutation();
+	const { data: buildingsData, isLoading: buildingsLoading } =
+		useGetBuildingsQuery();
 	const router = useRouter();
 
 	const {
@@ -43,9 +55,10 @@ export default function ApartmentCreateForm() {
 			reset();
 		} catch (error) {
 			const errorMessage = extractErrorMessage(error);
-			toast.error(errorMessage || "An error occurred");
+			toast.error(errorMessage || "Сталася помилка");
 		}
 	};
+
 	return (
 		<main>
 			<form
@@ -53,16 +66,41 @@ export default function ApartmentCreateForm() {
 				onSubmit={handleSubmit(onSubmit)}
 				className="flex w-full max-w-md flex-col gap-4"
 			>
-				<FormFieldComponent
-					label="Будинок"
-					name="building"
-					register={register}
-					errors={errors}
-					placeholder="Назва будинку"
-					startIcon={
-						<BuildingOfficeIcon className="dark:text-babyPowder size-8" />
-					}
-				/>
+				{/* Building dropdown */}
+				<div className="flex flex-col gap-1">
+					<label className="h4-semibold dark:text-babyPowder">Будинок</label>
+					<Controller
+						name="building"
+						control={control}
+						render={({ field }) => (
+							<Select
+								onValueChange={field.onChange}
+								value={field.value}
+								disabled={buildingsLoading}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue
+										placeholder={
+											buildingsLoading
+												? "Завантаження..."
+												: "Оберіть будинок"
+										}
+									/>
+								</SelectTrigger>
+								<SelectContent>
+									{buildingsData?.buildings?.map((building) => (
+										<SelectItem key={building.id} value={building.id}>
+											{building.name} — {building.address}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
+					/>
+					{errors.building && (
+						<p className="text-sm text-red-500">{errors.building.message}</p>
+					)}
+				</div>
 
 				<FormFieldComponent
 					label="Номер квартири"
@@ -72,6 +110,7 @@ export default function ApartmentCreateForm() {
 					placeholder="Номер квартири"
 					startIcon={<HomeIcon className="dark:text-babyPowder size-8" />}
 				/>
+
 				<label htmlFor="floor" className="h4-semibold dark:text-babyPowder">
 					Поверх
 				</label>

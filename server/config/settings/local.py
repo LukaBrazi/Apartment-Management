@@ -41,7 +41,7 @@ MINIO_STORAGE_USE_HTTPS = False
 AWS_S3_ENDPOINT_URL = f"http://{MINIO_STORAGE_ENDPOINT}"
 AWS_ACCESS_KEY_ID = MINIO_STORAGE_ACCESS_KEY
 AWS_SECRET_ACCESS_KEY = MINIO_STORAGE_SECRET_KEY
-AWS_STORAGE_BUCKET_NAME = "skandi-apartments"
+AWS_STORAGE_BUCKET_NAME = "alpha-apartments"
 AWS_S3_REGION_NAME = "us-east-1"
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_DEFAULT_ACL = "private"
@@ -52,14 +52,16 @@ AWS_S3_CUSTOM_DOMAIN = f"localhost:8080/minio/storage/{AWS_STORAGE_BUCKET_NAME}"
 
 # Static files settings
 # ------------------------------------------------------------------------------
-STATIC_URL = "http://localhost:8080/skandi-apartments/static/"
-STATICFILES_STORAGE = "config.settings.storage_backends.StaticStorage"
-
+STATIC_URL = f"http://localhost:8080/minio/storage/{AWS_STORAGE_BUCKET_NAME}/static/"
 
 # Media files settings
 # ------------------------------------------------------------------------------
-MEDIA_URL = "http://localhost:8080/skandi-apartments/media/"
-DEFAULT_FILE_STORAGE = "config.settings.storage_backends.MediaStorage"
+MEDIA_URL = f"http://localhost:8080/minio/storage/{AWS_STORAGE_BUCKET_NAME}/media/"
+
+STORAGES = {
+    "default": {"BACKEND": "config.settings.storage_backends.MediaStorage"},
+    "staticfiles": {"BACKEND": "config.settings.storage_backends.StaticStorage"},
+}
 
 
 # Static files finders and directories

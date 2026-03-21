@@ -98,23 +98,20 @@ class TopPostSerialzier(serializers.ModelSerializer):
         ]
 
     # Method to get the avatar of the author
-    def get_avatar(self, obj: Post) -> str | None:
+    def get_avatar(self, obj) -> str | None:
         """Get the avatar of the author.
 
         Args:
-            obj (Post): The post.
+            obj: The post or reply.
 
         Returns:
-            str | None: The avatar of the author.
+            str | None: The avatar URL, or None.
         """
-
-        # If the author has an avatar
-        if obj.author.profile.avatar:
-            # Return the avatar
-            return obj.author.profile.avatar.url
-
-        # Return None
-        return None
+        try:
+            avatar = obj.author.profile.avatar
+            return avatar.url if avatar else None
+        except Exception:
+            return None
 
 
 # ReplySerializer
@@ -169,23 +166,20 @@ class ReplySerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "author_username", "created_at", "updated_at"]
 
     # Method to get the avatar of the author
-    def get_avatar(self, obj: Post) -> str | None:
+    def get_avatar(self, obj) -> str | None:
         """Get the avatar of the author.
 
         Args:
-            obj (Post): The post.
+            obj: The post or reply.
 
         Returns:
-            str | None: The avatar of the author.
+            str | None: The avatar URL, or None.
         """
-
-        # If the author has an avatar
-        if obj.author.profile.avatar:
-            # Return the avatar
-            return obj.author.profile.avatar.url
-
-        # Return None
-        return None
+        try:
+            avatar = obj.author.profile.avatar
+            return avatar.url if avatar else None
+        except Exception:
+            return None
 
 
 # UpvotePostSerializer
@@ -454,17 +448,20 @@ class BasePostSerializer(serializers.ModelSerializer):
     def get_view_count(self, obj: Post) -> int:
         """Get the view count.
 
+        Uses pre-annotated `view_count` when available (set by list views),
+        otherwise falls back to a direct query (used on detail view).
+
         Args:
             obj (Post): The post.
 
         Returns:
             int: The view count.
         """
+        if hasattr(obj, "view_count"):
+            return obj.view_count
 
-        # Get the content type
+        # Fallback for views that don't annotate (single-object detail)
         content_type = ContentType.objects.get_for_model(obj)
-
-        # Get the view count
         return ContentView.objects.filter(
             content_type=content_type, object_id=obj.pkid
         ).count()
@@ -492,23 +489,20 @@ class BasePostSerializer(serializers.ModelSerializer):
         return False
 
     # Method to get the avatar of the author
-    def get_avatar(self, obj: Post) -> str | None:
+    def get_avatar(self, obj) -> str | None:
         """Get the avatar of the author.
 
         Args:
-            obj (Post): The post.
+            obj: The post or reply.
 
         Returns:
-            str | None: The avatar of the author.
+            str | None: The avatar URL, or None.
         """
-
-        # If the author has an avatar
-        if obj.author.profile.avatar:
-            # Return the avatar
-            return obj.author.profile.avatar.url
-
-        # Return None
-        return None
+        try:
+            avatar = obj.author.profile.avatar
+            return avatar.url if avatar else None
+        except Exception:
+            return None
 
 
 # PostSerializer

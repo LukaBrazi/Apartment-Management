@@ -57,7 +57,7 @@ export default function PostCard() {
 				</Link>
 			</div>
 
-			<div className="mt-7 grid grid-cols-2 gap-6">
+			<div className="mt-7 grid grid-cols-1 gap-6 sm:grid-cols-2">
 				{sortedPosts && sortedPosts.length > 0 ? (
 					sortedPosts.map((postItem) => (
 						<Card

@@ -32,7 +32,7 @@ export default function IssueCard({ issue }: IssueCardProps) {
 				className="hover:border-pumpkin dark:border-gray hover:dark:border-platinum rounded-xl border border-dashed"
 			>
 				<CardHeader>
-					<CardTitle className="flex-center h3-semibold font-robotoSlab dark:text-lime-500">
+					<CardTitle className="flex-center h3-semibold font-robotoSlab dark:text-pumpkin">
 						{issue.title.length > 20
 							? `${issue.title.substring(0, 20)}....`
 							: issue.title}
@@ -68,7 +68,7 @@ export default function IssueCard({ issue }: IssueCardProps) {
 
 					<p>
 						<span className="mr-0.5 font-bold">Пріоритет: </span>
-						<Badge className="bg-eerieBlack text-babyPowder dark:text-veryBlack dark:bg-lime-500">
+						<Badge className="bg-eerieBlack text-babyPowder dark:bg-pumpkin dark:text-eerieBlack">
 							{issue.priority}
 						</Badge>
 					</p>
