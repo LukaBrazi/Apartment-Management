@@ -1,0 +1,49 @@
+# ── Claude / AI agents ──────────────────────────────────────────────────────
+.claude/
+*.skill
+git-add-missing.sh
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+
+# ── Python / Django ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+ENV/
+*.egg-info/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+staticfiles/
+server/test.db
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+.env
+.env.*
+.envs/
+!.env.example
+
+# ── Node / Next.js ───────────────────────────────────────────────────────────
+node_modules/
+client/.next/
+client/tsconfig.tsbuildinfo
+client/yarn-error.log
+client/package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
