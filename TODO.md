@@ -27,7 +27,7 @@
 
 ### 🔔 ФІЧА 1 — Telegram-нотифікації
 
-**Статус:** `[ ] не розпочато`
+**Статус:** `[x] виконано`
 
 **Промт для розробки:**
 
@@ -685,9 +685,32 @@ Redux: додай `assignApiSlice` або розшир `issueApiSlice` мута�
 - [ ] **Backup скрипт** для PostgreSQL (pg_dump → MinIO)
 - [ ] **Sentry** для моніторингу помилок у продакшні
 - [ ] **SSL / HTTPS** конфіг для nginx
+- [x] **Видалити `makemigrations` з Docker entrypoint** — тільки `migrate` залишено
+- [x] **Non-root USER в Dockerfile** — `django:django` user, `chown` на APP_HOME
+
+### Безпека
+
+- [x] **Mass assignment `occupation`** — поле read_only в UpdateProfileSerializer
+- [x] **Валідація file upload аватара** — mime-type, розширення, розмір (макс 5 МБ)
+- [x] **JWT blacklist при logout** — refresh token блокується, access TTL скорочено до 5 хв
+- [x] **`rest_framework_simplejwt.token_blacklist`** — додано в INSTALLED_APPS + BLACKLIST_AFTER_ROTATION
+
+### Продуктивність
+
+- [x] **N+1 queries — Issues** — `select_related` + `annotate(view_count)` у всіх issue views через `_issue_base_qs()`
+- [x] **N+1 queries — Posts** — `select_related("author__profile")` + `annotate(view_count, replies_count)` у list views
+- [x] **DB indexes** — міграції: `issues/0005`, `passes/0002`, `ratings/0003` (status, priority, tenant, visit_date індекси)
+- [x] **`Rating.unique_together`** — `(rating_user, rated_user)` додано
 
 ### Технічний борг
 
 - [x] Видалити `apartment_unit` (legacy field) — фронт перейшов на `unit_number`
 - [x] Замінити `apartment` FK в `IssueStatusUpdateSerializer` на `unit_number`
 - [x] Health checks для Docker контейнерів (postgres, redis, minio, server, celery)
+
+### Frontend / UX
+
+- [x] **PostCard mobile layout** — `grid-cols-1 sm:grid-cols-2` замість `grid-cols-2`
+- [x] **IssueCard dark mode** — `dark:text-lime-500` → `dark:text-pumpkin`, badge priority виправлено
+- [x] **Announcements link** — `div` з hover замінено на `Link` з `href="/announcements/{id}"`
+- [x] **Особистий кабінет** — компоненти `WelcomeHero`, `QuickActions`, `SlaChip`, `PassesMiniPanel`, оновлений `ResidentDashboard`
