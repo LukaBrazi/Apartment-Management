@@ -14,6 +14,13 @@ export const apartmentApiSlice = baseApiSlice.injectEndpoints({
 
 		getMyApartment: builder.query<ApartmentResponse, void>({
 			query: () => "/apartments/my-apartments/",
+			// Backend returns { apartments: [...] } (plural, array).
+			// Frontend expects { apartment: {...} } (singular, first item).
+			transformResponse: (response: any): ApartmentResponse => {
+				const list = response?.apartments ?? response?.apartment ?? [];
+				const first = Array.isArray(list) ? list[0] : list;
+				return { apartment: first ?? null };
+			},
 			providesTags: ["Apartment"],
 		}),
 
