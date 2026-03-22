@@ -9,7 +9,8 @@ DB_URL = postgres://alpha_user:alpha_password@postgres:5432/alpha_apartments
 
 .PHONY: help up down restart build logs shell test test-cov migrate makemigrations \
         createsuperuser seed minio-init collectstatic celeryworker celerybeat \
-        ci-up ci-down ci-seed ci-reseed e2e e2e-ui e2e-full e2e-dev
+        ci-up ci-down ci-seed ci-reseed e2e e2e-ui e2e-full e2e-dev \
+        fresh
 
 help:
 	@echo "Skandi Apartments — команди Make"
@@ -42,6 +43,8 @@ help:
 	@echo "  make e2e-ui          Playwright у режимі UI (покрокова відладка)"
 	@echo "  make e2e-full        Підняти стек + seed + тести + прибрати"
 	@echo "  make e2e-dev         Підняти стек + seed + тести (стек залишається)"
+	@echo ""
+	@echo "  make fresh           Повний перезапуск: down→build→up→migrate→flush→seed→static"
 	@echo ""
 	@echo "  Доступні адреси після make up:"
 	@echo "    http://localhost:8080        — Frontend"
@@ -111,6 +114,36 @@ minio-init:
 	$(COMPOSE) exec minio mc mb --ignore-existing local/skandi-apartments
 	$(COMPOSE) exec minio mc anonymous set public local/skandi-apartments/static
 	@echo "MinIO bucket готовий."
+
+# --- Повний перезапуск ---
+
+fresh: docker-start
+	@echo "🔴 [1/7] Зупиняємо контейнери..."
+	$(COMPOSE) down
+	@echo "🔨 [2/7] Збираємо образи..."
+	$(COMPOSE) build
+	@echo "🚀 [3/7] Піднімаємо сервіси..."
+	$(COMPOSE) up -d
+	@echo "⏳ [4/7] Чекаємо готовності сервера..."
+	@for i in $$(seq 1 30); do \
+		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
+		  $$($(COMPOSE) ps -q server) 2>/dev/null || echo "unknown"); \
+		[ "$$STATUS" = "healthy" ] && echo "   Сервер готовий!" && break; \
+		echo "   $$i/30 — $$STATUS"; sleep 3; \
+	done
+	@echo "🗄️  [5/7] Міграції + flush + seed..."
+	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py migrate --no-input
+	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py flush --no-input
+	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py seed_demo
+	@echo "🪣 [6/7] MinIO bucket..."
+	$(COMPOSE) exec minio mc alias set local http://localhost:9000 minioadmin minioadmin123
+	$(COMPOSE) exec minio mc mb --ignore-existing local/skandi-apartments
+	$(COMPOSE) exec minio mc anonymous set public local/skandi-apartments/static
+	@echo "📦 [7/7] Статика..."
+	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py collectstatic --no-input
+	@echo ""
+	@echo "✅ Готово! Все оновлено з нуля."
+	@echo "   http://localhost:8080"
 
 # --- Тести ---
 
