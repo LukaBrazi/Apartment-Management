@@ -13,7 +13,7 @@ export const apartmentApiSlice = baseApiSlice.injectEndpoints({
 		}),
 
 		getMyApartment: builder.query<ApartmentResponse, void>({
-			query: () => "/apartments/my-apartment/",
+			query: () => "/apartments/my-apartments/",
 			providesTags: ["Apartment"],
 		}),
 
