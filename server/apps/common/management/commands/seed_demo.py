@@ -214,6 +214,86 @@ class Command(BaseCommand):
             )
         self.stdout.write(f"  ✓ Created/verified {len(announcements_data)} announcements")
 
+        # ── 9. News articles (6) ───────────────────────────────────────
+        from apps.news.models import News, NewsCategory
+
+        cat_info, _ = NewsCategory.objects.get_or_create(
+            name="Інформація", defaults={"color": "#4A90D9"}
+        )
+        cat_events, _ = NewsCategory.objects.get_or_create(
+            name="Події", defaults={"color": "#2D8A4E"}
+        )
+        cat_maintenance, _ = NewsCategory.objects.get_or_create(
+            name="Обслуговування", defaults={"color": "#D97706"}
+        )
+
+        news_data = [
+            {
+                "title": "Запуск нового порталу Skandi Apartments",
+                "excerpt": "Раді представити оновлений портал для мешканців ЖК Сонячний з новими можливостями.",
+                "body": "Шановні мешканці! Ми раді повідомити про запуск нового порталу управління Skandi Apartments. "
+                        "Тепер ви можете подавати заявки на обслуговування, отримувати оголошення та керувати перепустками онлайн.",
+                "category": cat_info,
+                "pinned": True,
+            },
+            {
+                "title": "Графік прибирання на березень 2026",
+                "excerpt": "Оновлений графік прибирання спільних приміщень та прибудинкової території.",
+                "body": "Прибирання під'їздів: щодня з 08:00 до 10:00. Прибирання двору: понеділок, середа, п'ятниця. "
+                        "Миття вікон на сходових клітках: перша субота місяця.",
+                "category": cat_maintenance,
+                "pinned": False,
+            },
+            {
+                "title": "День відкритих дверей в ЖК Сонячний",
+                "excerpt": "Запрошуємо на екскурсію по оновлених спільних приміщеннях 5 квітня.",
+                "body": "5 квітня о 14:00 відбудеться день відкритих дверей. Ви зможете оглянути оновлений спортзал, "
+                        "коворкінг та дитячу кімнату. Реєстрація на порталі.",
+                "category": cat_events,
+                "pinned": False,
+            },
+            {
+                "title": "Нові тарифи на обслуговування з 1 квітня",
+                "excerpt": "Інформація про зміни в тарифах на комунальні послуги.",
+                "body": "З 1 квітня 2026 року змінюються тарифи на утримання будинку та прибудинкової території. "
+                        "Детальна інформація доступна у розділі документів.",
+                "category": cat_info,
+                "pinned": False,
+            },
+            {
+                "title": "Встановлення нових поштових скриньок",
+                "excerpt": "Цього тижня буде завершено заміну поштових скриньок у обох під'їздах.",
+                "body": "Нові антивандальні поштові скриньки з індивідуальними ключами будуть встановлені до кінця тижня. "
+                        "Ключі можна отримати у консьєржа.",
+                "category": cat_maintenance,
+                "pinned": False,
+            },
+            {
+                "title": "Результати зборів ОСББ від 15 березня",
+                "excerpt": "Підсумки чергових зборів мешканців та прийняті рішення.",
+                "body": "На зборах було прийнято рішення про ремонт даху, оновлення ліфтів та встановлення зарядних станцій "
+                        "для електромобілів. Повний протокол доступний на порталі.",
+                "category": cat_events,
+                "pinned": False,
+            },
+        ]
+
+        now = timezone.now()
+        for i, nd in enumerate(news_data):
+            News.objects.get_or_create(
+                title=nd["title"],
+                defaults={
+                    "excerpt": nd["excerpt"],
+                    "body": nd["body"],
+                    "category": nd["category"],
+                    "author": dispatcher,
+                    "is_published": True,
+                    "published_at": now - timedelta(days=len(news_data) - i),
+                    "pinned": nd["pinned"],
+                },
+            )
+        self.stdout.write(f"  ✓ Created/verified {len(news_data)} news articles")
+
         self.stdout.write(self.style.SUCCESS(
             "\n✅ Demo seed complete!\n"
             f"   Building: {building.name}\n"

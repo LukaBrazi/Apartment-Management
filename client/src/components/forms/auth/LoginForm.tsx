@@ -42,7 +42,16 @@ export default function LoginForm() {
 			reset();
 		} catch (error) {
 			const errorMessage = extractErrorMessage(error);
-			toast.error(errorMessage || "An error occurred");
+			if (
+				errorMessage?.toLowerCase().includes("unable to log in") ||
+				errorMessage?.toLowerCase().includes("credentials")
+			) {
+				toast.error(
+					"Неправильний email або пароль, або акаунт ще не активовано. Перевірте пошту для посилання активації."
+				);
+			} else {
+				toast.error(errorMessage || "Помилка входу. Спробуйте ще раз.");
+			}
 		}
 	};
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
 	CreditCard,
@@ -121,8 +122,14 @@ export default function ResidentDashboard() {
 								))}
 							</>
 						) : previewIssues.length === 0 ? (
-							<div className="flex flex-col items-center justify-center gap-2 py-14 text-[#6B7280]">
-								<FileText className="h-10 w-10 opacity-30" />
+							<div className="flex flex-col items-center justify-center gap-3 py-10 text-[#6B7280]">
+								<Image
+									src="/assets/images/empty-states/empty-issues.svg"
+									alt=""
+									width={120}
+									height={120}
+									className="opacity-70"
+								/>
 								<p className="text-sm">Заявок немає</p>
 								<Link
 									href="/report-issue"
@@ -180,8 +187,14 @@ export default function ResidentDashboard() {
 									))}
 								</>
 							) : previewAnnouncements.length === 0 ? (
-								<div className="flex flex-col items-center justify-center gap-2 py-10 text-[#6B7280]">
-									<Megaphone className="h-10 w-10 opacity-30" />
+								<div className="flex flex-col items-center justify-center gap-3 py-8 text-[#6B7280]">
+									<Image
+										src="/assets/images/empty-states/empty-announcements.svg"
+										alt=""
+										width={100}
+										height={100}
+										className="opacity-60"
+									/>
 									<p className="text-sm">Оголошень немає</p>
 								</div>
 							) : (

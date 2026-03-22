@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetNewsQuery } from "@/lib/redux/features/news/newsApiSlice";
+import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { uk } from "date-fns/locale";
@@ -38,8 +39,16 @@ export default function NewsPage() {
       </div>
 
       {newsList.length === 0 ? (
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-8 text-center shadow-sm">
-          <p className="text-sm text-[#6B7280]">Новин ще немає.</p>
+        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-10 text-center shadow-sm flex flex-col items-center gap-4">
+          <Image
+            src="/assets/images/empty-states/empty-announcements.svg"
+            alt=""
+            width={180}
+            height={180}
+            className="opacity-70"
+          />
+          <p className="text-sm text-[#6B7280]">Новин ще немає</p>
+          <p className="text-xs text-[#9CA3AF]">Слідкуйте за оновленнями порталу</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

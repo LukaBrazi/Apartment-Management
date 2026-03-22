@@ -101,7 +101,8 @@ COPY server ${APP_HOME}
 # Create a non-root user and transfer ownership (prevents root exploit if container is compromised)
 RUN addgroup --system django \
     && adduser --system --ingroup django django \
-    && chown -R django:django ${APP_HOME}
+    && chown -R django:django ${APP_HOME} \
+    && chown django:django /entrypoint /start /start-celeryworker /start-celerybeat /start-flower
 
 USER django
 

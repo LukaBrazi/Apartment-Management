@@ -73,17 +73,28 @@ STATICFILES_FINDERS = [
 ]
 
 
-# Email
+# Email — use console backend in local dev so activation emails don't fail
 # ------------------------------------------------------------------------------
-EMAIL_BACKEND = env("DJANGO_EMAIL_BACKEND")
-EMAIL_HOST = env("DJANGO_EMAIL_HOST")
-EMAIL_PORT = env("DJANGO_EMAIL_PORT")
-DEFAULT_FROM_EMAIL = env("DJANGO_DEFAULT_FROM_EMAIL")
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "noreply@skandi-apartments.local"
+
+# Djoser — skip activation email requirement in local dev
+DJOSER = {
+    **globals().get("DJOSER", {}),
+    "SEND_ACTIVATION_EMAIL": False,
+    "SEND_CONFIRMATION_EMAIL": False,
+}
 
 
 # Django Extensions
 # ------------------------------------------------------------------------------
 INSTALLED_APPS += ["django_extensions"]
+
+
+# DRF Throttling — disabled in local dev to avoid hitting daily limits
+# ------------------------------------------------------------------------------
+REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}
 
 
 # Celery

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Car, Plus } from "lucide-react";
 import { useGetMyPassesQuery } from "@/lib/redux/features/passes/passApiSlice";
@@ -40,8 +41,14 @@ export default function PassesMiniPanel() {
 						))}
 					</>
 				) : activePasses.length === 0 ? (
-					<div className="flex flex-col items-center justify-center gap-1.5 py-8 text-[#6B7280]">
-						<Car className="h-8 w-8 opacity-25" />
+					<div className="flex flex-col items-center justify-center gap-2 py-6 text-[#6B7280]">
+						<Image
+							src="/assets/images/empty-states/empty-passes.svg"
+							alt=""
+							width={100}
+							height={100}
+							className="opacity-60"
+						/>
 						<p className="text-sm">Немає активних перепусток</p>
 					</div>
 				) : (
