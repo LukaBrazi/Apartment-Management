@@ -28,6 +28,8 @@ def send_telegram_message(self, chat_id: int, text: str):
         if not success:
             logger.warning(f"Message not delivered to chat_id={chat_id}")
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Telegram message delivery failed after {self.max_retries} retries for chat_id={chat_id}: {exc}")
         raise self.retry(exc=exc)
 
 
@@ -66,6 +68,8 @@ def notify_tenant_issue_status_changed(self, issue_id: str, old_status: str, new
         )
         send_telegram_message.delay(profile.chat_id, text)
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Issue status notification failed after {self.max_retries} retries for issue_id={issue_id}: {exc}")
         raise self.retry(exc=exc)
 
 
@@ -92,6 +96,8 @@ def notify_dispatchers_new_issue(self, issue_id: str):
         for chat_id in chat_ids:
             send_telegram_message.delay(chat_id, text)
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Dispatcher notification failed after {self.max_retries} retries for issue_id={issue_id}: {exc}")
         raise self.retry(exc=exc)
 
 
@@ -123,6 +129,8 @@ def notify_worker_assigned(self, issue_id: str):
         )
         send_telegram_message.delay(profile.chat_id, text)
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Worker assignment notification failed after {self.max_retries} retries for issue_id={issue_id}: {exc}")
         raise self.retry(exc=exc)
 
 
@@ -148,6 +156,8 @@ def notify_building_tenants_announcement(self, announcement_id: str):
         for chat_id in chat_ids:
             send_telegram_message.delay(chat_id, text)
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Announcement notification failed after {self.max_retries} retries for announcement_id={announcement_id}: {exc}")
         raise self.retry(exc=exc)
 
 
@@ -176,4 +186,6 @@ def notify_tenant_pass_status(self, pass_id: str, new_status: str):
         )
         send_telegram_message.delay(profile.chat_id, text)
     except Exception as exc:
+        if self.request.retries >= self.max_retries:
+            logger.error(f"Pass status notification failed after {self.max_retries} retries for pass_id={pass_id}: {exc}")
         raise self.retry(exc=exc)

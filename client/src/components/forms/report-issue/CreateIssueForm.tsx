@@ -55,7 +55,10 @@ export default function CreateIssueForm() {
 	});
 
 	const buildingOptions =
-		buildingsData?.buildings?.map((b) => ({ value: b.id, label: b.name })) ?? [];
+		buildingsData?.buildings?.map((b) => ({
+			value: b.id,
+			label: b.address ? `${b.name} — ${b.address}` : b.name,
+		})) ?? [];
 
 	const entranceOptions =
 		entrancesData?.entrances?.map((e) => ({
@@ -137,7 +140,9 @@ export default function CreateIssueForm() {
 									const selected = buildingsData?.buildings?.find((b) => b.id === bid);
 									setValue(
 										"location_note",
-										selected ? selected.name : "",
+										selected
+											? (selected.address ? `${selected.name} (${selected.address})` : selected.name)
+											: "",
 									);
 								}}
 								placeholder={buildingsLoading ? "Завантаження..." : "Оберіть будинок"}
@@ -166,11 +171,13 @@ export default function CreateIssueForm() {
 												const building = buildingsData?.buildings?.find(
 													(b) => b.id === selectedBuildingId,
 												);
+												const bLabel = building
+													? (building.address ? `${building.name} (${building.address})` : building.name)
+													: "";
 												if (val && building) {
-													onChange(`${building.name} / Під'їзд ${val.label.replace("Під'їзд ", "")}`);
+													onChange(`${bLabel} / Під'їзд ${val.label.replace("Під'їзд ", "")}`);
 												} else {
-													const b = buildingsData?.buildings?.find((b) => b.id === selectedBuildingId);
-													onChange(b?.name ?? "");
+													onChange(bLabel);
 												}
 											}}
 											onBlur={onBlur}

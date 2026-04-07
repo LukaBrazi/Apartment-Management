@@ -191,6 +191,7 @@ export interface Building {
 	address: string;
 	city: string;
 	is_active: boolean;
+	complex_name?: string;
 	created_at: string;
 }
 

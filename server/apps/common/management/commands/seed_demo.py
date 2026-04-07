@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 User = get_user_model()
@@ -26,32 +27,85 @@ def _ensure_user(email, password="Demo1234!", **fields):
     return user, created
 
 
+def _link_unit_apartment(unit, apt):
+    """Link apt → unit via OneToOne only if not already linked (idempotent)."""
+    unit.refresh_from_db()
+    if unit.apartment_id == apt.pk:
+        return  # already correct
+    if unit.apartment_id is not None:
+        return  # unit already has a different apartment, skip
+    with transaction.atomic():
+        try:
+            unit.apartment = apt
+            unit.save(update_fields=["apartment"])
+        except IntegrityError:
+            pass  # apt already linked to another unit from a prior seed run
+
+
 class Command(BaseCommand):
     help = "Seed demo data: buildings, users, requests, announcements, news, passes"
 
     def handle(self, *args, **options):
-        from apps.apartments.models import Apartment, Building, Entrance, Unit
+        from apps.apartments.models import Apartment, Building, Entrance, ResidentialComplex, Unit
         from apps.issues.models import Category, Issue
         from apps.passes.models import VehiclePass
         from apps.posts.models import Announcement
         from apps.profiles.models import Profile
+        from apps.site_settings.models import SiteSettings
 
         now = timezone.now()
         self.stdout.write("🌱 Seeding demo data...")
 
-        # ── 1. Building ──────────────────────────────────────────────────
-        building, _ = Building.objects.get_or_create(
+        # ── 0. Residential Complex (ЖК) ─────────────────────────────────
+        complex_obj, _ = ResidentialComplex.objects.get_or_create(
             name="ЖК Сонячний",
+            defaults={
+                "address": "вул. Хрещатик, 1-3, Київ",
+                "city": "Kyiv",
+                "description": "Сучасний житловий комплекс у центрі Києва. "
+                "2 будинки, 4 під'їзди, 40 квартир.",
+            },
+        )
+        # Set as the active complex in SiteSettings
+        site = SiteSettings.get()
+        if not site.current_complex:
+            site.current_complex = complex_obj
+            site.save()
+        self.stdout.write(f"  ✓ Residential Complex: {complex_obj.name}")
+
+        # ── 1. Buildings ─────────────────────────────────────────────────
+        building, _ = Building.objects.get_or_create(
+            name="Будинок 1",
             defaults={
                 "address": "вул. Хрещатик, 1",
                 "city": "Kyiv",
                 "is_active": True,
+                "complex": complex_obj,
             },
         )
+        if not building.complex:
+            building.complex = complex_obj
+            building.save()
+
+        building2, _ = Building.objects.get_or_create(
+            name="Будинок 2",
+            defaults={
+                "address": "вул. Хрещатик, 3",
+                "city": "Kyiv",
+                "is_active": True,
+                "complex": complex_obj,
+            },
+        )
+        if not building2.complex:
+            building2.complex = complex_obj
+            building2.save()
 
         # ── 2. Entrances ─────────────────────────────────────────────────
         entrance1, _ = Entrance.objects.get_or_create(building=building, name="1")
         entrance2, _ = Entrance.objects.get_or_create(building=building, name="2")
+        # Building 2 entrances
+        entrance3, _ = Entrance.objects.get_or_create(building=building2, name="1")
+        entrance4, _ = Entrance.objects.get_or_create(building=building2, name="2")
 
         # ── 3. Units (20 total: 10 per entrance, floors 1-5) ─────────────
         units = []
@@ -153,7 +207,8 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"  ✓ Electrician: {electrician.email} / Demo1234!")
 
-        # ── 5. Tenant users (no apartment yet — for testing) ──────────────
+        # ── 5. Tenant user (linked to unit, fully functional) ─────────────
+        tenant_unit = units[16]  # unit 105 in entrance 2, floor 4
         tenant_user, _ = _ensure_user(
             "tenant@demo.com",
             username="tenant",
@@ -166,8 +221,21 @@ class Command(BaseCommand):
             phone_number="+380637778899",
             country_of_origin="UA",
             city_of_origin="Київ",
+            bio="Мешканець ЖК Сонячний. Тестовий акаунт.",
+            unit=tenant_unit,
         )
-        self.stdout.write(f"  ✓ Tenant (no apartment): {tenant_user.email} / Demo1234!")
+        tenant_apt, _ = Apartment.objects.get_or_create(
+            unit_number=tenant_unit.number,
+            defaults={
+                "building": building.name,
+                "floor": tenant_unit.floor or 1,
+                "tenant": tenant_user,
+            },
+        )
+        tenant_apt.tenant = tenant_user
+        tenant_apt.save()
+        _link_unit_apartment(tenant_unit, tenant_apt)
+        self.stdout.write(f"  ✓ Tenant: {tenant_user.email} / Demo1234! (Unit {tenant_unit.number})")
 
         # ── 6. Resident users linked to units ─────────────────────────────
         residents_data = [
@@ -202,9 +270,7 @@ class Command(BaseCommand):
             )
             apt.tenant = user
             apt.save()
-            if not unit.apartment:
-                unit.apartment = apt
-                unit.save()
+            _link_unit_apartment(unit, apt)
 
             residents.append((user, unit, apt))
             self.stdout.write(f"  ✓ Resident: {email} / Demo1234! (Unit {unit.number})")
@@ -425,8 +491,9 @@ class Command(BaseCommand):
         # ── 12. Summary ──────────────────────────────────────────────────
         self.stdout.write(self.style.SUCCESS(
             "\n✅ Demo seed complete!\n"
-            f"   Building: {building.name}\n"
-            f"   Entrances: 2, Units: {Unit.objects.count()}\n"
+            f"   Complex: {complex_obj.name}\n"
+            f"   Buildings: {building.name}, {building2.name}\n"
+            f"   Entrances: {Entrance.objects.count()}, Units: {Unit.objects.count()}\n"
             f"   Users: {User.objects.count()}\n"
             f"   Issues: {Issue.objects.count()}\n"
             f"   Announcements: {Announcement.objects.count()}\n"
@@ -438,7 +505,7 @@ class Command(BaseCommand):
             "   guard@demo.com       (охоронець)\n"
             "   plumber@demo.com     (сантехнік)\n"
             "   electrician@demo.com (електрик)\n"
-            "   tenant@demo.com      (мешканець без квартири)\n"
+            "   tenant@demo.com      (мешканець, кв. {tenant_unit.number})\n"
             "   resident1@demo.com   (мешканець, кв. 1)\n"
             "   resident2@demo.com   (мешканець, кв. 3)\n"
             "   resident3@demo.com   (мешканець, кв. 5)\n"

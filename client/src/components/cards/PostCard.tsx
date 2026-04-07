@@ -37,7 +37,7 @@ export default function PostCard() {
 
 	if (isLoading) {
 		return (
-			<div className="flex-center pt-32">
+			<div className="flex-center min-h-[400px]">
 				<Spinner size="xl" />
 			</div>
 		);
@@ -65,7 +65,7 @@ export default function PostCard() {
 							className="dark:border-gray rounded-lg border"
 						>
 							<CardHeader className="dark:text-platinum w-full pb-4">
-								<CardTitle className="font-robotSlab text-center text-2xl">
+								<CardTitle className="font-robotSlab text-center text-2xl" title={postItem.title}>
 									{postItem.title.length > 25
 										? `${postItem.title.substring(0, 25)}....`
 										: postItem.title}

@@ -111,14 +111,51 @@ class ApartmentListAPIView(generics.ListAPIView):
         return self.request.user.apartment.all()
 
 
-class BuildingListAPIView(generics.ListAPIView):
-    """List all active buildings."""
+class MyApartmentAPIView(generics.RetrieveAPIView):
+    """Return the current tenant's first (and usually only) apartment.
 
-    queryset = Building.objects.filter(is_active=True)
+    GET /apartments/my-apartment/
+    → Renderer wraps as {"status_code": 200, "apartment": {...}}
+    → null/empty when user has no apartment
+    """
+
+    serializer_class = ApartmentSerializer
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "apartment"
+
+    def get_object(self):
+        return self.request.user.apartment.first()
+
+    def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        instance = self.get_object()
+        if instance is None:
+            # Renderer will produce {"status_code": 200, "apartment": {}}
+            # Frontend transformResponse → {apartment: {}} → apartment.id = undefined
+            return Response({}, status=status.HTTP_200_OK)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BuildingListAPIView(generics.ListAPIView):
+    """List active buildings scoped to the current ЖК.
+
+    If SiteSettings.current_complex is set, returns only buildings
+    belonging to that complex. Otherwise falls back to all active buildings.
+    """
+
     serializer_class = BuildingSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "buildings"
     pagination_class = None
+
+    def get_queryset(self):
+        from apps.site_settings.models import SiteSettings
+
+        qs = Building.objects.filter(is_active=True)
+        site = SiteSettings.get()
+        if site.current_complex_id:
+            qs = qs.filter(complex=site.current_complex)
+        return qs.select_related("complex")
 
 
 class EntranceListAPIView(generics.ListAPIView):

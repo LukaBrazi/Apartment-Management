@@ -1,13 +1,20 @@
 # Imports
-from apps.apartments.models import Apartment, Building, Entrance, Unit
+from apps.apartments.models import Apartment, Building, Entrance, ResidentialComplex, Unit
 from django.contrib import admin
+
+
+@admin.register(ResidentialComplex)
+class ResidentialComplexAdmin(admin.ModelAdmin):
+    list_display = ["id", "name", "address", "city", "created_at"]
+    search_fields = ["name", "address"]
 
 
 @admin.register(Building)
 class BuildingAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "address", "city", "is_active", "created_at"]
-    list_filter = ["is_active", "city"]
+    list_display = ["id", "name", "address", "city", "complex", "is_active", "created_at"]
+    list_filter = ["is_active", "city", "complex"]
     search_fields = ["name", "address"]
+    autocomplete_fields = ["complex"]
 
 
 @admin.register(Entrance)

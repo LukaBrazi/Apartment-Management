@@ -6,8 +6,17 @@ class SiteSettings(models.Model):
     """Singleton model — only one row (pk=1) ever exists.
 
     Admin can update hero image, title, subtitle and the CTA button.
+    Holds the active ResidentialComplex (ЖК) for this installation.
     """
 
+    current_complex = models.ForeignKey(
+        "apartments.ResidentialComplex",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Active Residential Complex"),
+        help_text=_("The ЖК this installation serves. Buildings are scoped to it."),
+    )
     hero_title = models.CharField(
         _("hero title"),
         max_length=200,

@@ -163,7 +163,7 @@ function TenantCardContent() {
 			<UsersSearch />
 
 			{/* Table */}
-			<div className="overflow-hidden rounded-lg border border-[--border] bg-[--bg-surface]">
+			<div className="overflow-x-auto rounded-lg border border-[--border] bg-[--bg-surface]">
 				<table className="w-full text-left text-sm">
 					<thead>
 						<tr className="border-b border-[--border] bg-[--bg-stone]">

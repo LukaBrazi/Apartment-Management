@@ -94,7 +94,8 @@ class ProfileListAPIView(generics.ListAPIView):
 
         # Return the queryset
         return (
-            Profile.objects.exclude(user__is_staff=True)
+            Profile.objects.select_related("user")
+            .exclude(user__is_staff=True)
             .exclude(user__is_superuser=True)
             .filter(occupation=Profile.Occupation.TENANT)
         )
@@ -152,7 +153,7 @@ class ProfileDetailAPIView(generics.RetrieveAPIView):
         # Try to get the profile
         try:
             # Return the profile
-            return Profile.objects.get(user=self.request.user)
+            return self.get_queryset().get(user=self.request.user)
 
         # If the profile does not exist
         except Profile.DoesNotExist:
@@ -379,7 +380,8 @@ class NonTenantProfileListAPIView(generics.ListAPIView):
 
         # Return the queryset
         return (
-            Profile.objects.exclude(user__is_staff=True)
+            Profile.objects.select_related("user")
+            .exclude(user__is_staff=True)
             .exclude(user__is_superuser=True)
             .exclude(occupation=Profile.Occupation.TENANT)
         )

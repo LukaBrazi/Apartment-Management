@@ -85,6 +85,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "managed_buildings",
             "average_rating",
         ]
+        read_only_fields = ["occupation", "reputation", "report_count", "slug"]
 
     # Method to get the avatar url
     def get_avatar(self, obj: Profile) -> str | None:

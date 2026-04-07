@@ -7,6 +7,7 @@ from apps.apartments.views import (
     BuildingListAPIView,
     BuildingUpdateDestroyAPIView,
     EntranceListAPIView,
+    MyApartmentAPIView,
 )
 from django.urls import path
 
@@ -14,6 +15,7 @@ from django.urls import path
 # Set the url patterns
 urlpatterns = [
     path("add/", ApartmentCreateAPIView.as_view(), name="add-apartment"),
+    path("my-apartment/", MyApartmentAPIView.as_view(), name="my-apartment"),
     path("my-apartments/", ApartmentListAPIView.as_view(), name="list-my-apartments"),
     path("buildings/", BuildingListAPIView.as_view(), name="list-buildings"),
     path("buildings/admin/", AdminBuildingListCreateAPIView.as_view(), name="admin-list-create-buildings"),

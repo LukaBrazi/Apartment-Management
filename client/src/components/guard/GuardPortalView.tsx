@@ -3,7 +3,7 @@
 import Spinner from "@/components/shared/Spinner";
 import VehiclePassCard from "@/components/cards/VehiclePassCard";
 import { useGetAllPassesQuery } from "@/lib/redux/features/passes/passApiSlice";
-import { ShieldIcon } from "lucide-react";
+import { ShieldIcon, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 
 export default function GuardPortalView() {
@@ -80,9 +80,17 @@ export default function GuardPortalView() {
 					<Spinner size="md" />
 				</div>
 			) : isError ? (
-				<p className="text-red-500 text-center py-8">
-					Не вдалося завантажити перепустки. Переконайтеся, що у вас є доступ охоронця або адміна.
-				</p>
+				<div className="flex flex-col items-center justify-center py-12 px-4">
+					<div className="rounded-full bg-red-100 dark:bg-red-900 p-3 mb-4">
+						<AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-300" />
+					</div>
+					<h3 className="text-center text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
+						Помилка при завантаженні
+					</h3>
+					<p className="text-center text-sm text-gray-600 dark:text-gray-400 max-w-sm">
+						Не вдалося завантажити перепустки. Переконайтеся, що у вас є доступ охоронця або адміна.
+					</p>
+				</div>
 			) : passes.length === 0 ? (
 				<div className="text-center py-12 text-gray-500 dark:text-gray-400">
 					<ShieldIcon className="size-12 mx-auto mb-3 opacity-30" />

@@ -16,6 +16,14 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     inlines = [SiteLinkInline]
     fieldsets = [
         (
+            "Residential Complex (ЖК)",
+            {
+                "fields": ["current_complex"],
+                "description": "The active ЖК for this installation. "
+                "Buildings are scoped to this complex.",
+            },
+        ),
+        (
             "Hero section",
             {
                 "fields": [

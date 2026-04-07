@@ -103,9 +103,9 @@ function CreatePostFormContent() {
 					render={({ field }) => (
 						<>
 							<div>
-								{field.value.map((tag: string, index: number) => (
+								{field.value.map((tag: string) => (
 									<Badge
-										key={index}
+										key={`tag-${tag}`}
 										className="border-veryBlack dark:border-pumpkin mb-2 mr-2 inline-flex items-center border dark:text-lime-500"
 									>
 										{tag}

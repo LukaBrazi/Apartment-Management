@@ -12,10 +12,14 @@ class SiteLinkSerializer(serializers.ModelSerializer):
 class SiteSettingsSerializer(serializers.ModelSerializer):
     links = serializers.SerializerMethodField()
     hero_image_url = serializers.SerializerMethodField()
+    complex_name = serializers.ReadOnlyField(source="current_complex.name")
+    complex_address = serializers.ReadOnlyField(source="current_complex.address")
 
     class Meta:
         model = SiteSettings
         fields = [
+            "complex_name",
+            "complex_address",
             "hero_title",
             "hero_subtitle",
             "hero_image_url",

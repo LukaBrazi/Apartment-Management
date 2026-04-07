@@ -32,7 +32,7 @@ export default function IssueCard({ issue }: IssueCardProps) {
 				className="hover:border-pumpkin dark:border-gray hover:dark:border-platinum rounded-xl border border-dashed"
 			>
 				<CardHeader>
-					<CardTitle className="flex-center h3-semibold font-robotoSlab dark:text-pumpkin">
+					<CardTitle className="flex-center h3-semibold font-robotoSlab dark:text-pumpkin" title={issue.title}>
 						{issue.title.length > 20
 							? `${issue.title.substring(0, 20)}....`
 							: issue.title}
@@ -40,7 +40,7 @@ export default function IssueCard({ issue }: IssueCardProps) {
 				</CardHeader>
 				<CardContent>
 					<CardDescription className="dark:text-platinum">
-						<p className="h4-semibold">
+						<p className="h4-semibold" title={issue.description}>
 							{issue.description.length > 35
 								? `${issue.description.substring(0, 35)}....`
 								: issue.description}

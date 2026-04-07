@@ -1,5 +1,5 @@
 # Imports
-from apps.apartments.models import Apartment, Building, Entrance, Unit
+from apps.apartments.models import Apartment, Building, Entrance, ResidentialComplex, Unit
 from rest_framework import serializers
 
 
@@ -14,12 +14,19 @@ class ApartmentSerializer(serializers.ModelSerializer):
 
 # ── New domain serializers ─────────────────────────────────────────────────
 
+class ResidentialComplexSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResidentialComplex
+        fields = ["pkid", "id", "name", "address", "city", "description"]
+
+
 class BuildingSerializer(serializers.ModelSerializer):
     pkid = serializers.IntegerField(read_only=True)
+    complex_name = serializers.ReadOnlyField(source="complex.name")
 
     class Meta:
         model = Building
-        fields = ["pkid", "id", "name", "address", "city", "is_active", "created_at"]
+        fields = ["pkid", "id", "name", "address", "city", "is_active", "complex_name", "created_at"]
 
 
 class EntranceSerializer(serializers.ModelSerializer):

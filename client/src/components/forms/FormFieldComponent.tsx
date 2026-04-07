@@ -45,10 +45,10 @@ export function FormFieldComponent<TFieldValues extends FieldValues>({
 	isPassword = false,
 	isTextArea = false,
 }: FormFieldComponentProps<TFieldValues>) {
-	const errorMessage = errors[name]?.message as unknown as string;
+	const errorMessage = typeof errors[name]?.message === "string" ? errors[name]?.message : undefined;
 
 	const sharedInputClass =
-		"rounded-xl border border-[#E2E5E8] bg-white text-[#1C2B3A] placeholder:text-[#6B7F8C] focus:border-[#3D7A8A] focus:ring-1 focus:ring-[#3D7A8A] dark:border-[#2D3D4F] dark:bg-[#1E2D3D] dark:text-[#F0EDE6] dark:placeholder:text-[#8FA8B8] dark:focus:border-[#5BA3B5] dark:focus:ring-[#5BA3B5] transition-colors";
+		"rounded-xl border border-[#E2E5E8] bg-white text-[#1C2B3A] placeholder:text-[#6B7F8C] focus:border-[#3D7A8A] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3D7A8A] dark:border-[#2D3D4F] dark:bg-[#1E2D3D] dark:text-[#F0EDE6] dark:placeholder:text-[#8FA8B8] dark:focus:border-[#5BA3B5] dark:focus-visible:ring-2 dark:focus-visible:ring-offset-2 dark:focus-visible:ring-[#5BA3B5] transition-colors";
 
 	const renderInputComponent = () => {
 		if (isTextArea) {

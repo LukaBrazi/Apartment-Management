@@ -24,8 +24,8 @@ import SlaChip from "./SlaChip";
 import PassesMiniPanel from "./PassesMiniPanel";
 
 export default function ResidentDashboard() {
-	const { data: profileData, isLoading: profileLoading } = useGetUserProfileQuery();
-	const { data: issuesData, isLoading: issuesLoading } = useGetMyIssuesQuery();
+	const { data: profileData, isLoading: profileLoading, isError: profileError } = useGetUserProfileQuery();
+	const { data: issuesData, isLoading: issuesLoading, isError: issuesError } = useGetMyIssuesQuery();
 	const { data: announcementsData, isLoading: announcementsLoading } = useGetTenantAnnouncementsQuery();
 	const { data: passesData } = useGetMyPassesQuery();
 
@@ -121,6 +121,11 @@ export default function ResidentDashboard() {
 									<div key={i} className="mx-5 my-3 h-10 animate-pulse rounded-lg bg-[#F3F4F6] dark:bg-[#1E2D3D]" />
 								))}
 							</>
+						) : issuesError ? (
+							<div className="flex flex-col items-center justify-center gap-3 py-10 text-[#6B7280]">
+								<p className="text-sm font-medium text-red-500">Помилка при завантаженні заявок</p>
+								<p className="text-xs text-[#6B7280]">Спробуйте оновити сторінку</p>
+							</div>
 						) : previewIssues.length === 0 ? (
 							<div className="flex flex-col items-center justify-center gap-3 py-10 text-[#6B7280]">
 								<Image

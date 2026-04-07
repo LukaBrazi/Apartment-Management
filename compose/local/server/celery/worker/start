@@ -8,4 +8,4 @@ set -o nounset
 
 
 # Execute watchfiles to monitor Python files and start Celery worker with specified logging level
-exec watchfiles --filter python celery.__main__.main --args '-A config.celery_app worker -l INFO'
+exec watchfiles --filter python celery.__main__.main --args '-A config.celery_app worker -l INFO --max-memory-per-child=256000'

@@ -96,6 +96,7 @@ services:
     redis:
         image: docker.io/redis:6 # Redis image
         container_name: alpha_apartments_local_redis # Container name
+        command: redis-server --save 60 1000 # Enable persistence with save every 60s if 1000 keys changed
         volumes:
             - local_redis_data:/data # Mount the Redis data volume
         networks:
@@ -191,6 +192,12 @@ services:
             - local_logs_nginx:/var/log/nginx # Mount the Nginx logs volume
         networks:
             - alpha_apartments_network # Network for Nginx
+        healthcheck:
+            test: ["CMD-SHELL", "curl -f http://localhost/api/v1/schema/ || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 15s
 
     # Telegram Bot (polling mode for local dev)
     # Start with: docker compose --profile telegram up telegrambot

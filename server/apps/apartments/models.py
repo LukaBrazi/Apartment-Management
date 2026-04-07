@@ -8,11 +8,46 @@ from django.utils.translation import gettext_lazy as _
 User = get_user_model()
 
 
+# ── Residential Complex (ЖК) ───────────────────────────────────────────────
+
+class ResidentialComplex(TimeStampedModel):
+    """Житловий комплекс (ЖК).
+
+    One app installation = one active ЖК.
+    All buildings belong to a complex; the active complex is set in SiteSettings.
+    """
+
+    name = models.CharField(_("Name"), max_length=200, help_text=_("e.g. ЖК Сонячний"))
+    address = models.CharField(
+        _("Address"), max_length=300, blank=True, default="",
+        help_text=_("Main address or district of the complex"),
+    )
+    city = models.CharField(_("City"), max_length=100, blank=True, default="")
+    description = models.TextField(_("Description"), blank=True, default="")
+
+    class Meta:
+        verbose_name = _("Residential Complex")
+        verbose_name_plural = _("Residential Complexes")
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 # ── New domain models: Building → Entrance → Unit ──────────────────────────
 
 class Building(TimeStampedModel):
     """Physical building (will be shown as 'Будинок' in UI)."""
 
+    complex = models.ForeignKey(
+        ResidentialComplex,
+        on_delete=models.CASCADE,
+        related_name="buildings",
+        verbose_name=_("Residential Complex"),
+        null=True,
+        blank=True,
+        help_text=_("ЖК this building belongs to"),
+    )
     name = models.CharField(_("Name"), max_length=100)
     address = models.CharField(_("Address"), max_length=255)
     city = models.CharField(_("City"), max_length=100, blank=True, default="")
