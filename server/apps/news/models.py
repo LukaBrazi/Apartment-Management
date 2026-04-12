@@ -55,7 +55,9 @@ class News(TimeStampedModel):
     tags = TaggableManager(verbose_name=_("Tags"), blank=True)
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="news_articles",
         verbose_name=_("Author"),
     )

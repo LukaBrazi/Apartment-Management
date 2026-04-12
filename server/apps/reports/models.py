@@ -39,7 +39,7 @@ class Report(TimeStampedModel):
     slug = AutoSlugField(populate_from="title", unique=True, always_update=True)
     reported_by = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="reports_made",
@@ -47,7 +47,7 @@ class Report(TimeStampedModel):
     )
     reported_user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="reports_received",

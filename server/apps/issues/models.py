@@ -132,7 +132,9 @@ class Issue(TimeStampedModel):
     due_at = models.DateTimeField(_("Due At"), null=True, blank=True)
     reported_by = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="reported_by_issues",
         verbose_name=_("Reported By"),
     )

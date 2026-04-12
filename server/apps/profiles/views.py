@@ -75,12 +75,13 @@ class ProfileListAPIView(generics.ListAPIView):
     renderer_classes = (GenericJSONRenderer,)
     pagination_class = StandardResultSetPagination
     object_label = "profiles"
+    permission_classes = [permissions.IsAdminUser]  # GDPR: тільки staff бачить список мешканців
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = (
         "user__username",
         "user__first_name",
         "user__last_name",
-        "user__email",
+        # user__email ВИДАЛЕНО: GDPR — user enumeration через email пошук
     )
     filterset_fields = ("occupation", "gender", "country_of_origin")
 
@@ -361,12 +362,13 @@ class NonTenantProfileListAPIView(generics.ListAPIView):
     renderer_classes = (GenericJSONRenderer,)
     pagination_class = StandardResultSetPagination
     object_label = "non_tenant_profiles"
+    permission_classes = [permissions.IsAdminUser]  # GDPR: тільки staff бачить список персоналу
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = (
         "user__username",
         "user__first_name",
         "user__last_name",
-        "user__email",
+        # user__email ВИДАЛЕНО: GDPR — user enumeration через email пошук
     )
     filterset_fields = ("occupation", "gender", "country_of_origin")
 

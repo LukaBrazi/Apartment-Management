@@ -1,10 +1,12 @@
 # Imports
 import logging
+import uuid
 from typing import Dict, Optional
 
 from django.conf import settings
+from django.db import transaction
 from djoser.social.views import ProviderAuthView
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -264,6 +266,209 @@ class CustomProviderAuthAPIView(ProviderAuthView):
                 logger.error("Access or refresh token not provided in response data.")
 
         # Return the response
+        return res
+
+
+# ── GDPR: Right to Access (Data Export) ──────────────────────────────────────
+
+class GDPRDataExportAPIView(APIView):
+    """GDPRDataExportAPIView
+
+    GDPR Art. 15 + Art. 20 — Right of Access and Right to Data Portability.
+
+    Returns a structured JSON snapshot of all personal data held for the
+    authenticated user: account info, profile, issues, ratings, reports,
+    vehicle passes, and posts.
+
+    GET /api/v1/auth/my-data/
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:
+        from apps.common.models import GDPRAuditLog
+        from apps.issues.models import Issue
+        from apps.passes.models import VehiclePass
+        from apps.posts.models import Post
+        from apps.ratings.models import Rating
+        from apps.reports.models import Report
+
+        user = request.user
+
+        # Audit log
+        GDPRAuditLog.log(
+            event=GDPRAuditLog.EventType.DATA_EXPORT,
+            subject=user,
+            actor=user,
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
+        profile = getattr(user, "profile", None)
+
+        # ── Account data ──────────────────────────────────────────────────────
+        account = {
+            "id": str(user.id),
+            "email": user.email,
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "date_joined": user.date_joined.isoformat(),
+            "is_active": user.is_active,
+        }
+
+        # ── Profile data ──────────────────────────────────────────────────────
+        profile_data = {}
+        if profile:
+            profile_data = {
+                "gender": profile.gender,
+                "bio": profile.bio or "",
+                "occupation": profile.occupation,
+                "phone_number": str(profile.phone_number) if profile.phone_number else "",
+                "country_of_origin": str(profile.country_of_origin),
+                "city_of_origin": profile.city_of_origin,
+                "reputation": profile.reputation,
+                "report_count": profile.report_count,
+            }
+
+        # ── Issues reported by user ───────────────────────────────────────────
+        issues = list(
+            Issue.objects.filter(reported_by=user).values(
+                "pkid", "title", "status", "priority", "created_at"
+            )
+        )
+        for i in issues:
+            i["pkid"] = str(i["pkid"])
+            i["created_at"] = i["created_at"].isoformat()
+
+        # ── Ratings given by user ─────────────────────────────────────────────
+        ratings_given = list(
+            Rating.objects.filter(rating_user=user).values(
+                "pkid", "rating", "comment", "created_at"
+            )
+        )
+        for r in ratings_given:
+            r["pkid"] = str(r["pkid"])
+            r["created_at"] = r["created_at"].isoformat()
+
+        # ── Reports filed by user ─────────────────────────────────────────────
+        reports_made = list(
+            Report.objects.filter(reported_by=user).values(
+                "pkid", "title", "description", "created_at"
+            )
+        )
+        for r in reports_made:
+            r["pkid"] = str(r["pkid"])
+            r["created_at"] = r["created_at"].isoformat()
+
+        # ── Vehicle passes ────────────────────────────────────────────────────
+        passes = list(
+            VehiclePass.objects.filter(tenant=user).values(
+                "pkid", "car_number", "visit_date", "status", "created_at"
+            )
+        )
+        for p in passes:
+            p["pkid"] = str(p["pkid"])
+            p["visit_date"] = p["visit_date"].isoformat()
+            p["created_at"] = p["created_at"].isoformat()
+
+        # ── Posts authored by user ────────────────────────────────────────────
+        posts = list(
+            Post.objects.filter(author=user).values("pkid", "title", "created_at")
+        )
+        for p in posts:
+            p["pkid"] = str(p["pkid"])
+            p["created_at"] = p["created_at"].isoformat()
+
+        payload = {
+            "account": account,
+            "profile": profile_data,
+            "issues": issues,
+            "ratings_given": ratings_given,
+            "reports_made": reports_made,
+            "vehicle_passes": passes,
+            "posts": posts,
+            "exported_at": __import__("django.utils.timezone", fromlist=["now"]).now().isoformat(),
+        }
+
+        return Response(payload, status=status.HTTP_200_OK)
+
+
+# ── GDPR: Right to Erasure ────────────────────────────────────────────────────
+
+class GDPREraseAccountAPIView(APIView):
+    """GDPREraseAccountAPIView
+
+    GDPR Art. 17 — Right to Erasure.
+
+    Pseudonymizes the authenticated user's personal data in-place so that
+    business records (issues, ratings, passes, etc.) are preserved with a
+    NULL or anonymized FK, while the personal-data link is severed.
+
+    Steps:
+      1. Pseudonymize User fields (email, username, first/last name)
+      2. Deactivate the account
+      3. Clear Profile personal fields (bio, phone, avatar)
+      4. Blacklist the current refresh token so no further logins are possible
+      5. Clear auth cookies and return 200
+
+    POST /api/v1/auth/user/anonymize/
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:
+        user = request.user
+        anon_id = str(uuid.uuid4()).replace("-", "")[:20]
+
+        with transaction.atomic():
+            from apps.common.models import GDPRAuditLog
+
+            # Audit: log the erasure request before anonymizing
+            GDPRAuditLog.log(
+                event=GDPRAuditLog.EventType.ACCOUNT_ANONYMIZED,
+                subject=user,
+                actor=user,
+                detail=f"Self-requested via POST /api/v1/auth/anonymize/ original_email={user.email}",
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+
+            # 1. Pseudonymize User fields
+            user.email = f"deleted_{anon_id}@gdpr.invalid"
+            user.username = f"deleted_{anon_id}"
+            user.first_name = ""
+            user.last_name = ""
+            user.is_active = False
+            user.save(
+                update_fields=["email", "username", "first_name", "last_name", "is_active"]
+            )
+
+            # 2. Clear Profile personal data
+            profile = getattr(user, "profile", None)
+            if profile:
+                profile.bio = ""
+                profile.phone_number = "+10000000000"  # placeholder, not real
+                profile.city_of_origin = ""
+                profile.avatar = None
+                profile.save(
+                    update_fields=["bio", "phone_number", "city_of_origin", "avatar"]
+                )
+
+        # 3. Blacklist JWT refresh token
+        refresh_token = request.COOKIES.get("refresh")
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                pass
+
+        # 4. Clear auth cookies and return
+        res = Response(
+            {"message": "Your account has been anonymized. Goodbye."},
+            status=status.HTTP_200_OK,
+        )
+        res.delete_cookie("access")
+        res.delete_cookie("refresh")
+        res.delete_cookie("logged_in")
         return res
 
 

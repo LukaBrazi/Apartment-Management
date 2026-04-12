@@ -56,13 +56,17 @@ class Rating(TimeStampedModel):
     # Attributes
     rated_user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="received_ratings",
         verbose_name=_("Rated User"),
     )
     rating_user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="given_ratings",
         verbose_name=_("Rating User"),
     )
