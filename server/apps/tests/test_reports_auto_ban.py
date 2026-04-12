@@ -16,6 +16,7 @@ def authenticated_client():
     client = APIClient()
     user = UserFactory(username="reporter_user")
     client.force_authenticate(user=user)
+    client.user = user  # expose user for tests that reference client.user
     return client
 
 

@@ -50,6 +50,7 @@ def staff_user(db):
     )
 
 
+@pytest.mark.django_db
 class TestGDPREraseAccount:
     def test_unauthenticated_cannot_erase(self):
         """Анонімний не може викликати erasure endpoint."""

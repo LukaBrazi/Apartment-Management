@@ -23,6 +23,7 @@ def tenant_client(tenant_user):
     """Create authenticated client for a tenant."""
     client = APIClient()
     client.force_authenticate(user=tenant_user)
+    client.user = tenant_user  # expose user for tests that reference client.user
     return client
 
 

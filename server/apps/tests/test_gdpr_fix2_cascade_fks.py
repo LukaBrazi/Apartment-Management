@@ -46,10 +46,10 @@ def user_b(db):
 @pytest.fixture
 def apartment(db, user_a):
     return Apartment.objects.create(
-        apartment_number="101",
+        unit_number="gdpr2_101",
         floor=1,
-        building_name="Тестовий будинок",
-        user=user_a,
+        building="Тестовий будинок",
+        tenant=user_a,
     )
 
 

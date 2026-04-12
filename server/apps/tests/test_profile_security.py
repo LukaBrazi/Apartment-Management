@@ -15,6 +15,7 @@ def tenant_client():
     client = APIClient()
     user = UserFactory(username="tenant_test")
     client.force_authenticate(user=user)
+    client.user = user  # expose user for tests that reference client.user
     return client
 
 

@@ -198,6 +198,30 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ["occupation"]
 
 
+class AdminUpdateProfileSerializer(serializers.ModelSerializer):
+    """Serializer for admin profile updates — allows changing occupation."""
+
+    country_of_origin = CountryField(name_only=True)
+    occupation = serializers.ChoiceField(choices=Profile.Occupation.choices, required=False)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "gender",
+            "country_of_origin",
+            "city_of_origin",
+            "bio",
+            "occupation",
+            "phone_number",
+        ]
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
 class AdminCreateUserSerializer(serializers.Serializer):
     email = serializers.EmailField()
     username = serializers.CharField()

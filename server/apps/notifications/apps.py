@@ -8,3 +8,6 @@ class NotificationsConfig(AppConfig):
 
     def ready(self):
         import apps.notifications.signals  # noqa: F401
+        # Re-register signals with resolved model classes so that
+        # signal.disconnect(sender=ModelClass) works in management commands.
+        apps.notifications.signals.connect_all()

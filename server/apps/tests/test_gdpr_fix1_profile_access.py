@@ -59,6 +59,7 @@ def other_tenant(db):
 
 # ── ProfileListAPIView ────────────────────────────────────────────────────────
 
+@pytest.mark.django_db
 class TestProfileListGDPR:
     def test_tenant_cannot_list_profiles(self, tenant_user):
         """GDPR: мешканець не може бачити список всіх мешканців."""
@@ -90,7 +91,9 @@ class TestProfileListGDPR:
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        profiles = data.get("profiles", [])
+        profiles_data = data.get("profiles", {})
+        # Unwrap pagination: profiles_data may be {"count": N, "results": [...]}
+        profiles = profiles_data.get("results", []) if isinstance(profiles_data, dict) else profiles_data
         # Email пошук більше не повертає результати
         assert not any(
             p.get("username") == "other_tenant" for p in profiles
@@ -109,6 +112,7 @@ class TestProfileListGDPR:
 
 # ── NonTenantProfileListAPIView ───────────────────────────────────────────────
 
+@pytest.mark.django_db
 class TestNonTenantProfileListGDPR:
     def test_tenant_cannot_list_non_tenant_profiles(self, tenant_user, staff_user):
         """GDPR: мешканець не може бачити список персоналу."""
@@ -134,7 +138,9 @@ class TestNonTenantProfileListGDPR:
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        profiles = data.get("non_tenant_profiles", [])
+        profiles_data = data.get("non_tenant_profiles", {})
+        # Unwrap pagination: profiles_data may be {"count": N, "results": [...]}
+        profiles = profiles_data.get("results", []) if isinstance(profiles_data, dict) else profiles_data
         assert not any(
             p.get("username") == "gdpr_staff" for p in profiles
         ), "Email search should NOT find users in non-tenant list"

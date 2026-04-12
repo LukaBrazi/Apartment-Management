@@ -55,13 +55,14 @@ def other_user(db):
 @pytest.fixture
 def owner_apartment(db, owner):
     return Apartment.objects.create(
-        apartment_number="202",
+        unit_number="gdpr4_202",
         floor=2,
-        building_name="Тест Будинок",
-        user=owner,
+        building="Тест Будинок",
+        tenant=owner,
     )
 
 
+@pytest.mark.django_db
 class TestGDPRDataExport:
     def test_unauthenticated_cannot_export(self):
         """Анонімний не може отримати дані."""
@@ -115,10 +116,10 @@ class TestGDPRDataExport:
         )
         # Issue для іншого user
         other_apt = Apartment.objects.create(
-            apartment_number="303",
+            unit_number="gdpr4_303",
             floor=3,
-            building_name="Тест",
-            user=other_user,
+            building="Тест",
+            tenant=other_user,
         )
         Issue.objects.create(
             apartment=other_apt,

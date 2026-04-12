@@ -5,6 +5,7 @@ from apps.common.renderers import GenericJSONRenderer
 from apps.profiles.models import Profile
 from apps.ratings.serializers import RatingSerializer
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from rest_framework import generics, status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.request import Request
@@ -133,6 +134,14 @@ class RatingCreateAPIView(generics.CreateAPIView):
         # If the rating user is not a tenant and the rated user is a tenant
         if (
             rating_user_occupation != Profile.Occupation.TENANT
+            and rated_user_occupation == Profile.Occupation.TENANT
+        ):
+            # Raise a permission denied exception
+            raise PermissionDenied("A service provider cannot rate a tenant.")
+
+        # If both are non-tenants (service providers rating each other)
+        if (
+            rating_user_occupation != Profile.Occupation.TENANT
             and rated_user_occupation != Profile.Occupation.TENANT
         ):
             # Raise a permission denied exception
@@ -140,8 +149,11 @@ class RatingCreateAPIView(generics.CreateAPIView):
                 "A service provider cannot rate another service provider."
             )
 
-        # Get the rating
-        rating = serializer.save(rating_user=rating_user, rated_user=rated_user)
+        # Get the rating (catch unique_together constraint violation)
+        try:
+            rating = serializer.save(rating_user=rating_user, rated_user=rated_user)
+        except IntegrityError:
+            raise ValidationError({"detail": "You have already rated this user."})
 
         # Get the serialized data
         serializer = self.get_serializer(rating)

@@ -167,7 +167,7 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [str(APPS_DIR / "static")],
+        "DIRS": [str(APPS_DIR / "templates"), str(APPS_DIR / "static")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

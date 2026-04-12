@@ -7,6 +7,7 @@ from apps.common.renderers import GenericJSONRenderer
 from apps.profiles.models import Profile
 from apps.profiles.serializers import (
     AdminCreateUserSerializer,
+    AdminUpdateProfileSerializer,
     AvatarUploadSerializer,
     ProfileSerializer,
     UpdateProfileSerializer,
@@ -461,7 +462,7 @@ class ProfileAdminUpdateAPIView(generics.RetrieveUpdateAPIView):
 
     # Attributes
     queryset = Profile.objects.select_related("user").all()
-    serializer_class = UpdateProfileSerializer
+    serializer_class = AdminUpdateProfileSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "profile"
     permission_classes = [permissions.IsAdminUser]

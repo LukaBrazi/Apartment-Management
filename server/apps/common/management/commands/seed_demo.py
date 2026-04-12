@@ -307,28 +307,38 @@ class Command(BaseCommand):
             ("Протікає дах над 5 поверхом", "Сантехніка", "Після дощу з'являються плями на стелі квартири на 5 поверсі."),
             ("Не працює домофон", "Електрика", "Домофон на вході під'їзду 1 не реагує на натискання кнопок."),
         ]
-        cat_map = {c.name: c for c in categories}
-        for i, (title, cat_name, description) in enumerate(issue_data):
-            user, unit, apt = residents[i % len(residents)]
-            cat = cat_map[cat_name]
-            status = statuses[i % len(statuses)]
-            due = now + timedelta(hours=cat.sla_hours) - timedelta(hours=random.randint(0, 96))
-            issue, created = Issue.objects.get_or_create(
-                title=title,
-                reported_by=user,
-                defaults={
-                    "apartment": apt,
-                    "unit": unit,
-                    "category": cat,
-                    "description": description,
-                    "status": status,
-                    "priority": ["low", "medium", "high"][i % 3],
-                    "due_at": due,
-                },
-            )
-            if created and status in ("done", "resolved"):
-                issue.resolved_on = now.date()
-                issue.save()
+        from apps.notifications.signals import cache_issue_old_state, on_issue_saved
+        from django.db.models.signals import post_save, pre_save
+
+        # Disconnect Celery signals during seed — broker may not be running
+        pre_save.disconnect(cache_issue_old_state, sender=Issue)
+        post_save.disconnect(on_issue_saved, sender=Issue)
+        try:
+            cat_map = {c.name: c for c in categories}
+            for i, (title, cat_name, description) in enumerate(issue_data):
+                user, unit, apt = residents[i % len(residents)]
+                cat = cat_map[cat_name]
+                status = statuses[i % len(statuses)]
+                due = now + timedelta(hours=cat.sla_hours) - timedelta(hours=random.randint(0, 96))
+                issue, created = Issue.objects.get_or_create(
+                    title=title,
+                    reported_by=user,
+                    defaults={
+                        "apartment": apt,
+                        "unit": unit,
+                        "category": cat,
+                        "description": description,
+                        "status": status,
+                        "priority": ["low", "medium", "high"][i % 3],
+                        "due_at": due,
+                    },
+                )
+                if created and status in ("done", "resolved"):
+                    issue.resolved_on = now.date()
+                    issue.save()
+        finally:
+            pre_save.connect(cache_issue_old_state, sender=Issue)
+            post_save.connect(on_issue_saved, sender=Issue)
 
         self.stdout.write(f"  ✓ Created/verified {len(issue_data)} service requests")
 
@@ -345,12 +355,20 @@ class Command(BaseCommand):
             ("Заміна лічильників води", "З 1 по 15 квітня відбудеться планова заміна лічильників холодної та гарячої води. Графік за квартирами буде розміщено на дошці оголошень."),
             ("Ремонт дахового покриття", "З 20 квітня розпочинається капітальний ремонт дахового покриття. Роботи триватимуть орієнтовно 3 тижні. Просимо вибачення за можливі незручності."),
         ]
-        for title, body in announcements_data:
-            Announcement.objects.get_or_create(
-                building=building,
-                title=title,
-                defaults={"body": body, "is_active": True},
-            )
+        from apps.notifications.signals import on_announcement_created
+
+        # Disconnect Celery signal during seed — broker may not be running
+        post_save.disconnect(on_announcement_created, sender=Announcement)
+        try:
+            for title, body in announcements_data:
+                Announcement.objects.get_or_create(
+                    building=building,
+                    title=title,
+                    defaults={"body": body, "is_active": True},
+                )
+        finally:
+            post_save.connect(on_announcement_created, sender=Announcement)
+
         self.stdout.write(f"  ✓ Created/verified {len(announcements_data)} announcements")
 
         # ── 10. News articles (8) ─────────────────────────────────────────
@@ -467,24 +485,33 @@ class Command(BaseCommand):
             ("ТТ6666ВВ", "Бригада електриків", 1),
             ("АА7777ММ", "Рієлтор на огляд квартири", 2),
         ]
-        for i, (car, comment, day_offset) in enumerate(pass_data):
-            user, unit, apt = residents[i % len(residents)]
-            visit = now.date() + timedelta(days=day_offset)
-            status = VehiclePass.Status.CLOSED if day_offset < 0 else VehiclePass.Status.PENDING
-            vp, created = VehiclePass.objects.get_or_create(
-                tenant=user,
-                car_number=car,
-                visit_date=visit,
-                defaults={
-                    "unit": unit,
-                    "comment": comment,
-                    "status": status,
-                },
-            )
-            if created and status == VehiclePass.Status.CLOSED:
-                vp.closed_by = guard
-                vp.closed_at = now - timedelta(hours=random.randint(1, 48))
-                vp.save()
+        from apps.notifications.signals import on_pass_saved
+        from django.db.models.signals import post_save
+        from apps.passes.models import VehiclePass as VehiclePassModel
+
+        # Disconnect Celery signal during seed — broker may not be running
+        post_save.disconnect(on_pass_saved, sender=VehiclePassModel)
+        try:
+            for i, (car, comment, day_offset) in enumerate(pass_data):
+                user, unit, apt = residents[i % len(residents)]
+                visit = now.date() + timedelta(days=day_offset)
+                status = VehiclePass.Status.CLOSED if day_offset < 0 else VehiclePass.Status.PENDING
+                vp, created = VehiclePass.objects.get_or_create(
+                    tenant=user,
+                    car_number=car,
+                    visit_date=visit,
+                    defaults={
+                        "unit": unit,
+                        "comment": comment,
+                        "status": status,
+                    },
+                )
+                if created and status == VehiclePass.Status.CLOSED:
+                    vp.closed_by = guard
+                    vp.closed_at = now - timedelta(hours=random.randint(1, 48))
+                    vp.save()
+        finally:
+            post_save.connect(on_pass_saved, sender=VehiclePassModel)
 
         self.stdout.write(f"  ✓ Created/verified {len(pass_data)} vehicle passes")
 

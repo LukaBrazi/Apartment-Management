@@ -9,6 +9,28 @@ _issue_old_status: dict = {}
 _issue_old_assigned_to: dict = {}
 
 
+# Use actual model classes (not strings) so that signal.disconnect() works
+# reliably in seed_demo and other management commands.
+def _get_issue_model():
+    from apps.issues.models import Issue
+    return Issue
+
+
+def _get_vehicle_pass_model():
+    from apps.passes.models import VehiclePass
+    return VehiclePass
+
+
+def _get_announcement_model():
+    from apps.posts.models import Announcement
+    return Announcement
+
+
+# We still need to register with string senders so Django can resolve the
+# models lazily at startup (avoids circular-import issues during AppConfig.ready).
+# But we also register a connect-on-ready callback so that disconnect() with
+# the actual model class works correctly.
+
 @receiver(pre_save, sender="issues.Issue")
 def cache_issue_old_state(sender, instance, **kwargs):
     """Cache old status and assigned_to before saving."""
@@ -62,3 +84,21 @@ def on_announcement_created(sender, instance, created, **kwargs):
     if created:
         from apps.notifications.tasks import notify_building_tenants_announcement
         notify_building_tenants_announcement.delay(str(instance.pk))
+
+
+def connect_all():
+    """
+    Re-connect all signals using the resolved model classes.
+    Called from NotificationsConfig.ready() AFTER the app registry is loaded.
+    This ensures that disconnect(sender=ModelClass) works correctly
+    (e.g. in seed_demo and other management commands).
+    """
+    from apps.issues.models import Issue
+    from apps.passes.models import VehiclePass
+    from apps.posts.models import Announcement
+
+    # Connect with actual classes (disconnect() will work with these)
+    pre_save.connect(cache_issue_old_state, sender=Issue, weak=False)
+    post_save.connect(on_issue_saved, sender=Issue, weak=False)
+    post_save.connect(on_pass_saved, sender=VehiclePass, weak=False)
+    post_save.connect(on_announcement_created, sender=Announcement, weak=False)
