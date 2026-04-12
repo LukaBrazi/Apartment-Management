@@ -50,6 +50,13 @@ CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
 
+# DRF Throttling — disabled in CI to avoid hitting rate limits during tests
+# (mirrors the same override in local.py)
+# ------------------------------------------------------------------------------
+REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] = []
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}
+
+
 # Django Extensions (for runserver_plus used in start script)
 # ------------------------------------------------------------------------------
 INSTALLED_APPS += ["django_extensions"]

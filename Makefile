@@ -9,7 +9,7 @@ DB_URL = postgres://alpha_user:alpha_password@postgres:5432/alpha_apartments
 
 .PHONY: help up down restart build logs shell test test-cov migrate makemigrations \
         createsuperuser seed minio-init collectstatic celeryworker celerybeat \
-        ci-up ci-down ci-seed ci-reseed e2e e2e-ui e2e-full e2e-dev \
+        ci-up ci-down ci-clean ci-seed ci-reseed e2e e2e-ui e2e-full e2e-dev \
         fresh
 
 help:
@@ -37,6 +37,7 @@ help:
 	@echo ""
 	@echo "  make ci-up           Підняти CI-стек (без MinIO/Mailpit/Celery)"
 	@echo "  make ci-down         Зупинити CI-стек"
+	@echo "  make ci-clean        Зупинити CI-стек і видалити volumes (потрібно перед e2e-full)"
 	@echo "  make ci-seed         Наповнити CI БД демо-даними"
 	@echo "  make ci-reseed       Скинути і переналити демо-дані в CI БД"
 	@echo "  make e2e             Запустити Playwright E2E тести (проти CI-стеку)"
@@ -161,6 +162,9 @@ ci-up:
 ci-down:
 	$(COMPOSE_CI) down
 
+ci-clean:
+	$(COMPOSE_CI) down -v --remove-orphans
+
 ci-seed:
 	$(COMPOSE_CI) exec -T server python manage.py seed_demo
 
@@ -175,29 +179,40 @@ e2e:
 e2e-ui:
 	cd ../sckandi-e2e && npx playwright test --ui
 
-# Повний цикл: підняти → seed → тести → прибрати
+# Повний цикл: прибрати попередній стек → підняти → seed → тести → прибрати
 e2e-full:
+	$(MAKE) ci-clean
 	$(MAKE) ci-up
 	@echo "Чекаємо готовності сервера..."
-	@for i in $$(seq 1 60); do \
+	@STATUS=""; \
+	for i in $$(seq 1 60); do \
 		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
 		  $$($(COMPOSE_CI) ps -q server) 2>/dev/null || echo "unknown"); \
 		[ "$$STATUS" = "healthy" ] && echo "Сервер готовий!" && break; \
 		echo "  $$i/60 — $$STATUS"; sleep 5; \
-	done
+	done; \
+	if [ "$$STATUS" != "healthy" ]; then \
+		echo "Сервер не запустився за відведений час (статус: $$STATUS)"; \
+		$(MAKE) ci-clean; exit 1; \
+	fi
 	$(MAKE) ci-seed
 	cd ../sckandi-e2e && npx playwright test --workers=1; E2E_EXIT=$$?; \
-	  $(MAKE) ci-down; exit $$E2E_EXIT
+	  $(MAKE) ci-clean; exit $$E2E_EXIT
 
 # Розробницький цикл: підняти → seed → тести (стек залишається для повторних запусків)
+# При першому запуску використовуй `make ci-clean` перед цим, якщо є старі volume
 e2e-dev:
 	$(MAKE) ci-up
 	@echo "Чекаємо готовності сервера..."
-	@for i in $$(seq 1 60); do \
+	@STATUS=""; \
+	for i in $$(seq 1 60); do \
 		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
 		  $$($(COMPOSE_CI) ps -q server) 2>/dev/null || echo "unknown"); \
 		[ "$$STATUS" = "healthy" ] && echo "Сервер готовий!" && break; \
 		echo "  $$i/60 — $$STATUS"; sleep 5; \
-	done
+	done; \
+	if [ "$$STATUS" != "healthy" ]; then \
+		echo "Сервер не запустився за відведений час (статус: $$STATUS)"; exit 1; \
+	fi
 	$(MAKE) ci-reseed
 	cd ../sckandi-e2e && npx playwright test --workers=1

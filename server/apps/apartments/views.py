@@ -177,6 +177,7 @@ class AdminBuildingListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [IsAdminUser]
     renderer_classes = (GenericJSONRenderer,)
     object_label = "buildings"
+    pagination_class = None
 
 
 class BuildingCreateAPIView(generics.CreateAPIView):

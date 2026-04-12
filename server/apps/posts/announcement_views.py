@@ -38,7 +38,10 @@ class AnnouncementListAPIView(generics.ListAPIView):
 class AnnouncementAdminSerializer(serializers.ModelSerializer):
     """Admin serializer for announcements — building is a writable FK."""
 
-    building = serializers.PrimaryKeyRelatedField(queryset=Building.objects.all())
+    building = serializers.SlugRelatedField(
+        slug_field='id',
+        queryset=Building.objects.all()
+    )
     building_name = serializers.ReadOnlyField(source="building.name")
 
     class Meta:
