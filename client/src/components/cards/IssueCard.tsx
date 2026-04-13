@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import React from "react";
 import {
@@ -9,7 +11,8 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Hotel } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/admin/StatusBadge";
+import { useGetUserProfileQuery } from "@/lib/redux/features/users/usersApiSlice";
 
 interface Issue {
 	id: string;
@@ -25,6 +28,9 @@ interface IssueCardProps {
 }
 
 export default function IssueCard({ issue }: IssueCardProps) {
+	const { data: currentUser } = useGetUserProfileQuery();
+	const isStaff = currentUser?.profile.is_staff ?? false;
+
 	return (
 		<Link href={`/issue/${issue.id}`} key={issue.id}>
 			<Card
@@ -59,19 +65,17 @@ export default function IssueCard({ issue }: IssueCardProps) {
 				</CardContent>
 
 				<CardFooter className="dark:text-babyPowder flex flex-row justify-between">
-					<p>
+					<p className="flex items-center gap-1.5">
 						<span className="mr-0.5 font-bold">Статус: </span>
-						<Badge className="bg-eerieBlack text-babyPowder dark:bg-electricIndigo dark:text-babyPowder">
-							{issue.status}
-						</Badge>
+						<StatusBadge value={issue.status} />
 					</p>
 
-					<p>
-						<span className="mr-0.5 font-bold">Пріоритет: </span>
-						<Badge className="bg-eerieBlack text-babyPowder dark:bg-pumpkin dark:text-eerieBlack">
-							{issue.priority}
-						</Badge>
-					</p>
+					{isStaff && (
+						<p className="flex items-center gap-1.5">
+							<span className="mr-0.5 font-bold">Пріоритет: </span>
+							<StatusBadge value={issue.priority} type="priority" />
+						</p>
+					)}
 				</CardFooter>
 			</Card>
 		</Link>

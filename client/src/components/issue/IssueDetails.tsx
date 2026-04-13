@@ -21,6 +21,7 @@ import { AuthFormHeader } from "../forms/auth";
 import { CheckCheck, CircleDot, EyeIcon, Hotel } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import StatusBadge from "../admin/StatusBadge";
 
 interface IssueDetailsProps {
 	params: {
@@ -35,6 +36,8 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 	const router = useRouter();
 
 	const { data: currentUser } = useGetUserProfileQuery();
+
+	const isStaff = currentUser?.profile.is_staff ?? false;
 
 	const canUpdate = issue?.assigned_to === currentUser?.profile.full_name;
 
@@ -120,19 +123,23 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 
 			<CardFooter className="mt-2 flex flex-row justify-between dark:text-lime-500">
 				<p className="text-lg">
-					Призначено:
+					Призначено:{" "}
 					<span className="dark:text-platinum">
-						{issue?.assigned_to || "Not assigned Yet!"}
+						{issue?.assigned_to || "Не призначено"}
 					</span>
 				</p>
-				<p className="text-lg">
-					Статус:
-					<span className="dark:text-platinum">{issue?.status}</span>
+				<p className="flex items-center gap-2 text-lg">
+					Статус:{" "}
+					{issue?.status && <StatusBadge value={issue.status} />}
 				</p>
-				<p className="text-lg">
-					Пріоритет:
-					<span className="dark:text-platinum">{issue?.priority}</span>
-				</p>
+				{isStaff && (
+					<p className="flex items-center gap-2 text-lg">
+						Пріоритет:{" "}
+						{issue?.priority && (
+							<StatusBadge value={issue.priority} type="priority" />
+						)}
+					</p>
+				)}
 				<p className="flex flex-row items-center">
 					<EyeIcon className="mr-1 size-5" />
 					<span className="dark:text-platinum text-lg">
