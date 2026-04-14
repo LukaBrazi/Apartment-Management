@@ -1,4 +1,4 @@
-from django.db.models import F
+from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -18,7 +18,16 @@ class NewsListAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        qs = News.objects.filter(is_published=True).order_by("-pinned", "-published_at", "-created_at")
+        qs = News.objects.filter(is_published=True)
+        # Filter by organization: user sees org news + global news (org=NULL)
+        if request.user.is_authenticated and not request.user.is_superuser:
+            from apps.organizations.utils import get_user_organizations
+            user_orgs = get_user_organizations(request.user)
+            qs = qs.filter(Q(organization__in=user_orgs) | Q(organization__isnull=True))
+        else:
+            # Unauthenticated or superuser sees all published news
+            pass
+        qs = qs.order_by("-pinned", "-published_at", "-created_at")
         serializer = NewsListSerializer(qs, many=True, context={"request": request})
         return Response({"news": serializer.data})
 

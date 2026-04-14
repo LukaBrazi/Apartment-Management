@@ -105,13 +105,21 @@ class IssueListAPIView(generics.ListAPIView):
         base_qs = _issue_base_qs()
         if user.is_superuser:
             return base_qs
-        # Staff scoped to their assigned buildings (M2M); if none — sees all
+
+        # First apply building scope filter if staff has buildings assigned
         try:
             managed = user.profile.buildings.all()
             if managed.exists():
-                return base_qs.filter(unit__entrance__building__in=managed).distinct()
+                base_qs = base_qs.filter(unit__entrance__building__in=managed).distinct()
         except AttributeError:
             pass
+
+        # Then apply organization filter (if org memberships exist)
+        from apps.organizations.utils import get_user_organizations
+        user_orgs = get_user_organizations(user)
+        if user_orgs.exists():
+            base_qs = base_qs.filter(organization__in=user_orgs)
+
         return base_qs
 
 
@@ -147,8 +155,15 @@ class AssignedIssuesListAPIView(generics.ListAPIView):
             QuerySet: The queryset of issues assigned to the user.
         """
 
-        # Return the queryset of issues assigned to the user
-        return _issue_base_qs().filter(assigned_to=self.request.user)
+        # Filter by organization scope
+        from apps.organizations.utils import get_user_organizations
+        qs = _issue_base_qs().filter(assigned_to=self.request.user)
+        if not self.request.user.is_superuser:
+            user_orgs = get_user_organizations(self.request.user)
+            if not user_orgs.exists():
+                return qs  # backward compat: no org membership → no org filter
+            return qs.filter(organization__in=user_orgs)
+        return qs
 
 
 # MyIssuesListAPIView Class
@@ -166,7 +181,14 @@ class MyIssuesListAPIView(generics.ListAPIView):
     ordering = ("-created_at",)
 
     def get_queryset(self):
-        return _issue_base_qs().filter(reported_by=self.request.user)
+        from apps.organizations.utils import get_user_organizations
+        qs = _issue_base_qs().filter(reported_by=self.request.user)
+        if not self.request.user.is_superuser:
+            user_orgs = get_user_organizations(self.request.user)
+            if not user_orgs.exists():
+                return qs  # backward compat: no org membership → no org filter
+            return qs.filter(organization__in=user_orgs)
+        return qs
 
 
 # IssueCreateAPIView Class

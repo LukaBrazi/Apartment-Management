@@ -85,10 +85,19 @@ class PostListAPIView(generics.ListAPIView):
             QuerySet: A queryset of Post objects, annotated with reply count and ordered.
         """
         # Annotate posts with reply count and view count; prefetch related for N+1 avoidance
-        return Post.objects.select_related("author__profile").annotate(
+        qs = Post.objects.select_related("author__profile").annotate(
             replies_count=Count("replies", distinct=True),
             view_count=Count("content_views", distinct=True),
         ).order_by("-upvotes", "-created_at")
+
+        # Org isolation: authenticated non-superuser sees only their org's posts
+        # Backward compat: if user has no org membership → no filter (return all)
+        if self.request.user.is_authenticated and not self.request.user.is_superuser:
+            from apps.organizations.utils import get_user_organizations
+            user_orgs = get_user_organizations(self.request.user)
+            if user_orgs.exists():
+                return qs.filter(organization__in=user_orgs)
+        return qs
 
 
 # MyPostListAPIView class

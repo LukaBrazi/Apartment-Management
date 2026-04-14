@@ -103,6 +103,7 @@ LOCAL_APPS = [
     "apps.news",
     "apps.site_settings",
     "apps.notifications",
+    "apps.organizations",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 

@@ -10,7 +10,7 @@ DB_URL = postgres://alpha_user:alpha_password@postgres:5432/alpha_apartments
 .PHONY: help up down restart build logs shell test test-cov migrate makemigrations \
         createsuperuser seed minio-init collectstatic celeryworker celerybeat \
         ci-up ci-down ci-clean ci-seed ci-reseed e2e e2e-ui e2e-full e2e-dev \
-        fresh
+        fresh docker-start
 
 help:
 	@echo "Skandi Apartments — команди Make"
@@ -32,8 +32,10 @@ help:
 	@echo ""
 	@echo "  make minio-init      Ініціалізувати MinIO bucket (перший запуск)"
 	@echo ""
-	@echo "  make test            Запустити тести"
-	@echo "  make test-cov        Тести з покриттям коду"
+	@echo "  make test            Запустити всі тести (apps/tests + organizations/tests)"
+	@echo "  make test-cov        Всі тести з покриттям коду"
+	@echo ""
+	@echo "  ПРИМІТКА: pytest автоматично знаходить тести в apps/tests та apps/organizations/tests"
 	@echo ""
 	@echo "  make ci-up           Підняти CI-стек (без MinIO/Mailpit/Celery)"
 	@echo "  make ci-down         Зупинити CI-стек"
@@ -149,10 +151,10 @@ fresh: docker-start
 # --- Тести ---
 
 test:
-	cd server && ../.venv/bin/pytest apps/tests/ -v
+	cd server && ../.venv/bin/pytest -v
 
 test-cov:
-	cd server && ../.venv/bin/pytest apps/tests/ -v --cov=apps --cov-report=term-missing
+	cd server && ../.venv/bin/pytest -v --cov=apps --cov-report=term-missing
 
 # --- CI / E2E ---
 

@@ -23,6 +23,10 @@ function AboutContent() {
 	const { data, isLoading } = useGetUserProfileQuery();
 	const profile = data?.profile;
 
+	// Репутація видима тільки для персоналу (охорона, сантехніки тощо)
+	// Мешканці (tenant) не бачать своєї репутації
+	const isWorker = profile?.is_staff || (profile?.occupation && profile.occupation !== "tenant");
+
 	if (isLoading) {
 		return (
 			<div className="flex-center pt-32">
@@ -51,11 +55,13 @@ function AboutContent() {
 						label="Дата реєстрації"
 						value={formatDate(profile?.date_joined).toString() || ""}
 					/>
-					<ProfileItem
-						icon={<BadgeCheck className="tab-icon" />}
-						label="Репутація"
-						value={`${profile?.reputation} з 100` || ""}
-					/>
+					{isWorker && (
+						<ProfileItem
+							icon={<BadgeCheck className="tab-icon" />}
+							label="Репутація"
+							value={`${profile?.reputation} з 100` || ""}
+						/>
+					)}
 					<ProfileItem
 						icon={<Map className="tab-icon" />}
 						label="Країна"

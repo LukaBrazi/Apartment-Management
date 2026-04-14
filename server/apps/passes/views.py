@@ -30,9 +30,16 @@ class VehiclePassListCreateAPIView(generics.ListCreateAPIView):
         return VehiclePassSerializer
 
     def get_queryset(self):
-        return VehiclePass.objects.select_related(
+        qs = VehiclePass.objects.select_related(
             "tenant", "unit__entrance__building", "closed_by"
-        ).all()
+        )
+        if not self.request.user.is_superuser:
+            from apps.organizations.utils import get_user_organizations
+            user_orgs = get_user_organizations(self.request.user)
+            if not user_orgs.exists():
+                return qs  # backward compat: no org membership → no org filter
+            return qs.filter(organization__in=user_orgs)
+        return qs
 
 
 class MyVehiclePassListAPIView(generics.ListAPIView):
@@ -42,9 +49,16 @@ class MyVehiclePassListAPIView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return VehiclePass.objects.filter(
+        qs = VehiclePass.objects.filter(
             tenant=self.request.user
         ).select_related("unit__entrance__building", "closed_by")
+        if not self.request.user.is_superuser:
+            from apps.organizations.utils import get_user_organizations
+            user_orgs = get_user_organizations(self.request.user)
+            if not user_orgs.exists():
+                return qs  # backward compat: no org membership → no org filter
+            return qs.filter(organization__in=user_orgs)
+        return qs
 
 
 class CloseVehiclePassAPIView(APIView):

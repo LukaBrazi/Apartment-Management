@@ -61,6 +61,14 @@ class News(TimeStampedModel):
         related_name="news_articles",
         verbose_name=_("Author"),
     )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        related_name="news_articles",
+        null=True,
+        blank=True,
+        help_text=_("Організація (NULL = глобальна новина для всіх)"),
+    )
     published_at = models.DateTimeField(_("Published At"), null=True, blank=True)
     is_published = models.BooleanField(_("Published"), default=False)
     pinned = models.BooleanField(_("Pinned"), default=False)
@@ -71,6 +79,10 @@ class News(TimeStampedModel):
         verbose_name = _("News")
         verbose_name_plural = _("News")
         ordering = ["-pinned", "-published_at", "-created_at"]
+        indexes = [
+            models.Index(fields=["organization", "is_published"], name="news_org_published_idx"),
+            models.Index(fields=["-published_at"], name="news_published_date_idx"),
+        ]
 
     def __str__(self) -> str:
         return self.title

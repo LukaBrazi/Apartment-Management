@@ -84,6 +84,14 @@ class Post(TimeStampedModel):
         related_name="posts",
         verbose_name=_("Author"),
     )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        related_name="posts",
+        null=True,
+        blank=True,
+        help_text=_("Організація, до якої належить ця публікація"),
+    )
     bookmarked_by = models.ManyToManyField(
         User,
         related_name="bookmarked_posts",
@@ -167,6 +175,10 @@ class Post(TimeStampedModel):
 
         verbose_name = _("Post")
         verbose_name_plural = _("Posts")
+        indexes = [
+            models.Index(fields=["organization"], name="post_organization_idx"),
+            models.Index(fields=["author", "created_at"], name="post_author_created_idx"),
+        ]
 
 
 # Reply Model

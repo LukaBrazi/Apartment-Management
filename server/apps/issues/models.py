@@ -111,6 +111,8 @@ class Issue(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="issues",
         verbose_name=_("Apartment"),
+        null=True,
+        blank=True,
     )
     # New: link to Unit (preferred over apartment FK going forward)
     unit = models.ForeignKey(
@@ -128,6 +130,14 @@ class Issue(TimeStampedModel):
         blank=True,
         related_name="issues",
         verbose_name=_("Category"),
+    )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        related_name="issues",
+        null=True,
+        blank=True,
+        help_text=_("Організація, до якої належить ця заявка"),
     )
     due_at = models.DateTimeField(_("Due At"), null=True, blank=True)
     reported_by = models.ForeignKey(
@@ -172,6 +182,7 @@ class Issue(TimeStampedModel):
             models.Index(fields=["status", "priority"], name="issue_status_priority_idx"),
             models.Index(fields=["reported_by", "status"], name="issue_reporter_status_idx"),
             models.Index(fields=["assigned_to", "status"], name="issue_assignee_status_idx"),
+            models.Index(fields=["organization", "status"], name="issue_org_status_idx"),
         ]
 
     # String Representation

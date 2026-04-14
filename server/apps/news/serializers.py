@@ -46,10 +46,39 @@ class NewsCategoryPKField(serializers.PrimaryKeyRelatedField):
             self.fail("does_not_exist", pk_value=data)
 
 
+class OrganizationPKField(serializers.PrimaryKeyRelatedField):
+    """
+    Поле для вибору організації за UUID.
+    queryset визначається динамічно щоб уникнути circular import на рівні модуля.
+    """
+
+    def get_queryset(self):
+        from apps.organizations.models import Organization
+        return Organization.objects.filter(is_active=True)
+
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, value):
+        if value is None:
+            return None
+        return str(value.id)
+
+    def to_internal_value(self, data):
+        if data is None:
+            return None
+        try:
+            from apps.organizations.models import Organization
+            return Organization.objects.get(id=data)
+        except (Organization.DoesNotExist, ValueError, TypeError):
+            self.fail("does_not_exist", pk_value=data)
+
+
 class NewsAdminSerializer(TaggitSerializer, serializers.ModelSerializer):
     category = NewsCategoryPKField(
         queryset=NewsCategory.objects.all(), allow_null=True, required=False
     )
+    organization = OrganizationPKField(allow_null=True, required=False)
     tags = TagListSerializerField(required=False)
     author_name = serializers.ReadOnlyField(source="author.full_name")
 
@@ -57,7 +86,7 @@ class NewsAdminSerializer(TaggitSerializer, serializers.ModelSerializer):
         model = News
         fields = [
             "id", "title", "slug", "excerpt", "body", "cover_image",
-            "category", "tags", "author_name",
+            "category", "tags", "author_name", "organization",
             "published_at", "is_published", "pinned",
             "views_count", "external_url", "created_at",
         ]

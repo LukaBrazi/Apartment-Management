@@ -559,6 +559,11 @@ class PostSerializer(TaggitSerializer, BasePostSerializer):
         # Get the user
         user = self.context.get("request").user
 
+        # Auto-derive organization if not set
+        if not validated_data.get("organization"):
+            from apps.organizations.utils import get_user_primary_organization
+            validated_data["organization"] = get_user_primary_organization(user)
+
         # Create the post
         post = Post.objects.create(author=user, **validated_data)
 

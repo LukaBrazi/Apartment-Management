@@ -52,6 +52,14 @@ class Building(TimeStampedModel):
     address = models.CharField(_("Address"), max_length=255)
     city = models.CharField(_("City"), max_length=100, blank=True, default="")
     is_active = models.BooleanField(_("Active"), default=True)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="buildings",
+        null=True,
+        blank=True,
+        help_text=_("Organization that owns this building"),
+    )
 
     class Meta:
         verbose_name = _("Building")
@@ -72,6 +80,14 @@ class Entrance(TimeStampedModel):
         verbose_name=_("Building"),
     )
     name = models.CharField(_("Name / Number"), max_length=20)
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="entrances",
+        null=True,
+        blank=True,
+        editable=False,
+    )
 
     class Meta:
         verbose_name = _("Entrance")
@@ -81,6 +97,11 @@ class Entrance(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.building.name} / Entrance {self.name}"
+
+    def save(self, *args, **kwargs):
+        if self.building_id and not self.organization_id:
+            self.organization = self.building.organization
+        super().save(*args, **kwargs)
 
 
 class Unit(TimeStampedModel):
@@ -103,6 +124,14 @@ class Unit(TimeStampedModel):
         related_name="unit",
         verbose_name=_("Legacy Apartment"),
     )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="units",
+        null=True,
+        blank=True,
+        editable=False,
+    )
 
     class Meta:
         verbose_name = _("Unit")
@@ -112,6 +141,11 @@ class Unit(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Unit {self.number} — {self.entrance}"
+
+    def save(self, *args, **kwargs):
+        if self.entrance_id and not self.organization_id:
+            self.organization = self.entrance.organization
+        super().save(*args, **kwargs)
 
 
 # ── Legacy Apartment Model (kept for backward compatibility) ────────────────
@@ -136,7 +170,7 @@ class Apartment(TimeStampedModel):
 
     # Attributes
     unit_number = models.CharField(
-        max_length=10, unique=True, verbose_name=_("Unit Number")
+        max_length=10, verbose_name=_("Unit Number")
     )
     building = models.CharField(max_length=50, verbose_name=_("Building"))
     floor = models.PositiveIntegerField(verbose_name=_("Floor"))
@@ -148,6 +182,11 @@ class Apartment(TimeStampedModel):
         related_name="apartment",
         verbose_name=_("Tenant"),
     )
+
+    class Meta:
+        verbose_name = _("Apartment")
+        verbose_name_plural = _("Apartments")
+        unique_together = [("building", "unit_number")]
 
     # String Representation
     def __str__(self) -> str:

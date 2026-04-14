@@ -24,6 +24,11 @@ class VehiclePassCreateSerializer(serializers.ModelSerializer):
             .select_related("entrance__building")
             .first()
         )
+        if not validated_data.get("organization"):
+            from apps.organizations.utils import get_user_primary_organization
+            org = get_user_primary_organization(user)
+            if org:  # only set if user has an org
+                validated_data["organization"] = org
         return VehiclePass.objects.create(tenant=user, unit=unit, **validated_data)
 
 

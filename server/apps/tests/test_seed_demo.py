@@ -15,16 +15,16 @@ def test_seed_demo_runs_and_creates_expected_data():
 
     call_command("seed_demo", verbosity=0)
 
-    # 2 buildings (Будинок 1 + Будинок 2)
-    assert Building.objects.count() == 2
-    # 4 entrances (2 per building)
-    assert Entrance.objects.count() == 4
-    # 20 units (5 per entrance)
+    # 3 buildings (Корпус А, Б, В)
+    assert Building.objects.count() == 3
+    # 5 entrances (2 in A, 2 in B, 1 in C)
+    assert Entrance.objects.count() == 5
+    # 20 units (10 per entrance in A, 2 entrances)
     assert Unit.objects.count() == 20
     # admin + dispatcher + guard + plumber + electrician + 1 tenant + 8 residents = 14
     assert User.objects.count() == 14
-    # 15 service requests
-    assert Issue.objects.count() == 15
+    # 16 service requests
+    assert Issue.objects.count() == 16
     # 10 announcements
     assert Announcement.objects.count() == 10
     # 8 news articles
@@ -41,5 +41,5 @@ def test_seed_demo_idempotent():
     call_command("seed_demo", verbosity=0)
 
     # Idempotent: second run uses get_or_create, no duplicates
-    assert Building.objects.count() == 2
-    assert Issue.objects.count() == 15
+    assert Building.objects.count() == 3
+    assert Issue.objects.count() == 16

@@ -119,6 +119,15 @@ class IssueCreateSerializer(serializers.ModelSerializer):
             attrs["description"] = f"📍 Місце: {location_note}\n\n{attrs['description']}"
         return attrs
 
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if request and not validated_data.get("organization"):
+            from apps.organizations.utils import get_user_primary_organization
+            org = get_user_primary_organization(request.user)
+            if org:  # only set if user has an org
+                validated_data["organization"] = org
+        return super().create(validated_data)
+
 
 # Issue Status Update Serializer
 class IssueStatusUpdateSerializer(serializers.ModelSerializer):

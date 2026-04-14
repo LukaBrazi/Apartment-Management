@@ -30,6 +30,14 @@ class VehiclePass(TimeStampedModel):
         related_name="vehicle_passes",
         verbose_name=_("Unit"),
     )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        related_name="vehicle_passes",
+        null=True,
+        blank=True,
+        help_text=_("Організація, до якої належить цей пропуск"),
+    )
     car_number = models.CharField(
         _("Car Number"), max_length=20, blank=True, default=""
     )
@@ -59,6 +67,7 @@ class VehiclePass(TimeStampedModel):
             models.Index(fields=["status"], name="pass_status_idx"),
             models.Index(fields=["tenant", "status"], name="pass_tenant_status_idx"),
             models.Index(fields=["visit_date"], name="pass_visit_date_idx"),
+            models.Index(fields=["organization", "status"], name="pass_org_status_idx"),
         ]
 
     def __str__(self) -> str:

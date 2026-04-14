@@ -108,23 +108,25 @@ class ProfileSerializer(serializers.ModelSerializer):
             return None
 
     # Method to get the apartment
-    def get_apartment(self, obj: Profile) -> list | None:
+    def get_apartment(self, obj: Profile) -> dict | None:
         """Get the apartment the user belongs to.
+
+        Returns a single apartment object (not a list) so the frontend
+        can access profile.apartment.unit_number directly.
 
         Args:
             obj (Profile): The profile.
 
         Returns:
-            list | None: The apartment the user belongs to.
+            dict | None: The apartment the user belongs to, or None.
         """
 
-        # Get all the apartments
-        apartments = obj.user.apartment.all()
+        # Get the first apartment linked to this user
+        apartment = obj.user.apartment.first()
 
-        # If the apartments exist
-        if apartments:
-            # Serialize the apartments
-            return ApartmentSerializer(apartments, many=True).data
+        # If the apartment exists, return as single object
+        if apartment:
+            return ApartmentSerializer(apartment).data
 
         # Return None
         return None
