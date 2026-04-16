@@ -45,7 +45,8 @@ LOCALE_PATHS = [str(BASE_DIR / "locale")]
 # Site settings
 # ------------------------------------------------------------------------------
 SITE_ID = 1
-SITE_NAME = env("SITE_NAME", default="Skandi Apartments")
+SITE_NAME = env("SITE_NAME", default="EstateOS")
+PLATFORM_DOMAINS = env.list("PLATFORM_DOMAINS", default=["estateos.com"])
 
 
 # Databases
@@ -160,6 +161,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.common.middleware.OrganizationMiddleware",
 ]
 
 
@@ -205,7 +207,7 @@ EMAIL_TIMEOUT = 5
 # Admin
 # ------------------------------------------------------------------------------
 ADMIN_URL = "django-admin/"
-ADMINS = [("Andriienko Dmytro", "d.andriienko@skandi-apartments.local")]
+ADMINS = [("Andriienko Dmytro", "d.andriienko@estateos.local")]
 MANAGERS = ADMINS
 
 
@@ -299,10 +301,10 @@ REST_FRAMEWORK = {
 # DRF Spectacular Config
 # -------------------------------------------------------------------------------
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Skandi Apartments API",
-    "DESCRIPTION": "Skandi Apartments web portal lets tenants report issues, report other tenants, and securely share incidents. It effectively uses Django REST Framework for the backend and DRF Spectacular for the API documentation.",
+    "TITLE": f"{env('SITE_NAME', default='EstateOS')} API",
+    "DESCRIPTION": "Residential complex management platform API. Tenants can report issues, request vehicle passes, view news and announcements. Built with Django REST Framework.",
     "VERSION": "1.0.0",
-    "CONTACT": {"name": "Andriienko Dmytro", "email": "d.andriienko@skandi-apartments.local"},
+    "CONTACT": {"name": "Andriienko Dmytro", "email": "d.andriienko@propmanager.local"},
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",

@@ -121,29 +121,58 @@ minio-init:
 # --- Повний перезапуск ---
 
 fresh: docker-start
-	@echo "🔴 [1/7] Зупиняємо контейнери..."
-	$(COMPOSE) down
-	@echo "🔨 [2/7] Збираємо образи..."
+	@echo "🔴 [1/8] Зупиняємо контейнери і видаляємо volumes..."
+	$(COMPOSE) down -v --remove-orphans
+	@echo "🔨 [2/8] Збираємо образи..."
 	$(COMPOSE) build
-	@echo "🚀 [3/7] Піднімаємо сервіси..."
+	@echo "🚀 [3/8] Піднімаємо інфраструктуру (postgres, redis, minio, mailpit)..."
+	$(COMPOSE) up -d postgres redis minio mailpit
+	@echo "⏳ [4/8] Чекаємо готовності postgres..."
+	@STATUS=""; \
+	for i in $$(seq 1 60); do \
+		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
+		  $$($(COMPOSE) ps -q postgres) 2>/dev/null || echo "unknown"); \
+		[ "$$STATUS" = "healthy" ] && echo "   ✓ postgres готовий!" && break; \
+		echo "   $$i/60 — postgres: $$STATUS"; sleep 2; \
+	done; \
+	if [ "$$STATUS" != "healthy" ]; then \
+		echo "❌ postgres не запустився"; \
+		$(COMPOSE) logs postgres | tail -30; exit 1; \
+	fi
+	@echo "⏳ [5/8] Чекаємо готовності MinIO..."
+	@STATUS=""; \
+	for i in $$(seq 1 60); do \
+		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
+		  $$($(COMPOSE) ps -q minio) 2>/dev/null || echo "unknown"); \
+		[ "$$STATUS" = "healthy" ] && echo "   ✓ minio готовий!" && break; \
+		echo "   $$i/60 — minio: $$STATUS"; sleep 2; \
+	done; \
+	if [ "$$STATUS" != "healthy" ]; then \
+		echo "❌ minio не запустився"; \
+		$(COMPOSE) logs minio | tail -30; exit 1; \
+	fi
+	@echo "🪣 [6/8] Створюємо MinIO bucket ДО старту сервера..."
+	$(COMPOSE) exec -T minio mc alias set local http://localhost:9000 minioadmin minioadmin123
+	$(COMPOSE) exec -T minio mc mb --ignore-existing local/skandi-apartments
+	$(COMPOSE) exec -T minio mc anonymous set public local/skandi-apartments/static
+	@echo "🚀 [7/8] Піднімаємо сервер та інші сервіси..."
 	$(COMPOSE) up -d
-	@echo "⏳ [4/7] Чекаємо готовності сервера..."
-	@for i in $$(seq 1 30); do \
+	@echo "⏳ Чекаємо готовності сервера..."
+	@STATUS=""; \
+	for i in $$(seq 1 60); do \
 		STATUS=$$(docker inspect --format='{{.State.Health.Status}}' \
 		  $$($(COMPOSE) ps -q server) 2>/dev/null || echo "unknown"); \
-		[ "$$STATUS" = "healthy" ] && echo "   Сервер готовий!" && break; \
-		echo "   $$i/30 — $$STATUS"; sleep 3; \
-	done
-	@echo "🗄️  [5/7] Міграції + flush + seed..."
-	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py migrate --no-input
-	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py flush --no-input
-	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py seed_demo
-	@echo "🪣 [6/7] MinIO bucket..."
-	$(COMPOSE) exec minio mc alias set local http://localhost:9000 minioadmin minioadmin123
-	$(COMPOSE) exec minio mc mb --ignore-existing local/skandi-apartments
-	$(COMPOSE) exec minio mc anonymous set public local/skandi-apartments/static
-	@echo "📦 [7/7] Статика..."
-	$(COMPOSE) exec -e DATABASE_URL=$(DB_URL) server python manage.py collectstatic --no-input
+		[ "$$STATUS" = "healthy" ] && echo "   ✓ server готовий!" && break; \
+		echo "   $$i/60 — server: $$STATUS"; sleep 3; \
+	done; \
+	if [ "$$STATUS" != "healthy" ]; then \
+		echo "❌ server не запустився"; \
+		$(COMPOSE) logs server | tail -50; exit 1; \
+	fi
+	@echo "🗄️  [8/8] Міграції + flush + seed..."
+	$(COMPOSE) exec -T -e DATABASE_URL=$(DB_URL) server python manage.py migrate --no-input
+	$(COMPOSE) exec -T -e DATABASE_URL=$(DB_URL) server python manage.py flush --no-input
+	$(COMPOSE) exec -T -e DATABASE_URL=$(DB_URL) server python manage.py seed_demo
 	@echo ""
 	@echo "✅ Готово! Все оновлено з нуля."
 	@echo "   http://localhost:8080"

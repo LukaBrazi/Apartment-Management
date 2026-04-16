@@ -1,6 +1,7 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
-from .models import SiteLink, SiteSettings
+from .models import ContactPerson, SiteLink, SiteSettings
 
 
 class SiteLinkInline(admin.TabularInline):
@@ -16,27 +17,74 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     inlines = [SiteLinkInline]
     fieldsets = [
         (
-            "Residential Complex (ЖК)",
+            _("Residential Complex (ЖК)"),
             {
                 "fields": ["current_complex"],
-                "description": "The active ЖК for this installation. "
-                "Buildings are scoped to this complex.",
+                "description": _("The active ЖК for this installation. "
+                "Buildings are scoped to this complex."),
             },
         ),
         (
-            "Hero section",
+            _("Hero Section"),
             {
                 "fields": [
                     "hero_image",
                     "hero_title",
                     "hero_subtitle",
+                    "cta_text",
+                    "cta_url",
                 ]
             },
         ),
         (
-            "Call-to-action button",
+            _("Platform Identity (White-Label)"),
             {
-                "fields": ["cta_text", "cta_url"],
+                "fields": [
+                    "platform_name",
+                    "platform_tagline",
+                    "logo_url",
+                    "favicon_url",
+                ],
+                "description": _("Customize the platform branding for white-label deployments."),
+            },
+        ),
+        (
+            _("Branding Colors"),
+            {
+                "fields": ["primary_color", "secondary_color"],
+                "description": _("Hex color codes for primary and secondary branding."),
+            },
+        ),
+        (
+            _("Complex Information"),
+            {
+                "fields": ["complex_name", "complex_address", "complex_description"],
+                "description": _("Override current_complex info or provide additional context."),
+            },
+        ),
+        (
+            _("Support Contact Information"),
+            {
+                "fields": [
+                    "support_email",
+                    "support_phone",
+                    "support_hours",
+                    "telegram_url",
+                    "viber_url",
+                ],
+            },
+        ),
+        (
+            _("Footer & Legal"),
+            {
+                "fields": ["footer_text", "terms_url", "privacy_url"],
+            },
+        ),
+        (
+            _("SEO"),
+            {
+                "fields": ["meta_title", "meta_description"],
+                "classes": ["collapse"],
             },
         ),
     ]
@@ -68,3 +116,44 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(
             reverse("admin:site_settings_sitesettings_change", args=[obj.pk])
         )
+
+
+@admin.register(ContactPerson)
+class ContactPersonAdmin(admin.ModelAdmin):
+    """Admin for contact persons displayed on the contacts page."""
+
+    list_display = ["name", "role", "position", "phone", "is_active", "order"]
+    list_filter = ["role", "is_active", "is_emergency"]
+    search_fields = ["name", "position", "email", "phone"]
+    ordering = ["order", "name"]
+
+    fieldsets = [
+        (
+            _("Contact Information"),
+            {
+                "fields": ["name", "position", "phone", "email", "telegram", "photo"],
+            },
+        ),
+        (
+            _("Role & Classification"),
+            {
+                "fields": ["role", "is_emergency"],
+                "description": _("Assign a role and mark as emergency contact if applicable."),
+            },
+        ),
+        (
+            _("Availability"),
+            {
+                "fields": ["working_hours", "is_active"],
+            },
+        ),
+        (
+            _("Display Settings"),
+            {
+                "fields": ["order"],
+                "description": _("Control display order on the contacts page."),
+            },
+        ),
+    ]
+
+    readonly_fields = []

@@ -9,13 +9,13 @@ SECRET_KEY = env(
     "DJANGO_SECRET_KEY",
     default="QTMT8ZsZaDOSmVFhCTmJULzMu1DLNxbqoKKAGBsFwUwQKRjIzXYyeKCeRRqvGn23",
 )
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "skandi-apartments.serveo.net"]
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "estateos.serveo.net"]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",
     "http://0.0.0.0:8080",
     "http://127.0.0.1:8080",
 ]
-SITE_NAME = "Skandi Apartments"
+SITE_NAME = "EstateOS"
 
 
 # Caches
@@ -41,7 +41,7 @@ MINIO_STORAGE_USE_HTTPS = False
 AWS_S3_ENDPOINT_URL = f"http://{MINIO_STORAGE_ENDPOINT}"
 AWS_ACCESS_KEY_ID = MINIO_STORAGE_ACCESS_KEY
 AWS_SECRET_ACCESS_KEY = MINIO_STORAGE_SECRET_KEY
-AWS_STORAGE_BUCKET_NAME = "alpha-apartments"
+AWS_STORAGE_BUCKET_NAME = "skandi-apartments"
 AWS_S3_REGION_NAME = "us-east-1"
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_DEFAULT_ACL = "private"
@@ -76,7 +76,7 @@ STATICFILES_FINDERS = [
 # Email — use console backend in local dev so activation emails don't fail
 # ------------------------------------------------------------------------------
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "noreply@skandi-apartments.local"
+DEFAULT_FROM_EMAIL = "noreply@estateos.local"
 
 # Djoser — skip activation email requirement in local dev
 DJOSER = {

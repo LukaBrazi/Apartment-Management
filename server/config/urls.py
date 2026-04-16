@@ -34,7 +34,9 @@ urlpatterns += [
 ]
 
 
-# Admin configuration
-admin.site.site_header = "Skandi Apartments Admin"
-admin.site.site_title = "Skandi Apartments Admin"
-admin.site.index_title = "Welcome to Skandi Apartments Admin"
+# Admin configuration — reads SITE_NAME from .env for white-label support
+from django.conf import settings as _settings
+_site_name = getattr(_settings, "SITE_NAME", "EstateOS")
+admin.site.site_header = f"{_site_name} Admin"
+admin.site.site_title = f"{_site_name} Admin"
+admin.site.index_title = f"Панель управління {_site_name}"

@@ -7,6 +7,11 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+def _site_name() -> str:
+    """Return platform name from settings — white-label friendly."""
+    return getattr(settings, "SITE_NAME", "EstateOS")
+
+
 def _run_async(coro):
     """Run async coroutine from sync context."""
     try:
@@ -64,7 +69,7 @@ def notify_tenant_issue_status_changed(self, issue_id: str, old_status: str, new
             f"🔔 *Заявка оновлена*\n"
             f"*{issue.title}*\n"
             f"Статус: {old_label} → {new_label}\n\n"
-            f"_Skandi Apartments_"
+            f"_{_site_name()}_"
         )
         send_telegram_message.delay(profile.chat_id, text)
     except Exception as exc:
@@ -91,7 +96,7 @@ def notify_dispatchers_new_issue(self, issue_id: str):
             f"*{issue.title}*\n"
             f"Від: {issue.reported_by.get_full_name() or issue.reported_by.email}\n"
             f"Пріоритет: {issue.priority}\n\n"
-            f"_Skandi Apartments_"
+            f"_{_site_name()}_"
         )
         for chat_id in chat_ids:
             send_telegram_message.delay(chat_id, text)
@@ -125,7 +130,7 @@ def notify_worker_assigned(self, issue_id: str):
             f"👷 *Вам призначено заявку*\n"
             f"*{issue.title}*\n"
             f"Пріоритет: {issue.priority}\n\n"
-            f"_Skandi Apartments_"
+            f"_{_site_name()}_"
         )
         send_telegram_message.delay(profile.chat_id, text)
     except Exception as exc:
@@ -151,7 +156,7 @@ def notify_building_tenants_announcement(self, announcement_id: str):
         text = (
             f"📢 *Нове оголошення*\n"
             f"*{announcement.title}*\n\n"
-            f"_Skandi Apartments_"
+            f"_{_site_name()}_"
         )
         for chat_id in chat_ids:
             send_telegram_message.delay(chat_id, text)
@@ -182,7 +187,7 @@ def notify_tenant_pass_status(self, pass_id: str, new_status: str):
         text = (
             f"🚗 *Перепустка {status_text}*\n"
             f"Авто: `{vehicle_pass.car_number}`\n\n"
-            f"_Skandi Apartments_"
+            f"_{_site_name()}_"
         )
         send_telegram_message.delay(profile.chat_id, text)
     except Exception as exc:

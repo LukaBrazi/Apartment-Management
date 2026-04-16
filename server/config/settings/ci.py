@@ -7,7 +7,7 @@ DEBUG = True
 SECRET_KEY = "ci-insecure-key-for-testing-only-do-not-use-in-production"
 ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:8080"]
-SITE_NAME = "Skandi Apartments"
+SITE_NAME = "EstateOS"
 
 
 # Caches

@@ -50,7 +50,8 @@ class Command(BaseCommand):
         from apps.passes.models import VehiclePass
         from apps.posts.models import Announcement
         from apps.profiles.models import Profile
-        from apps.site_settings.models import SiteSettings
+        from apps.site_settings.models import SiteSettings, ContactPerson
+        from apps.organizations.models import Organization, OrganizationMembership, OrgRole, OrganizationType
 
         now = timezone.now()
         self.stdout.write("🌿 Seeding ЖК Скандинавія demo data...")
@@ -68,6 +69,19 @@ class Command(BaseCommand):
                 ),
             },
         )
+
+        # ── 0.1. Organization (for multi-tenant setup) ────────────────────
+        demo_org, _ = Organization.objects.get_or_create(
+            slug="skandinaviya-demo",
+            defaults={
+                "name": "ЖК Скандинавія (Demo)",
+                "type": OrganizationType.HOUSING_COMPLEX,
+                "is_active": True,
+                "features": {"issues": True, "passes": True, "news": True, "ratings": True},
+            },
+        )
+        self.stdout.write(f"  ✓ Organization: {demo_org.name}")
+
         site = SiteSettings.get()
         if not site.current_complex:
             site.current_complex = complex_obj
@@ -159,6 +173,13 @@ class Command(BaseCommand):
         )
         self.stdout.write("  ✓ Superuser: admin@demo.com / Demo1234!")
 
+        # ── 4.1. Link admin to Organization ───────────────────────────────
+        OrganizationMembership.objects.get_or_create(
+            user=admin,
+            organization=demo_org,
+            defaults={"role": OrgRole.SUPER_ADMIN, "is_active": True},
+        )
+
         # ── 5. Staff ──────────────────────────────────────────────────────
         dispatcher, _ = _ensure_user(
             "dispatcher@demo.com",
@@ -181,6 +202,14 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"  ✓ Dispatcher: {dispatcher.email} / Demo1234!")
 
+        # ── 5.1. Link dispatcher to Organization ──────────────────────────
+        OrganizationMembership.objects.get_or_create(
+            user=dispatcher,
+            organization=demo_org,
+            defaults={"role": OrgRole.ADMIN, "is_active": True},
+        )
+
+        # ── 5.2. Guard ────────────────────────────────────────────────────
         guard, _ = _ensure_user(
             "guard@demo.com",
             username="guard",
@@ -201,6 +230,14 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"  ✓ Guard: {guard.email} / Demo1234!")
 
+        # Link guard to organization
+        OrganizationMembership.objects.get_or_create(
+            user=guard,
+            organization=demo_org,
+            defaults={"role": OrgRole.STAFF, "is_active": True},
+        )
+
+        # ── 5.3. Plumber ──────────────────────────────────────────────────
         plumber, _ = _ensure_user(
             "plumber@demo.com",
             username="plumber",
@@ -221,6 +258,14 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"  ✓ Plumber: {plumber.email} / Demo1234!")
 
+        # Link plumber to organization
+        OrganizationMembership.objects.get_or_create(
+            user=plumber,
+            organization=demo_org,
+            defaults={"role": OrgRole.STAFF, "is_active": True},
+        )
+
+        # ── 5.4. Electrician ───────────────────────────────────────────────
         electrician, _ = _ensure_user(
             "electrician@demo.com",
             username="electrician",
@@ -240,6 +285,13 @@ class Command(BaseCommand):
             ),
         )
         self.stdout.write(f"  ✓ Electrician: {electrician.email} / Demo1234!")
+
+        # Link electrician to organization
+        OrganizationMembership.objects.get_or_create(
+            user=electrician,
+            organization=demo_org,
+            defaults={"role": OrgRole.STAFF, "is_active": True},
+        )
 
         # ── 6. Tenant (linked to unit) ────────────────────────────────────
         tenant_unit = units[16]
@@ -273,6 +325,14 @@ class Command(BaseCommand):
         tenant_apt.tenant = tenant_user
         tenant_apt.save()
         _link_unit_apartment(tenant_unit, tenant_apt)
+
+        # Link tenant to organization
+        OrganizationMembership.objects.get_or_create(
+            user=tenant_user,
+            organization=demo_org,
+            defaults={"role": OrgRole.RESIDENT, "is_active": True},
+        )
+
         self.stdout.write(f"  ✓ Tenant: {tenant_user.email} / Demo1234! (Кв. {tenant_unit.number})")
 
         # ── 7. Residents ──────────────────────────────────────────────────
@@ -309,6 +369,14 @@ class Command(BaseCommand):
             apt.tenant = user
             apt.save()
             _link_unit_apartment(unit, apt)
+
+            # Link resident to organization
+            OrganizationMembership.objects.get_or_create(
+                user=user,
+                organization=demo_org,
+                defaults={"role": OrgRole.RESIDENT, "is_active": True},
+            )
+
             residents.append((user, unit, apt))
             self.stdout.write(f"  ✓ Resident: {email} (кв. {unit.number})")
 
@@ -653,6 +721,49 @@ class Command(BaseCommand):
             post_save.connect(on_pass_saved, sender=VehiclePassModel)
 
         self.stdout.write(f"  ✓ Created/verified {len(pass_data)} vehicle passes")
+
+        # ── 13. Organization-scoped SiteSettings and Contacts ──────────────
+        org_site, _ = SiteSettings.objects.get_or_create(organization=demo_org)
+        org_site.platform_name = "EstateOS"
+        org_site.complex_name = "ЖК Скандинавія"
+        org_site.complex_address = "просп. Берестейський, 40-В, Київ"
+        org_site.support_email = "support@skandinaviya.ua"
+        org_site.support_phone = "+38 (044) 000-00-00"
+        org_site.primary_color = "#3D7A8A"
+        org_site.hero_title = "Ласкаво просимо до ЖК Скандинавія"
+        org_site.hero_subtitle = "Ви новий мешканець? Або вже зареєстровані?"
+        org_site.cta_text = "Увійти"
+        org_site.footer_text = "ЖК Скандинавія | EstateOS © 2026"
+        org_site.save()
+        self.stdout.write(f"  ✓ Organization SiteSettings linked")
+
+        # Organization-linked contacts
+        ContactPerson.objects.get_or_create(
+            organization=demo_org,
+            role=ContactPerson.Role.MANAGER,
+            defaults={
+                "name": "Тетяна Романенко",
+                "position": "Керуюча ЖК",
+                "phone": "+38 (044) 000-11-22",
+                "email": "manager@skandinaviya.ua",
+                "working_hours": "Пн-Пт 09:00-18:00",
+                "is_active": True,
+                "order": 0,
+            },
+        )
+        ContactPerson.objects.get_or_create(
+            organization=demo_org,
+            role=ContactPerson.Role.GUARD,
+            defaults={
+                "name": "Василь Гриценко",
+                "position": "Старший охоронець",
+                "phone": "+38 (044) 000-33-44",
+                "working_hours": "24/7",
+                "is_active": True,
+                "order": 1,
+            },
+        )
+        self.stdout.write(f"  ✓ Organization contacts created")
 
         # ── 13. Summary ───────────────────────────────────────────────────
         self.stdout.write(self.style.SUCCESS(
