@@ -2,7 +2,7 @@ import IssueDetails from "@/components/issue/IssueDetails";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Деталі заявки",
+	title: "ApartmentOS | Деталі заявки",
 	description:
 		"Авторизовані користувачі можуть переглядати деталі своїх заявок та видаляти їх",
 };

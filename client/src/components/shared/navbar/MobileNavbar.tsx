@@ -65,7 +65,7 @@ export default function MobileNavbar() {
 				<Link href="/" className="flex items-center gap-2">
 					<HomeModernIcon className="size-9 text-[#2F6FED]" />
 					<p className="h2-semibold font-robotoSlab text-[#111827] dark:text-[#F0EDE6] tracking-tight">
-						Skandi <span className="text-[#2F6FED]">Apartments</span>
+						ApartmentOS
 					</p>
 				</Link>
 
@@ -82,18 +82,11 @@ export default function MobileNavbar() {
 									Вийти
 								</Button>
 							) : (
-								<>
-									<Link href="/register" className="w-full">
-										<Button className="small-medium w-full rounded-xl bg-[#2F6FED] text-white shadow-none hover:bg-[#2460d4] dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0]">
-											Реєстрація
-										</Button>
-									</Link>
-									<Link href="/login" className="w-full">
-										<Button className="small-medium w-full rounded-xl border border-[#2F6FED] bg-transparent text-[#2F6FED] shadow-none hover:bg-[#EEF3FD] dark:border-[#5BA3B5] dark:text-[#5BA3B5] dark:hover:bg-[#1A2E3A]">
-											Увійти
-										</Button>
-									</Link>
-								</>
+								<Link href="/login" className="w-full">
+									<Button className="small-medium w-full rounded-xl border border-[#2F6FED] bg-transparent text-[#2F6FED] shadow-none hover:bg-[#EEF3FD] dark:border-[#5BA3B5] dark:text-[#5BA3B5] dark:hover:bg-[#1A2E3A]">
+										Увійти
+									</Button>
+								</Link>
 							)}
 						</SheetFooter>
 					</SheetClose>

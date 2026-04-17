@@ -3,7 +3,7 @@ import CreatePassForm from "@/components/forms/request-pass/CreatePassForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Request Vehicle Pass",
+	title: "ApartmentOS | Request Vehicle Pass",
 	description: "Submit a vehicle pass request so the guard can let your visitor through",
 };
 

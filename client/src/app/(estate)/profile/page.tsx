@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | User Profile",
+	title: "ApartmentOS | User Profile",
 	description: "Signed in users can view all their profile information",
 };
 

@@ -51,7 +51,7 @@ class Command(BaseCommand):
                         )
                     if resp.status_code == 200:
                         await update.message.reply_text(
-                            "✅ *Telegram підключено!*\n\nТепер ви будете отримувати сповіщення від Skandi Apartments.",
+                            "✅ *Telegram підключено!*\n\nТепер ви будете отримувати сповіщення від ApartmentOS.",
                             parse_mode="Markdown",
                         )
                     else:
@@ -61,7 +61,7 @@ class Command(BaseCommand):
                     await update.message.reply_text("Сталася помилка. Спробуйте пізніше.")
             else:
                 await update.message.reply_text(
-                    "👋 *Вітаємо у Skandi Apartments Bot!*\n\n"
+                    "👋 *Вітаємо у ApartmentOS Bot!*\n\n"
                     "Щоб підключити сповіщення, перейдіть в особистий кабінет на сайті та натисніть «Підключити Telegram».",
                     parse_mode="Markdown",
                 )

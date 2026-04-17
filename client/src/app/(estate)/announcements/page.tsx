@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Skandi Apartments | Оголошення" };
+export const metadata: Metadata = { title: "ApartmentOS | Оголошення" };
 
 export default function AnnouncementsPage() {
 	return (

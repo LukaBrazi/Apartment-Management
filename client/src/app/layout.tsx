@@ -9,7 +9,7 @@ import ReduxProvider from "@/lib/redux/provider";
 import { PersistAuth } from "@/utils";
 
 export const metadata: Metadata = {
-	title: "Home | Skandi Apartments",
+	title: "Home | ApartmentOS",
 	description: "Welcome home",
 };
 

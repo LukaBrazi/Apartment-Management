@@ -55,11 +55,6 @@ export default function LeftNavbar() {
 							Увійти
 						</Button>
 					</Link>
-					<Link href="/register">
-						<Button className="small-medium w-full rounded-xl bg-[#2F6FED] px-4 py-3 text-white shadow-none transition-colors hover:bg-[#2460d4] dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0]">
-							Реєстрація
-						</Button>
-					</Link>
 				</div>
 			)}
 		</section>

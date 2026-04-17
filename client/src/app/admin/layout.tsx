@@ -40,7 +40,7 @@ export default function AdminLayout({
 					{/* Logo / Brand */}
 					<div className="px-6 py-5 border-b border-[#2D3D4F]">
 						<h1 className="text-white font-semibold text-sm leading-tight">
-							Skandi Apartments
+							ApartmentOS
 						</h1>
 						<p className="text-[#5BA3B5] text-xs mt-0.5">Адмін панель</p>
 					</div>
@@ -87,7 +87,7 @@ export default function AdminLayout({
 					{/* Top Bar */}
 					<header className="sticky top-0 z-30 h-14 bg-white dark:bg-[#162032] border-b border-[#E2E5E8] dark:border-[#2D3D4F] flex items-center px-6 shadow-sm">
 						<span className="text-sm font-medium text-[#1C2B3A] dark:text-white">
-							Skandi Apartments —{" "}
+							ApartmentOS —{" "}
 							<span className="text-[#3D7A8A]">Адмін панель</span>
 						</span>
 					</header>

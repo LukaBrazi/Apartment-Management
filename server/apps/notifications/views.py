@@ -23,7 +23,7 @@ class GenerateTokenView(APIView):
         TelegramVerificationToken.objects.filter(user=request.user, is_used=False).delete()
 
         token_obj = TelegramVerificationToken.objects.create(user=request.user)
-        bot_username = getattr(settings, "TELEGRAM_BOT_USERNAME", "SkandiApartmentsBot")
+        bot_username = getattr(settings, "TELEGRAM_BOT_USERNAME", "ApartmentOSBot")
         deep_link = f"https://t.me/{bot_username}?start={token_obj.token}"
 
         data = {

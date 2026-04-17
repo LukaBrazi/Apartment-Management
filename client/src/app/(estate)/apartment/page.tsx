@@ -3,7 +3,7 @@ import { AuthFormHeader } from "@/components/forms/auth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Додати квартиру",
+	title: "ApartmentOS | Додати квартиру",
 	description: "Авторизовані користувачі можуть додати дані своєї квартири",
 };
 

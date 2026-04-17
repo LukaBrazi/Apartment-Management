@@ -3,7 +3,7 @@ import GuardPortalView from "@/components/guard/GuardPortalView";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Портал охорони",
+	title: "ApartmentOS | Портал охорони",
 	description: "Портал охорони — перегляд та управління заявками на в'їзд авто",
 };
 

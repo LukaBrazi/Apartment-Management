@@ -1,43 +1,12 @@
 # Imports
 from django.contrib.auth import get_user_model
 from django_countries.serializer_fields import CountryField
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserSerializer
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
 # Get the user model
 User = get_user_model()
-
-
-# Create User Serializer
-class CreateUserSerializer(UserCreateSerializer):
-    """CreateUserSerializer
-
-    CreateUserSerializer class is used to create a user.
-
-    Extends:
-        UserCreateSerializer
-
-    Meta Class:
-        model (User): The user model.
-        fields (tuple): The fields to include in the serialized data.
-        extra_kwargs (dict): The extra keyword arguments.
-    """
-
-    # Meta Class
-    class Meta(UserCreateSerializer.Meta):
-        """Meta Class
-
-        Attributes:
-            model (User): The user model.
-            fields (tuple): The fields to include in the serialized data.
-            extra_kwargs (dict): The extra keyword arguments.
-        """
-
-        # Attributes
-        model = User
-        fields = ("id", "email", "username", "first_name", "last_name", "password")
-        extra_kwargs = {"password": {"write_only": True}}
 
 
 # Custom User Serializer

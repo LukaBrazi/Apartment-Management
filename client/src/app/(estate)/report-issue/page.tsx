@@ -3,7 +3,7 @@ import CreateIssueForm from "@/components/forms/report-issue/CreateIssueForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Подати заявку",
+	title: "ApartmentOS | Подати заявку",
 	description:
 		"Мешканці можуть повідомляти керівництво про проблеми зі своїми квартирами",
 };

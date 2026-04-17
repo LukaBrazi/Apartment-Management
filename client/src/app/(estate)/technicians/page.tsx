@@ -3,7 +3,7 @@ import TechnicianCard from "@/components/cards/TechnicianCard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Спеціалісти",
+	title: "ApartmentOS | Спеціалісти",
 	description:
 		"Мешканці можуть переглядати список технічних спеціалістів та їх рейтинг",
 };

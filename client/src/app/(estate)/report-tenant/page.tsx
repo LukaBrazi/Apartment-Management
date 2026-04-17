@@ -3,7 +3,7 @@ import CreateReportForm from "@/components/forms/report-tenant/CreateReportForm"
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Скарга на мешканця",
+	title: "ApartmentOS | Скарга на мешканця",
 	description:
 		"Мешканці можуть поскаржитися на інших мешканців у разі неналежної поведінки",
 };

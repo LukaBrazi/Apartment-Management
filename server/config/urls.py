@@ -7,7 +7,6 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView
 # Set the django urls
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
-    path("api/v1/auth/", include("djoser.urls")),
     path("api/v1/auth/", include("apps.users.urls")),
     path("api/v1/profiles/", include("apps.profiles.urls")),
     path("api/v1/apartments/", include("apps.apartments.urls")),

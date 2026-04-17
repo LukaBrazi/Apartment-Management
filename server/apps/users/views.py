@@ -5,7 +5,6 @@ from typing import Dict, Optional
 
 from django.conf import settings
 from django.db import transaction
-from djoser.social.views import ProviderAuthView
 from rest_framework import permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -199,70 +198,6 @@ class CustomTokenRefreshAPIView(TokenRefreshView):
                 )
 
                 # Log the error
-                logger.error("Access or refresh token not provided in response data.")
-
-        # Return the response
-        return res
-
-
-# Custom Provider Auth API View
-class CustomProviderAuthAPIView(ProviderAuthView):
-    """Custom Provider Auth API View
-
-    This class extends the ProviderAuthView class to set the authentication cookies.
-
-    Args:
-        ProviderAuthView
-
-    Methods:
-        post(request: Request, *args: Dict, **kwargs: Dict) -> Response: Handle the POST request.
-
-    Returns:
-        Response: The response object.
-    """
-
-    # Method to handle the POST request
-    def post(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:
-        """Handle the POST request.
-
-        Args:
-            request (Request): The request object.
-            *args (dict): The arguments.
-            **kwargs (dict): The keyword arguments.
-
-        Returns:
-            Response: The response object.
-        """
-
-        # Get the response
-        res = super().post(request, *args, **kwargs)
-
-        # If the status code is 201
-        if res.status_code == status.HTTP_201_CREATED:
-            # Get the access and refresh tokens
-            access_token = res.data.get("access")
-            refresh_token = res.data.get("refresh")
-
-            # If the access and refresh tokens are provided
-            if access_token and refresh_token:
-                # Set the authentication cookies
-                set_auth_cookies(res, access_token, refresh_token)
-
-                # Remove the access and refresh tokens from the response data
-                res.data.pop("access")
-                res.data.pop("refresh")
-
-                # Set the message in the response data
-                res.data["message"] = "You are logged in successfully."
-
-            # Else
-            else:
-                # Set the in the response data
-                res.data["message"] = (
-                    "Access or refresh token not found in provider response."
-                )
-
-                # Log the error message
                 logger.error("Access or refresh token not provided in response data.")
 
         # Return the response

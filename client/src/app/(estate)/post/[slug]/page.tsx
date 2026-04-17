@@ -2,7 +2,7 @@ import PostDetails from "@/components/post/PostDetails";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Деталі публікації",
+	title: "ApartmentOS | Деталі публікації",
 	description: "Авторизовані користувачі можуть переглядати деталі публікацій",
 };
 

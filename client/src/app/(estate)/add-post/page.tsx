@@ -4,7 +4,7 @@ import { AuthFormHeader } from "@/components/forms/auth";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Нова публікація",
+	title: "ApartmentOS | Нова публікація",
 	description:
 		"Авторизовані користувачі можуть задавати питання або публікувати контент для всіх",
 };

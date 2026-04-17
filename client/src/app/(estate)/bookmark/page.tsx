@@ -2,7 +2,7 @@ import BookmarkedPostCard from "@/components/cards/BookmarkedPostCard";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Skandi Apartments | Закладки",
+	title: "ApartmentOS | Закладки",
 	description: "Авторизовані користувачі можуть переглядати збережені публікації",
 };
 

@@ -6,9 +6,9 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	title: "Home | Skandi Apartments",
+	title: "Home | ApartmentOS",
 	description:
-		"Skandi Apartments Home Page. Create your account to get started.",
+		"ApartmentOS — Увійдіть до свого акаунту",
 };
 
 interface SiteLink {
@@ -29,11 +29,11 @@ interface SiteSettings {
 }
 
 const DEFAULTS: SiteSettings = {
-	hero_title: "Ласкаво просимо до Skandi Apartments",
-	hero_subtitle: "Ви новий мешканець? Або вже зареєстровані?",
+	hero_title: "Вітаємо в ApartmentOS",
+	hero_subtitle: "Увійдіть до свого акаунту",
 	hero_image_url: null,
-	cta_text: "Створити акаунт",
-	cta_url: "/register",
+	cta_text: "Увійти",
+	cta_url: "/login",
 	links: [],
 };
 
@@ -69,7 +69,7 @@ export default async function HomePage() {
 				) : (
 					<Image
 						src="/assets/images/hero/hero-welcome.png"
-						alt="Skandi Apartments"
+						alt="ApartmentOS"
 						fill
 						style={{ objectFit: "cover", objectPosition: "center" }}
 						priority

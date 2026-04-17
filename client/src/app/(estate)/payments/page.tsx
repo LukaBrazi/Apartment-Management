@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import ComingSoon from "@/components/shared/ComingSoon";
 
-export const metadata: Metadata = { title: "Skandi Apartments | Платежі" };
+export const metadata: Metadata = { title: "ApartmentOS | Платежі" };
 
 export default function PaymentsPage() {
   return (
