@@ -1,4 +1,4 @@
-# EstateOS Multi-Tenant Audit Report
+# ApartmentOS Multi-Tenant Audit Report
 
 **Date:** April 2026  
 **Version:** 1.0  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-EstateOS is transitioning from a per-client deployment model to a **single-deployment multi-tenant platform**. This audit reviews all 13 installed apps to assess organization-scoping readiness.
+ApartmentOS is transitioning from a per-client deployment model to a **single-deployment multi-tenant platform**. This audit reviews all 13 installed apps to assess organization-scoping readiness.
 
 ### Key Finding:
 - **6 modules fully scoped** (safe for multi-tenant)
@@ -270,7 +270,7 @@ class TelegramVerificationToken(models.Model):
 
 ## Conclusion
 
-EstateOS is **70% ready** for multi-tenant single deployment:
+ApartmentOS is **70% ready** for multi-tenant single deployment:
 
 ✅ **What's ready:** Core features (buildings, issues, passes, posts, users, profiles)
 ⚠️ **What needs review:** Categories, legacy models

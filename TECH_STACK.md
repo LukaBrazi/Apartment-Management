@@ -1,4 +1,4 @@
-# Tech Stack — Skandi Apartments
+# Tech Stack — ApartmentOS
 
 Пояснення кожної технології в проєкті: що вона робить і чому обрана саме вона.
 

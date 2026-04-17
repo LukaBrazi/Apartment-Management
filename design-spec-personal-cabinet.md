@@ -1,4 +1,4 @@
-# Skandi Apartments — Design Specification: Personal Cabinet (Tenant Dashboard)
+# ApartmentOS — Design Specification: Personal Cabinet (Tenant Dashboard)
 > Version 2.0 | March 2026 | Stack: Django 4.2 · Next.js 14 · TailwindCSS 3
 
 ---
@@ -84,7 +84,7 @@ fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
 │  bg-[#1E2761]                   │  bg-slate-50 min-h-screen                 │
 │                                 │                                            │
 │  ┌───────────────────────────┐  │  ┌──────────────────────────────────────┐ │
-│  │ 🏢  Skandi Apartments      │  │  │  TOP BAR (sticky, h-16)              │ │
+│  │ 🏢  ApartmentOS             │  │  │  TOP BAR (sticky, h-16)              │ │
 │  │     [logo 40px]           │  │  │  bg-white border-b border-slate-200  │ │
 │  └───────────────────────────┘  │  │  [Page Title]         [🔔] [Avatar▼] │ │
 │                                 │  └──────────────────────────────────────┘ │
@@ -114,9 +114,9 @@ fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
 
   <!-- Logo -->
   <div class="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-    <img src="/logo.svg" alt="Skandi" class="h-10 w-10" />
+    <img src="/logo.svg" alt="ApartmentOS" class="h-10 w-10" />
     <span class="text-white font-bold text-lg leading-tight">
-      Skandi<br/>Apartments
+      ApartmentOS
     </span>
   </div>
 
@@ -1630,4 +1630,4 @@ client/src/utils/
 ---
 
 *End of specification — v2.0*
-*March 2026 · Skandi Apartments Project · Web Designer Agent*
+*March 2026 · ApartmentOS Project · Web Designer Agent*

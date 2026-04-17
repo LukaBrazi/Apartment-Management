@@ -1,4 +1,4 @@
-# EstateOS SuperAdmin Quick Start Guide
+# ApartmentOS SuperAdmin Quick Start Guide
 
 **Target Audience:** Platform administrators managing multiple client organizations  
 **Last Updated:** April 2026
@@ -7,7 +7,7 @@
 
 ## What You Need to Know
 
-You're running **ONE** EstateOS instance that serves **MANY clients** (Organizations).
+You're running **ONE** ApartmentOS instance that serves **MANY clients** (Organizations).
 
 - **Old way:** Every client gets their own Railway deploy and database ❌
 - **New way:** One Railway, one database, multiple Organizations ✅
@@ -18,7 +18,7 @@ You're running **ONE** EstateOS instance that serves **MANY clients** (Organizat
 
 ### Step 1: Create Organization in Django Admin
 
-1. Go to `https://api.estateos.com/django-admin/`
+1. Go to `https://api.apartmentos.com/django-admin/`
 2. **Organizations → Organizations → Add Organization**
 3. Fill in:
    - **Name:** ЖК Сонячний
@@ -60,7 +60,7 @@ You're running **ONE** EstateOS instance that serves **MANY clients** (Organizat
    ```
 3. Or if already have wildcard:
    ```
-   *.estateos.com → cname.vercel-dns.com (one-time setup)
+   *.apartmentos.com → cname.vercel-dns.com (one-time setup)
    ```
 
 **Wait 5-15 minutes for DNS to propagate.**
@@ -71,12 +71,12 @@ You're running **ONE** EstateOS instance that serves **MANY clients** (Organizat
 
 Director can now login at:
 ```
-https://zhk-sunny.estateos.com
+https://zhk-sunny.apartmentos.com
 ```
 
 API access:
 ```bash
-curl -H "X-Organization-Slug: zhk-sunny" https://api.estateos.com/api/v1/orgs/organizations/self/
+curl -H "X-Organization-Slug: zhk-sunny" https://api.apartmentos.com/api/v1/orgs/organizations/self/
 # Should return organization details
 ```
 
@@ -136,7 +136,7 @@ Create/manage organizations via API:
 
 ```bash
 # Create organization
-curl -X POST https://api.estateos.com/api/v1/orgs/organizations/ \
+curl -X POST https://api.apartmentos.com/api/v1/orgs/organizations/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -148,11 +148,11 @@ curl -X POST https://api.estateos.com/api/v1/orgs/organizations/ \
 
 # Get all organizations
 curl -H "Authorization: Bearer $TOKEN" \
-  https://api.estateos.com/api/v1/orgs/organizations/
+  https://api.apartmentos.com/api/v1/orgs/organizations/
 
 # Get specific organization
 curl -H "Authorization: Bearer $TOKEN" \
-  https://api.estateos.com/api/v1/orgs/organizations/zhk-sunny/
+  https://api.apartmentos.com/api/v1/orgs/organizations/zhk-sunny/
 ```
 
 ---
@@ -161,7 +161,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ### For Website (Frontend)
 
-When user visits `zhk-sunny.estateos.com`:
+When user visits `zhk-sunny.apartmentos.com`:
 
 1. Vercel (Next.js) sees subdomain
 2. Extracts slug: `zhk-sunny`
@@ -178,7 +178,7 @@ When external system calls API:
 ```bash
 # Request with org header
 curl -H "X-Organization-Slug: zhk-sunny" \
-  https://api.estateos.com/api/v1/issues/
+  https://api.apartmentos.com/api/v1/issues/
 
 # Backend automatically filters:
 # SELECT * FROM issues WHERE organization_id = (SELECT id FROM organizations WHERE slug = 'zhk-sunny')
@@ -192,7 +192,7 @@ curl -H "X-Organization-Slug: zhk-sunny" \
 
 1. Check Cloudflare DNS is set:
    ```bash
-   dig zhk-sunny.estateos.com
+   dig zhk-sunny.apartmentos.com
    ```
    Should show CNAME pointing to Vercel
 
@@ -230,7 +230,7 @@ curl -H "X-Organization-Slug: zhk-sunny" \
 - [ ] Verify data isolation (A's issues invisible to B)
 - [ ] Test multi-org API calls
 - [ ] Test DNS resolution for all domains
-- [ ] Set up CORS properly: `CORS_ALLOWED_ORIGINS=https://*.estateos.com`
+- [ ] Set up CORS properly: `CORS_ALLOWED_ORIGINS=https://*.apartmentos.com`
 - [ ] Enable HTTPS everywhere
 - [ ] Set up monitoring/alerting
 - [ ] Test database backups
@@ -248,7 +248,7 @@ One Organization = One Client (ЖК, Management Company, etc.)
 
 Every organization has a unique **slug** (e.g., `zhk-sunny`).
 
-- Used in domain: `zhk-sunny.estateos.com`
+- Used in domain: `zhk-sunny.apartmentos.com`
 - Used in API header: `X-Organization-Slug: zhk-sunny`
 - Must be URL-safe (lowercase, hyphens, no spaces)
 

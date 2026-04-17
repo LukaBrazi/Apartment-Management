@@ -13,7 +13,7 @@ DB_URL = postgres://alpha_user:alpha_password@postgres:5432/alpha_apartments
         fresh docker-start
 
 help:
-	@echo "Skandi Apartments — команди Make"
+	@echo "ApartmentOS — команди Make"
 	@echo ""
 	@echo "  make up              Запустити всі сервіси (foreground)"
 	@echo "  make up-d            Запустити всі сервіси (background)"

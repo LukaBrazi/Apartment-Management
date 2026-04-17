@@ -1,4 +1,4 @@
-# 🤝 Contributing — Skandi Apartments
+# 🤝 Contributing — ApartmentOS
 
 ## 🧪 TDD — Test-Driven Development
 
@@ -99,6 +99,16 @@ fix/xxx       ← хотфікс
 ```
 
 PR в `main` без зелених тестів — не merge.
+
+### Push в main
+
+**Тільки CEO (Dmytro) має право пушити в `main`** після ревью змін.
+
+Правила для агентів та розробників:
+- Без прямої команди або спеціальної вказівки — **не пушити в main**.
+- Усі зміни оформлюються через feature-гілку → PR → code review → merge.
+- Агенти можуть комітити у feature-гілки, але push в `main` — виключно з дозволу CEO.
+- Якщо потрібно терміново пушнути — запитай дозвіл у CEO перед push.
 
 ---
 

@@ -1,4 +1,4 @@
-# DevOps Review — Skandi Apartments
+# DevOps Review — ApartmentOS
 > Дата: 2026-03-21 | Переглянуто: Dockerfile, docker-compose.local.yml, docker-compose.ci.yml, nginx конфіги, railway.toml, settings/production.py, settings/base.py, requirements/*.txt, .github/workflows/ci.yml
 
 ---

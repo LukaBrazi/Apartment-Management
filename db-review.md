@@ -1,4 +1,4 @@
-# Database Review — Skandi Apartments
+# Database Review — ApartmentOS
 
 > Дата: 2026-03-21
 > Стек: PostgreSQL · Django ORM · Django REST Framework

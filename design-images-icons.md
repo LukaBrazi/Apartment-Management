@@ -1,4 +1,4 @@
-# Skandi Apartments — Design Images & Icons Specification
+# ApartmentOS — Design Images & Icons Specification
 
 > **Version 1.0** | March 2026 | Stack: Django 4.2 · Next.js 14 · TailwindCSS 3
 
@@ -20,7 +20,7 @@
 ### 1.1 Logo
 
 #### Full Logo (Primary)
-- **Name:** `skandi-logo-full.svg`
+- **Name:** `apartmentos-logo-full.svg`
 - **Usage:** Sidebar header (w-10, h-10), marketing materials
 - **Variants:**
   - Default (dark on light)
@@ -29,19 +29,19 @@
 - **Formats:** SVG (primary), PNG 256x256, PNG 512x512
 - **Safe Area:** 16px padding
 - **Min Width:** 40px (sidebar context)
-- **Reference:** Currently using `next.svg` & `vercel.svg` — **TODO:** Replace with Skandi-branded logo
+- **Reference:** Currently using `next.svg` & `vercel.svg` — **TODO:** Replace with ApartmentOS-branded logo
 
 #### Favicon
 - **Name:** `favicon.ico`
 - **Sizes:** 16x16, 32x32, 64x64
 - **Format:** ICO
-- **Note:** Current favicon at `/app/favicon.ico` should be updated with Skandi brand mark
+- **Note:** Current favicon at `/app/favicon.ico` should be updated with ApartmentOS brand mark
 - **Variants Needed:**
   - Apple touch icon (180x180, PNG)
   - Android chrome (192x192, 512x512, PNG)
 
 #### Minimal Mark (Icon)
-- **Name:** `skandi-mark.svg`
+- **Name:** `apartmentos-mark.svg`
 - **Usage:** Browser tabs, micro interfaces
 - **Size:** 40x40px (scalable SVG)
 - **Colors:** Primary navy (#1C2B3A) or white depending on context
@@ -795,9 +795,9 @@ Some illustrations need dark variants:
 │   │       ├── status-rejected.svg
 │   │       └── status-pending.svg
 │   ├── logos/
-│   │   ├── skandi-logo-full.svg
-│   │   ├── skandi-logo-full-dark.svg
-│   │   ├── skandi-mark.svg
+│   │   ├── apartmentos-logo-full.svg
+│   │   ├── apartmentos-logo-full-dark.svg
+│   │   ├── apartmentos-mark.svg
 │   │   ├── favicon.ico
 │   │   ├── apple-touch-icon.png
 │   │   └── android-chrome.png
@@ -851,7 +851,7 @@ export function HeroSection() {
       <source srcSet="/assets/images/hero/hero-welcome.jpg" type="image/jpeg" />
       <img
         src="/assets/images/hero/hero-welcome.jpg"
-        alt="Welcome to Skandi Apartments"
+        alt="Welcome to ApartmentOS"
         className="w-full h-auto"
       />
     </picture>
@@ -889,7 +889,7 @@ export function AdaptiveHero() {
 ### 6.3 Implementation Checklist
 
 **Phase 1: Brand Foundation (Week 1)**
-- [ ] Create/finalize Skandi logo (full + mark + favicon)
+- [ ] Create/finalize ApartmentOS logo (full + mark + favicon)
 - [ ] Generate brand color palette JSON reference
 - [ ] Set up folder structure in `/public/assets/`
 - [ ] Document color hex codes in Figma/design system
@@ -925,7 +925,7 @@ export function AdaptiveHero() {
 
 ### 7.1 Exported for Designers & Developers
 
-**Save as:** `/public/assets/brand/skandi-colors.json`
+**Save as:** `/public/assets/brand/apartmentos-colors.json`
 
 ```json
 {

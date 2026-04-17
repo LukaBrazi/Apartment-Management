@@ -3,11 +3,15 @@
 .gitattributes
 .gitignore
 
-
 # Directories and files related to project structure and development
 .envs/
 venv/
 
-
 # Git repository metadata
 .git/
+
+# Node.js artifacts — prevent host node_modules from conflicting with Docker build
+**/node_modules
+.pnpm-store/
+client/.next/
+client/.turbo/
