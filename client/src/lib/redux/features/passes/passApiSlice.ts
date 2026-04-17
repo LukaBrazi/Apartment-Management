@@ -41,6 +41,13 @@ export const passApiSlice = baseApiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["VehiclePass"],
 		}),
+		deletePass: builder.mutation<void, string>({
+			query: (passId) => ({
+				url: `/passes/${passId}/`,
+				method: "DELETE",
+			}),
+			invalidatesTags: ["VehiclePass"],
+		}),
 	}),
 });
 
@@ -49,4 +56,5 @@ export const {
 	useGetMyPassesQuery,
 	useGetAllPassesQuery,
 	useClosePassMutation,
+	useDeletePassMutation,
 } = passApiSlice;

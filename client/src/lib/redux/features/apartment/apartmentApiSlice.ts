@@ -9,7 +9,7 @@ export const apartmentApiSlice = baseApiSlice.injectEndpoints({
 				method: "POST",
 				body: formData,
 			}),
-			invalidatesTags: ["Apartment"],
+			invalidatesTags: ["Apartment", "User"],
 		}),
 
 		getMyApartment: builder.query<ApartmentResponse, void>({

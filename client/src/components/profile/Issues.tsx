@@ -20,7 +20,7 @@ export default function Issues() {
 	return (
 		<TabsContent value="my-issues">
 			<h2 className="h2-semibold flex-center font-robotoSlab dark:text-pumpkin text-xl">
-				Total: ({myIssue?.count})
+				Всього: ({myIssue?.count})
 			</h2>
 			<div className="mt-4 grid cursor-pointer grid-cols-1 gap-4 p-1.5 md:grid-cols-2 lg:grid-cols-3">
 				{myIssue && myIssue.results.length > 0 ? (

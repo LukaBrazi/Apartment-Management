@@ -88,3 +88,29 @@ class CloseVehiclePassAPIView(APIView):
         vehicle_pass.save(update_fields=["status", "closed_by_id", "closed_at"])
 
         return Response(VehiclePassSerializer(vehicle_pass).data)
+
+
+class DeleteVehiclePassAPIView(APIView):
+    """Tenant deletes their own pending pass, or admin/guard deletes any pass."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pass_id):
+        try:
+            vehicle_pass = VehiclePass.objects.get(id=pass_id)
+        except VehiclePass.DoesNotExist:
+            return Response(
+                {"error": "Pass not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Only the pass creator (tenant) or staff/admin can delete
+        is_owner = vehicle_pass.tenant == request.user
+        is_admin = request.user.is_staff or request.user.is_superuser
+        if not is_owner and not is_admin:
+            return Response(
+                {"error": "You do not have permission to delete this pass."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        vehicle_pass.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

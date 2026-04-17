@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.passes.views import (
     CloseVehiclePassAPIView,
+    DeleteVehiclePassAPIView,
     MyVehiclePassListAPIView,
     VehiclePassListCreateAPIView,
 )
@@ -13,5 +14,10 @@ urlpatterns = [
         "<uuid:pass_id>/close/",
         CloseVehiclePassAPIView.as_view(),
         name="close-vehicle-pass",
+    ),
+    path(
+        "<uuid:pass_id>/",
+        DeleteVehiclePassAPIView.as_view(),
+        name="delete-vehicle-pass",
     ),
 ]

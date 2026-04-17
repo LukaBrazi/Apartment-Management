@@ -17,10 +17,10 @@ def test_seed_demo_runs_and_creates_expected_data():
 
     # 3 buildings (Корпус А, Б, В)
     assert Building.objects.count() == 3
-    # 5 entrances (2 in A, 2 in B, 1 in C)
-    assert Entrance.objects.count() == 5
-    # 20 units (10 per entrance in A, 2 entrances)
-    assert Unit.objects.count() == 20
+    # 6 entrances (2 per building)
+    assert Entrance.objects.count() == 6
+    # 60 units (10 per entrance × 6 entrances)
+    assert Unit.objects.count() == 60
     # admin + dispatcher + guard + plumber + electrician + 1 tenant + 8 residents = 14
     assert User.objects.count() == 14
     # 16 service requests

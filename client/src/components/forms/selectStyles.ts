@@ -32,10 +32,10 @@ const customStyles = {
 	}),
 	menu: (provided: any) => ({
 		...provided,
-		backgroundColor: "var(--select-menu-background-color)",
+		backgroundColor: "var(--select-menu-background-color, #ffffff)",
 		borderRadius: "0.75rem",
 		border: "1px solid var(--select-border-color)",
-		boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+		boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
 		overflow: "hidden",
 	}),
 	menuList: (provided: any) => ({

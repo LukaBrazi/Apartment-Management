@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthNavigation } from "@/hooks";
 import { useUserProfile } from "@/hooks/useUseProfile";
-import { BookMarked, LogOut, User, Users } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -48,7 +48,7 @@ export default function AuthAvatar() {
 						</Avatar>
 					</DropdownMenuTrigger>
 
-					<DropdownMenuContent className="dark:text-platinum">
+					<DropdownMenuContent className="bg-white dark:bg-gray-800 border shadow-lg dark:text-platinum">
 						<DropdownMenuLabel className="border-b-2">
 							Мій акаунт
 						</DropdownMenuLabel>
@@ -56,18 +56,6 @@ export default function AuthAvatar() {
 						<DropdownMenuItem className="auth-nav">
 							<Link href="/profile" className="flex-row-center">
 								<User className="mr-1" /> Профіль
-							</Link>
-						</DropdownMenuItem>
-
-						<DropdownMenuItem className="auth-nav">
-							<Link href="/tenants" className="flex-row-center">
-								<Users className="mr-1" /> Мешканці
-							</Link>
-						</DropdownMenuItem>
-
-						<DropdownMenuItem className="auth-nav">
-							<Link href="/bookmarks" className="flex-row-center">
-								<BookMarked className="mr-1" /> Закладки
 							</Link>
 						</DropdownMenuItem>
 

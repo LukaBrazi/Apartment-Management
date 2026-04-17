@@ -56,7 +56,7 @@ class IsStaffOrSuperUser(permissions.BasePermission):
 
     # Method to check if the user is staff or superuser
     def has_permission(self, request: Request, view: Any) -> bool:
-        """Method to check if the user is staff or superuser.
+        """Method to check if the user is staff, superuser, or guard.
 
         Args:
             request (Request): The request object.
@@ -66,20 +66,23 @@ class IsStaffOrSuperUser(permissions.BasePermission):
             bool: The boolean value.
         """
 
-        # Check if the user is authorized
-        is_authorized = (
-            request.user
-            and request.user.is_authenticated
-            and (request.user.is_staff or request.user.is_superuser)
-        )
-
-        # If the user is not authorized
-        if not is_authorized:
-            # Set the message
+        if not (request.user and request.user.is_authenticated):
             self.message = "Access to this information is restricted to staff and admin users only."
+            return False
 
-        # Return if the user is authorized
-        return is_authorized
+        # Staff and superusers always have access
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        # Guards can view issues (read-only for awareness)
+        try:
+            if request.user.profile.occupation == "guard":
+                return True
+        except Exception:
+            pass
+
+        self.message = "Access to this information is restricted to staff and admin users only."
+        return False
 
 
 # IssueListAPIView Class

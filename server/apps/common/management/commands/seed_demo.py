@@ -48,7 +48,7 @@ class Command(BaseCommand):
         from apps.apartments.models import Apartment, Building, Entrance, ResidentialComplex, Unit
         from apps.issues.models import Category, Issue
         from apps.passes.models import VehiclePass
-        from apps.posts.models import Announcement
+        from apps.posts.models import Announcement, Post
         from apps.profiles.models import Profile
         from apps.site_settings.models import SiteSettings, ContactPerson
         from apps.organizations.models import Organization, OrganizationMembership, OrgRole, OrganizationType
@@ -134,14 +134,21 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  ✓ Buildings: {building_a.name}, {building_b.name}, {building_c.name}")
 
-        # ── 2. Entrances ──────────────────────────────────────────────────
-        entrance1, _ = Entrance.objects.get_or_create(building=building_a, name="1")
-        entrance2, _ = Entrance.objects.get_or_create(building=building_a, name="2")
-        entrance3, _ = Entrance.objects.get_or_create(building=building_b, name="1")
-        entrance4, _ = Entrance.objects.get_or_create(building=building_b, name="2")
-        entrance5, _ = Entrance.objects.get_or_create(building=building_c, name="1")
+        # ── 2. Entrances (під'їзди) ───────────────────────────────────────
+        entrance1, _ = Entrance.objects.get_or_create(building=building_a, name="Під'їзд 1")
+        entrance2, _ = Entrance.objects.get_or_create(building=building_a, name="Під'їзд 2")
+        entrance3, _ = Entrance.objects.get_or_create(building=building_b, name="Під'їзд 1")
+        entrance4, _ = Entrance.objects.get_or_create(building=building_b, name="Під'їзд 2")
+        entrance5, _ = Entrance.objects.get_or_create(building=building_c, name="Під'їзд 1")
+        entrance6, _ = Entrance.objects.get_or_create(building=building_c, name="Під'їзд 2")
 
-        # ── 3. Units (20 for residents + 1 for tenant) ────────────────────
+        self.stdout.write(
+            f"  ✓ Entrances: {Entrance.objects.filter(building__in=[building_a, building_b, building_c]).count()} "
+            f"(А: 2, Б: 2, В: 2)"
+        )
+
+        # ── 3. Units ─────────────────────────────────────────────────────
+        # Building A: entrance1 → units 1-10, entrance2 → units 101-110
         units = []
         for floor in range(1, 6):
             for pos in range(1, 3):
@@ -161,6 +168,42 @@ class Command(BaseCommand):
                     defaults={"floor": floor},
                 )
                 units.append(unit)
+
+        # Building B: entrance3 → units 201-210, entrance4 → units 301-310
+        for floor in range(1, 6):
+            for pos in range(1, 3):
+                unit_num = str(200 + (floor - 1) * 2 + pos)
+                Unit.objects.get_or_create(
+                    entrance=entrance3,
+                    number=unit_num,
+                    defaults={"floor": floor},
+                )
+        for floor in range(1, 6):
+            for pos in range(1, 3):
+                unit_num = str(300 + (floor - 1) * 2 + pos)
+                Unit.objects.get_or_create(
+                    entrance=entrance4,
+                    number=unit_num,
+                    defaults={"floor": floor},
+                )
+
+        # Building C: entrance5 → units 401-410, entrance6 → units 501-510
+        for floor in range(1, 6):
+            for pos in range(1, 3):
+                unit_num = str(400 + (floor - 1) * 2 + pos)
+                Unit.objects.get_or_create(
+                    entrance=entrance5,
+                    number=unit_num,
+                    defaults={"floor": floor},
+                )
+        for floor in range(1, 6):
+            for pos in range(1, 3):
+                unit_num = str(500 + (floor - 1) * 2 + pos)
+                Unit.objects.get_or_create(
+                    entrance=entrance6,
+                    number=unit_num,
+                    defaults={"floor": floor},
+                )
 
         # ── 4. Superuser ──────────────────────────────────────────────────
         admin, _ = _ensure_user(
@@ -763,9 +806,169 @@ class Command(BaseCommand):
                 "order": 1,
             },
         )
-        self.stdout.write(f"  ✓ Organization contacts created")
+        ContactPerson.objects.get_or_create(
+            organization=demo_org,
+            role=ContactPerson.Role.TECHNICIAN,
+            defaults={
+                "name": "Микола Процьків",
+                "position": "Сантехнік",
+                "phone": "+38 (067) 111-22-33",
+                "email": "plumber@skandinaviya.ua",
+                "working_hours": "Пн-Пт 08:00-17:00",
+                "is_active": True,
+                "order": 2,
+            },
+        )
+        ContactPerson.objects.get_or_create(
+            organization=demo_org,
+            role=ContactPerson.Role.TECHNICIAN,
+            defaults={
+                "name": "Андрій Кравченко",
+                "position": "Електрик",
+                "phone": "+38 (067) 444-55-66",
+                "email": "electrician@skandinaviya.ua",
+                "working_hours": "Пн-Пт 08:00-17:00, аварійні — цілодобово",
+                "is_active": True,
+                "order": 3,
+            },
+        )
+        ContactPerson.objects.get_or_create(
+            organization=demo_org,
+            role=ContactPerson.Role.ACCOUNTANT,
+            defaults={
+                "name": "Ірина Ковальчук",
+                "position": "Головний бухгалтер ОСББ",
+                "phone": "+38 (044) 000-55-66",
+                "email": "accounting@skandinaviya.ua",
+                "working_hours": "Пн-Пт 09:00-17:00",
+                "is_active": True,
+                "order": 4,
+            },
+        )
+        ContactPerson.objects.get_or_create(
+            organization=demo_org,
+            role=ContactPerson.Role.EMERGENCY,
+            defaults={
+                "name": "Аварійна служба ЖК",
+                "position": "Диспетчерська",
+                "phone": "+38 (044) 000-77-88",
+                "working_hours": "24/7",
+                "is_emergency": True,
+                "is_active": True,
+                "order": 5,
+            },
+        )
+        self.stdout.write(f"  ✓ Organization contacts created (6 contact persons)")
 
-        # ── 13. Summary ───────────────────────────────────────────────────
+        # ── 13. Posts & Tags ─────────────────────────────────────────────
+        posts_data = [
+            {
+                "title": "Як правильно подавати заявку на ремонт",
+                "body": (
+                    "Покрокова інструкція для мешканців ЖК:\n\n"
+                    "1. Зайдіть у свій кабінет на порталі ApartmentOS\n"
+                    "2. Натисніть «Створити заявку»\n"
+                    "3. Оберіть категорію (сантехніка, електрика, ліфт тощо)\n"
+                    "4. Опишіть проблему та додайте фото\n"
+                    "5. Чекайте на підтвердження від диспетчера\n\n"
+                    "Якщо заявка терміновая — зателефонуйте на гарячу лінію."
+                ),
+                "tags": ["ремонт", "заявки", "інструкція"],
+                "author": dispatcher,
+                "upvotes": 12,
+            },
+            {
+                "title": "Правила паркування на території ЖК",
+                "body": (
+                    "Шановні мешканці!\n\n"
+                    "Нагадуємо правила паркування:\n"
+                    "- Паркуватися лише на відведених місцях\n"
+                    "- Гостьові перепустки оформляються через портал\n"
+                    "- Заборонено блокувати проїзди та пожежні виходи\n"
+                    "- Порушники отримають попередження\n\n"
+                    "Дякуємо за розуміння!"
+                ),
+                "tags": ["паркування", "правила", "перепустки"],
+                "author": dispatcher,
+                "upvotes": 8,
+            },
+            {
+                "title": "Графік роботи сантехніка",
+                "body": (
+                    "Сантехнік ЖК Скандинавія працює:\n\n"
+                    "Пн-Пт: 09:00 — 18:00\n"
+                    "Сб: 10:00 — 14:00\n"
+                    "Нд: вихідний\n\n"
+                    "Для термінових випадків (прорив труби, затоплення) — "
+                    "зверніться до аварійної служби за номером +38 (044) 000-77-88 (цілодобово)."
+                ),
+                "tags": ["сантехніка", "графік", "контакти"],
+                "author": plumber,
+                "upvotes": 15,
+            },
+            {
+                "title": "Економія електроенергії: поради для мешканців",
+                "body": (
+                    "Кілька простих порад, як зменшити рахунки за електрику:\n\n"
+                    "1. Використовуйте LED-лампи замість ламп розжарювання\n"
+                    "2. Вимикайте світло, виходячи з кімнати\n"
+                    "3. Не залишайте техніку в режимі очікування\n"
+                    "4. Встановіть двозонний лічильник\n"
+                    "5. Використовуйте пральну машину на повному завантаженні\n\n"
+                    "Разом ми зробимо наш ЖК більш енергоефективним!"
+                ),
+                "tags": ["електрика", "економія", "поради"],
+                "author": electrician,
+                "upvotes": 20,
+            },
+            {
+                "title": "Підготовка до опалювального сезону",
+                "body": (
+                    "Опалювальний сезон починається 15 жовтня.\n\n"
+                    "Для підготовки просимо:\n"
+                    "- Перевірте стан радіаторів у своїй квартирі\n"
+                    "- Якщо є проблеми з батареями — подайте заявку до 1 жовтня\n"
+                    "- Не закривайте радіатори меблями для кращої циркуляції тепла\n"
+                    "- При виявленні витоку — негайно повідомте диспетчера\n\n"
+                    "Бажаємо теплої зими!"
+                ),
+                "tags": ["опалення", "сезон", "підготовка"],
+                "author": dispatcher,
+                "upvotes": 10,
+            },
+            {
+                "title": "Нові правила сортування сміття",
+                "body": (
+                    "З 1 числа вводяться нові правила сортування:\n\n"
+                    "🟡 Жовтий контейнер — пластик та метал\n"
+                    "🔵 Синій контейнер — папір та картон\n"
+                    "🟢 Зелений контейнер — скло\n"
+                    "⚫ Чорний контейнер — змішані відходи\n\n"
+                    "Контейнери розташовані біля кожного під'їзду. "
+                    "Просимо дотримуватись правил!"
+                ),
+                "tags": ["екологія", "правила", "сортування"],
+                "author": dispatcher,
+                "upvotes": 6,
+            },
+        ]
+
+        for post_data in posts_data:
+            tags = post_data.pop("tags")
+            upvotes_count = post_data.pop("upvotes")
+            post_data["organization"] = demo_org
+            post, created = Post.objects.get_or_create(
+                title=post_data["title"],
+                defaults=post_data,
+            )
+            if created:
+                post.upvotes = upvotes_count
+                post.save(update_fields=["upvotes"])
+                post.tags.set(tags)
+
+        self.stdout.write(f"  ✓ Posts created: {Post.objects.count()} with tags")
+
+        # ── 14. Summary ───────────────────────────────────────────────────
         self.stdout.write(self.style.SUCCESS(
             "\n✅ ЖК Скандинавія seed complete!\n"
             f"   Комплекс: {complex_obj.name}\n"
@@ -775,6 +978,7 @@ class Command(BaseCommand):
             f"   Заявки: {Issue.objects.count()}\n"
             f"   Оголошення: {Announcement.objects.count()}\n"
             f"   Новини: {News.objects.filter(is_published=True).count()}\n"
+            f"   Публікації: {Post.objects.count()}\n"
             f"   Пропуски: {VehiclePass.objects.count()}\n"
             "\n   Логіни (пароль: Demo1234!):\n"
             "   ──────────────────────────────────────────\n"

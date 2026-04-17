@@ -204,21 +204,25 @@ export default function ResidentDashboard() {
 								</div>
 							) : (
 								previewAnnouncements.map((ann) => (
-									<Link
+									<div
 										key={ann.id}
-										href={`/announcements/${ann.id}`}
 										className="block px-5 py-3.5 hover:bg-[#F7F8FA] dark:hover:bg-[#1E2D3D] transition-colors"
 									>
 										<p className="text-sm font-medium leading-snug text-[#111827] dark:text-[#F0EDE6] line-clamp-2">
 											{ann.title}
 										</p>
+										{ann.body && (
+											<p className="mt-1 text-xs text-[#374151] dark:text-[#A0B3C1] line-clamp-2">
+												{ann.body}
+											</p>
+										)}
 										<p className="mt-0.5 text-xs text-[#6B7280] dark:text-[#8FA8B8]">
 											{new Date(ann.created_at).toLocaleDateString("uk-UA", {
 												day: "numeric",
 												month: "long",
 											})}
 										</p>
-									</Link>
+									</div>
 								))
 							)}
 						</div>

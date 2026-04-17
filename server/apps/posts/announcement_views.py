@@ -14,7 +14,7 @@ class AnnouncementSerializer(serializers.ModelSerializer):
 
 class AnnouncementListAPIView(generics.ListAPIView):
     """Tenants see active announcements for their building only.
-    Staff/admin see all active announcements across all buildings.
+    Staff/admin and guards see all active announcements for their organization.
     """
 
     serializer_class = AnnouncementSerializer
@@ -25,6 +25,20 @@ class AnnouncementListAPIView(generics.ListAPIView):
         qs = Announcement.objects.filter(is_active=True)
         if user.is_staff or user.is_superuser:
             return qs
+
+        # Guards and workers: show all announcements for their org buildings
+        try:
+            occupation = user.profile.occupation
+        except Exception:
+            occupation = None
+
+        if occupation and occupation != "tenant":
+            from apps.organizations.utils import get_user_organizations
+            user_orgs = get_user_organizations(user)
+            if user_orgs.exists():
+                return qs.filter(building__organization__in=user_orgs)
+            return qs
+
         # Tenant: filter to their building via Unit → Entrance → Building
         unit = Unit.objects.filter(apartment__tenant=user).select_related(
             "entrance__building"

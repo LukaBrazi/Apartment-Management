@@ -16,8 +16,32 @@ import {
 	Star,
 	UserRoundCheck,
 } from "lucide-react";
-import { capitalizeFirstLetter, formatDate } from "@/utils";
+import { formatDate } from "@/utils";
 import ProtectedRoute from "../shared/ProtectedRoutes";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
+const genderLabels: Record<string, string> = {
+	male: "Чоловік",
+	female: "Жінка",
+	other: "Інше",
+};
+
+const countryLabels: Record<string, string> = {
+	Ukraine: "Україна",
+};
+
+const occupationLabels: Record<string, string> = {
+	mason: "Муляр",
+	carpenter: "Тесляр",
+	plumber: "Сантехнік",
+	roofer: "Покрівельник",
+	painter: "Маляр",
+	electrician: "Електрик",
+	hvac: "Вентиляція/Кліматизація",
+	tenant: "Мешканець",
+	guard: "Охоронець",
+};
 
 function AboutContent() {
 	const { data, isLoading } = useGetUserProfileQuery();
@@ -48,7 +72,7 @@ function AboutContent() {
 					<ProfileItem
 						icon={<UserRoundCheck className="tab-icon" />}
 						label="Стать"
-						value={capitalizeFirstLetter(profile?.gender || "")}
+						value={genderLabels[profile?.gender || ""] || profile?.gender || ""}
 					/>
 					<ProfileItem
 						icon={<CalendarDays className="tab-icon" />}
@@ -65,7 +89,7 @@ function AboutContent() {
 					<ProfileItem
 						icon={<Map className="tab-icon" />}
 						label="Країна"
-						value={profile?.country_of_origin || ""}
+						value={countryLabels[profile?.country_of_origin || ""] || profile?.country_of_origin || ""}
 					/>
 					<ProfileItem
 						icon={<MapPinnedIcon className="tab-icon" />}
@@ -78,7 +102,7 @@ function AboutContent() {
 					<ProfileItem
 						icon={<Briefcase className="tab-icon" />}
 						label="Рід занять"
-						value={capitalizeFirstLetter(profile?.occupation || "")}
+						value={occupationLabels[profile?.occupation || ""] || profile?.occupation || ""}
 					/>
 					<ProfileItem
 						icon={<Home className="tab-icon" />}
@@ -88,7 +112,7 @@ function AboutContent() {
 					<ProfileItem
 						icon={<Hotel className="tab-icon" />}
 						label="Будинок"
-						value={`${profile?.apartment?.building || "Немає"}, Floor: ${profile?.apartment?.floor || "Немає"} `}
+						value={`${profile?.apartment?.building || "Немає"}, Поверх: ${profile?.apartment?.floor || "Немає"}`}
 					/>
 					<ProfileItem
 						icon={<Star className="tab-icon" />}
@@ -105,6 +129,18 @@ function AboutContent() {
 						</p>
 					</div>
 				</div>
+			</div>
+			<div className="flex cursor-pointer flex-row justify-between p-4">
+				<Link href="/profile/edit">
+					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
+						Оновити профіль
+					</Button>
+				</Link>
+				<Link href="/apartment">
+					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
+						Додати квартиру
+					</Button>
+				</Link>
 			</div>
 		</TabsContent>
 	);

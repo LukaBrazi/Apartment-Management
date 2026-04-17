@@ -4,8 +4,6 @@ import React from "react";
 
 import type { Metadata } from "next";
 import Header from "@/components/profile/Header";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import ProfileTabs from "@/components/profile/ProfileTabs";
 
 export const metadata: Metadata = {
@@ -20,18 +18,7 @@ function ProfilePageContent() {
 				<Header />
 				<ProfileTabs />
 			</div>
-			<div className="flex cursor-pointer flex-row justify-between">
-				<Link href="/profile/edit">
-					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
-						Оновити профіль
-					</Button>
-				</Link>
-				<Link href="/apartment">
-					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
-						Додати квартиру
-					</Button>
-				</Link>
-			</div>
+			{/* Buttons moved to About.tsx — only visible on the "Про мене" tab */}
 		</>
 	);
 }

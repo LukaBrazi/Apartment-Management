@@ -38,7 +38,7 @@ export default function NotificationBell() {
 				</button>
 			</DropdownMenuTrigger>
 
-			<DropdownMenuContent className="w-80 dark:text-[#F0EDE6]" align="end">
+			<DropdownMenuContent className="w-80 bg-white dark:bg-gray-800 border shadow-lg dark:text-[#F0EDE6]" align="end">
 				<DropdownMenuLabel className="flex items-center justify-between border-b pb-2">
 					<span className="text-sm font-semibold">Сповіщення</span>
 					{unreadCount > 0 && (

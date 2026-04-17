@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Car, Plus } from "lucide-react";
-import { useGetMyPassesQuery } from "@/lib/redux/features/passes/passApiSlice";
+import { Car, Plus, Trash2 } from "lucide-react";
+import { useGetMyPassesQuery, useDeletePassMutation } from "@/lib/redux/features/passes/passApiSlice";
 
 export default function PassesMiniPanel() {
 	const { data, isLoading } = useGetMyPassesQuery();
+	const [deletePass, { isLoading: isDeleting }] = useDeletePassMutation();
 
 	const activePasses = (data?.results ?? [])
 		.filter((p) => p.status === "pending")
@@ -66,6 +67,18 @@ export default function PassesMiniPanel() {
 							<span className="flex-shrink-0 rounded-full bg-[#EDFAF6] px-2 py-0.5 text-xs font-medium text-[#2E7D6B]">
 								Активна
 							</span>
+							<button
+								onClick={() => {
+									if (window.confirm("Видалити цю перепустку?")) {
+										deletePass(pass.id);
+									}
+								}}
+								disabled={isDeleting}
+								className="flex-shrink-0 rounded-lg p-1.5 text-[#9CA3AF] transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+								title="Видалити перепустку"
+							>
+								<Trash2 className="h-3.5 w-3.5" />
+							</button>
 						</div>
 					))
 				)}
