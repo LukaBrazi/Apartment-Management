@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
 	title: "Home | Skandi Apartments",
 	description:
@@ -44,7 +46,8 @@ async function getSiteSettings(): Promise<SiteSettings> {
 		});
 		if (!res.ok) return DEFAULTS;
 		const json = await res.json();
-		return (json.site_settings as SiteSettings) ?? DEFAULTS;
+		const data = (json.site_settings as SiteSettings) ?? DEFAULTS;
+		return { ...DEFAULTS, ...data, links: data.links ?? [] };
 	} catch {
 		return DEFAULTS;
 	}
