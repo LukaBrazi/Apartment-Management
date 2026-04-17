@@ -19,10 +19,14 @@ RUN pip install --no-cache-dir -r requirements/production.txt
 # Copy server code
 COPY server/ /app/
 
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Collect static files
 RUN python manage.py collectstatic --no-input || true
 
 EXPOSE ${PORT:-8000}
 
-# Run migrations and start gunicorn
-CMD python manage.py migrate --no-input && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120
+# Run entrypoint (migrations + gunicorn)
+ENTRYPOINT ["/app/entrypoint.sh"]
