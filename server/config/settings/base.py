@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 from django.utils.timezone import timedelta
 
 # Base directory of the Django project
@@ -237,6 +238,18 @@ CELERY_BEAT_SCHEDULE = {
     "update-reputations-every-day": {
         "task": "update_all_reputations",
         "schedule": timedelta(days=1),
+    },
+    # Nightly demo reset. CELERY_TIMEZONE = Europe/Kyiv, so
+    # `crontab(hour=23, minute=0)` fires at 23:00 local time every day —
+    # DST handled by Celery, no UTC conversion needed.
+    #
+    # The DatabaseScheduler treats this dict as the initial seed for
+    # django_celery_beat's PeriodicTask table; after the first beat run
+    # ops can toggle / edit the schedule via Django Admin without a
+    # code change. See server/apps/common/tasks.py::seed_demo_reset.
+    "seed-demo-reset-nightly": {
+        "task": "seed_demo_reset",
+        "schedule": crontab(hour=23, minute=0),
     },
 }
 

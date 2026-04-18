@@ -1,6 +1,16 @@
-# Demo reset — nightly CronJob
+# Demo reset — nightly CronJob (REFERENCE / FUTURE MIGRATION TARGET)
 #
 # Reference: client/docs/DEMO_SEED_PLAN.md §10.2
+#
+# ⚠️ NOT ACTIVE: The platform currently runs on Railway and the nightly
+# demo reset is handled by Celery Beat
+# (`server/apps/common/tasks.py::seed_demo_reset`, scheduled via the
+# `seed-demo-reset-nightly` entry in CELERY_BEAT_SCHEDULE).
+#
+# This manifest is kept as a ready-to-apply fallback for a future move
+# from Railway to Kubernetes. On migration day: apply this CronJob,
+# then drop the corresponding `CELERY_BEAT_SCHEDULE` entry and
+# `apps/common/tasks.py::seed_demo_reset` task.
 #
 # Runs `python manage.py seed_demo --reset --passwords-from-env` every night
 # at 23:00 Europe/Kyiv, which scoped-deletes every demo row (by email domain

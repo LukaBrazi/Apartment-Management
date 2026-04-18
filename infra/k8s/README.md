@@ -1,7 +1,17 @@
 # Kubernetes manifests
 
+> **Status:** reference only. The platform currently runs on Railway;
+> the nightly demo reset is wired via **Celery Beat**, not these
+> manifests. See `server/apps/common/tasks.py::seed_demo_reset` and the
+> `seed-demo-reset-nightly` entry in
+> `server/config/settings/base.py::CELERY_BEAT_SCHEDULE`.
+>
+> Keep this folder as the migration target if/when we move off Railway
+> onto a Kubernetes cluster — the Celery task can be deleted in favour
+> of the CronJob below at that point.
+
 Infrastructure manifests for ApartmentOS. Not consumed by `docker-compose`
-or Railway — these target the Kubernetes staging/production cluster.
+or Railway — these target a future Kubernetes staging/production cluster.
 
 ## Files
 
