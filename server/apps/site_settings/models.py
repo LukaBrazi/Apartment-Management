@@ -41,7 +41,7 @@ class SiteSettings(models.Model):
     hero_subtitle = models.CharField(
         _("hero subtitle"),
         max_length=300,
-        default="Are you a new tenant? Or an existing tenant?",
+        default="Увійдіть до свого акаунту",
     )
     hero_image = models.ImageField(
         _("hero image"),
@@ -65,7 +65,7 @@ class SiteSettings(models.Model):
     platform_name = models.CharField(
         _("platform name"),
         max_length=100,
-        default="EstateOS",
+        default="ApartmentOS",
         help_text=_("The name of the property management platform (white-label)."),
     )
     platform_tagline = models.CharField(
