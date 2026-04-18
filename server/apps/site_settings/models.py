@@ -36,7 +36,7 @@ class SiteSettings(models.Model):
     hero_title = models.CharField(
         _("hero title"),
         max_length=200,
-        default="Welcome to EstateOS",
+        default="Вітаємо в ApartmentOS",
     )
     hero_subtitle = models.CharField(
         _("hero subtitle"),
@@ -53,12 +53,12 @@ class SiteSettings(models.Model):
     cta_text = models.CharField(
         _("CTA button text"),
         max_length=100,
-        default="Create Your Account",
+        default="Увійти",
     )
     cta_url = models.CharField(
         _("CTA button URL"),
         max_length=200,
-        default="/register",
+        default="/login",
     )
 
     # ─── Platform Identity ───────────────────────────────────────────────────
