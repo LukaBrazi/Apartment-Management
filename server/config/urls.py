@@ -35,7 +35,7 @@ urlpatterns += [
 
 # Admin configuration — reads SITE_NAME from .env for white-label support
 from django.conf import settings as _settings
-_site_name = getattr(_settings, "SITE_NAME", "EstateOS")
+_site_name = getattr(_settings, "SITE_NAME", "ApartmentOS")
 admin.site.site_header = f"{_site_name} Admin"
 admin.site.site_title = f"{_site_name} Admin"
 admin.site.index_title = f"Панель управління {_site_name}"
