@@ -40,3 +40,8 @@ httpx>=0.25.0  # https://github.com/encode/httpx
 djangorestframework==3.15.1  # https://github.com/encode/django-rest-framework
 djangorestframework-simplejwt==5.3.1  # https://github.com/jazzband/djangorestframework-simplejwt
 django-cors-headers==4.3.1  # https://github.com/adamchainz/django-cors-headers
+
+
+# Seed / demo data
+# ------------------------------------------------------------------------------
+Faker==25.8.0  # https://github.com/joke2k/faker  — used by apps/common/seed/helpers.py
