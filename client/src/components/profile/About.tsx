@@ -51,6 +51,10 @@ function AboutContent() {
 	// Мешканці (tenant) не бачать своєї репутації
 	const isWorker = profile?.is_staff || (profile?.occupation && profile.occupation !== "tenant");
 
+	// Кнопка "Додати квартиру" доступна тільки мешканцям і охоронцям
+	const canAddApartment =
+		profile?.occupation === "tenant" || profile?.occupation === "guard";
+
 	if (isLoading) {
 		return (
 			<div className="flex-center pt-32">
@@ -107,12 +111,12 @@ function AboutContent() {
 					<ProfileItem
 						icon={<Home className="tab-icon" />}
 						label="Квартира"
-						value={profile?.apartment?.unit_number || "Немає"}
+						value={profile?.unit_number || profile?.apartment?.unit_number || "Немає"}
 					/>
 					<ProfileItem
 						icon={<Hotel className="tab-icon" />}
 						label="Будинок"
-						value={`${profile?.apartment?.building || "Немає"}, Поверх: ${profile?.apartment?.floor || "Немає"}`}
+						value={profile?.building_name || profile?.apartment?.building || "Немає"}
 					/>
 					<ProfileItem
 						icon={<Star className="tab-icon" />}
@@ -136,11 +140,13 @@ function AboutContent() {
 						Оновити профіль
 					</Button>
 				</Link>
-				<Link href="/apartment">
-					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
-						Додати квартиру
-					</Button>
-				</Link>
+				{canAddApartment && (
+					<Link href="/apartment">
+						<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
+							Додати квартиру
+						</Button>
+					</Link>
+				)}
 			</div>
 		</TabsContent>
 	);

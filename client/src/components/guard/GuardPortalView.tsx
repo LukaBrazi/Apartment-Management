@@ -32,8 +32,13 @@ export default function GuardPortalView() {
 	} = useGetTenantAnnouncementsQuery();
 
 	const passes = data?.results ?? [];
-	const issues = (issuesData as any)?.issues ?? (issuesData as any)?.results ?? [];
-	const announcements = (announcementsData as any)?.results ?? (announcementsData as any) ?? [];
+	// GenericJSONRenderer wraps: { status_code, issues: { count, results: [...] } }
+	const issues = (issuesData as any)?.issues?.results
+		?? (issuesData as any)?.issues
+		?? [];
+	const announcements = Array.isArray(announcementsData)
+		? announcementsData
+		: (announcementsData as any)?.results ?? [];
 
 	return (
 		<div className="max-w-4xl mx-auto">

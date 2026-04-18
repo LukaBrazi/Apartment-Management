@@ -210,6 +210,20 @@ export interface EntrancesResponse {
 	entrances: Entrance[];
 }
 
+export interface Unit {
+	id: string;
+	unit_id: string;
+	number: string;
+	floor: number | null;
+	entrance: string;
+	entrance_name: string;
+	building_name: string;
+}
+
+export interface UnitsResponse {
+	units: Unit[];
+}
+
 export interface IssueData {
 	title: string;
 	description: string;
@@ -373,6 +387,10 @@ export interface Profile {
 		building: string;
 		floor: number;
 	} | null;
+	unit_id?: string | null;
+	unit_number?: string | null;
+	building_name?: string | null;
+	building_id?: string | null;
 }
 
 export interface ProfilesResponse {
@@ -540,6 +558,7 @@ export interface AdminProfileUpdateData {
 	gender?: "male" | "female" | "other";
 	occupation?: Occupation;
 	bio?: string;
+	unit_id?: string | null;
 }
 
 export interface AdminCreateUserData {
@@ -549,6 +568,7 @@ export interface AdminCreateUserData {
 	last_name: string;
 	password: string;
 	occupation: Occupation;
+	unit_id?: string | null;
 }
 
 export interface BuildingCreateData {

@@ -14,6 +14,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Issue } from "@/types";
 import { Users, ClipboardList, Car, Newspaper } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
 
 const recentIssueColumns: ColumnDef<Issue, unknown>[] = [
 	{
@@ -80,6 +81,7 @@ export default function AdminDashboardPage() {
 			icon: Users,
 			color: "text-[#3D7A8A]",
 			bg: "bg-[#EBF3F5] dark:bg-[#1A2E3A]",
+			href: "/admin/residents",
 		},
 		{
 			label: "Активних заявок",
@@ -87,6 +89,7 @@ export default function AdminDashboardPage() {
 			icon: ClipboardList,
 			color: "text-amber-600 dark:text-amber-400",
 			bg: "bg-amber-50 dark:bg-amber-900/20",
+			href: "/admin/issues",
 		},
 		{
 			label: "Перепусток (очікують)",
@@ -94,6 +97,7 @@ export default function AdminDashboardPage() {
 			icon: Car,
 			color: "text-indigo-600 dark:text-indigo-400",
 			bg: "bg-indigo-50 dark:bg-indigo-900/20",
+			href: "/admin/passes",
 		},
 		{
 			label: "Новин",
@@ -101,6 +105,7 @@ export default function AdminDashboardPage() {
 			icon: Newspaper,
 			color: "text-green-600 dark:text-green-400",
 			bg: "bg-green-50 dark:bg-green-900/20",
+			href: "/admin/posts",
 		},
 	];
 
@@ -117,23 +122,22 @@ export default function AdminDashboardPage() {
 
 			{/* Stats Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-				{statsCards.map(({ label, value, icon: Icon, color, bg }) => (
-					<Card
-						key={label}
-						className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-white dark:bg-[#162032] shadow-sm"
-					>
-						<CardContent className="p-5 flex items-center gap-4">
-							<div className={`p-3 rounded-xl ${bg}`}>
-								<Icon className={`h-5 w-5 ${color}`} />
-							</div>
-							<div>
-								<p className="text-2xl font-bold text-[#1C2B3A] dark:text-white">
-									{value}
-								</p>
-								<p className="text-xs text-[#6B7F8C] mt-0.5">{label}</p>
-							</div>
-						</CardContent>
-					</Card>
+				{statsCards.map(({ label, value, icon: Icon, color, bg, href }) => (
+					<Link key={label} href={href}>
+						<Card className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-white dark:bg-[#162032] shadow-sm cursor-pointer hover:shadow-md hover:border-[#3D7A8A] dark:hover:border-[#3D7A8A] transition-all">
+							<CardContent className="p-5 flex items-center gap-4">
+								<div className={`p-3 rounded-xl ${bg}`}>
+									<Icon className={`h-5 w-5 ${color}`} />
+								</div>
+								<div>
+									<p className="text-2xl font-bold text-[#1C2B3A] dark:text-white">
+										{value}
+									</p>
+									<p className="text-xs text-[#6B7F8C] mt-0.5">{label}</p>
+								</div>
+							</CardContent>
+						</Card>
+					</Link>
 				))}
 			</div>
 

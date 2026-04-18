@@ -33,7 +33,7 @@ import {
 	useUpdateAnnouncementMutation,
 	useDeleteAnnouncementMutation,
 } from "@/lib/redux/features/admin/adminApiSlice";
-import { useGetBuildingsQuery } from "@/lib/redux/features/apartment/apartmentApiSlice";
+import { useAdminGetBuildingsQuery } from "@/lib/redux/features/admin/adminApiSlice";
 import { Announcement } from "@/types";
 import { extractErrorMessage } from "@/utils";
 
@@ -51,7 +51,7 @@ type DialogMode = "create" | "edit" | "delete" | null;
 export default function AdminPostsPage() {
 	const { data: announcementsData, isLoading } =
 		useGetAdminAnnouncementsQuery();
-	const { data: buildingsData } = useGetBuildingsQuery();
+	const { data: buildingsData } = useAdminGetBuildingsQuery();
 	const [createAnnouncement, { isLoading: isCreating }] =
 		useCreateAnnouncementMutation();
 	const [updateAnnouncement, { isLoading: isUpdating }] =

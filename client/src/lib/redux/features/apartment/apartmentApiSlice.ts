@@ -1,4 +1,4 @@
-import { ApartmentData, ApartmentResponse, BuildingsResponse, EntrancesResponse } from "@/types";
+import { ApartmentData, ApartmentResponse, BuildingsResponse, EntrancesResponse, UnitsResponse } from "@/types";
 import { baseApiSlice } from "../api/baseApiSlice";
 
 export const apartmentApiSlice = baseApiSlice.injectEndpoints({
@@ -30,6 +30,11 @@ export const apartmentApiSlice = baseApiSlice.injectEndpoints({
 			query: (buildingId) => `/apartments/buildings/${buildingId}/entrances/`,
 			providesTags: ["Apartment"],
 		}),
+
+		getUnitsByBuilding: builder.query<UnitsResponse, string>({
+			query: (buildingId) => `/apartments/buildings/${buildingId}/units/`,
+			providesTags: ["Apartment"],
+		}),
 	}),
 });
 
@@ -38,4 +43,5 @@ export const {
 	useGetMyApartmentQuery,
 	useGetBuildingsQuery,
 	useGetEntrancesQuery,
+	useGetUnitsByBuildingQuery,
 } = apartmentApiSlice;

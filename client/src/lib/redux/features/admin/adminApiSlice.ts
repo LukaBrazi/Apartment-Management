@@ -122,15 +122,15 @@ export const adminApiSlice = baseApiSlice.injectEndpoints({
 		}),
 		adminCreateBuilding: builder.mutation<{ building: Building }, BuildingCreateData>({
 			query: (data) => ({ url: "/apartments/buildings/create/", method: "POST", body: data }),
-			invalidatesTags: ["AdminBuildings"],
+			invalidatesTags: ["AdminBuildings", "Apartment"],
 		}),
 		adminUpdateBuilding: builder.mutation<{ building: Building }, BuildingUpdateData>({
 			query: ({ pkid, ...data }) => ({ url: `/apartments/buildings/${pkid}/`, method: "PATCH", body: data }),
-			invalidatesTags: ["AdminBuildings"],
+			invalidatesTags: ["AdminBuildings", "Apartment"],
 		}),
 		adminDeleteBuilding: builder.mutation<void, number>({
 			query: (pkid) => ({ url: `/apartments/buildings/${pkid}/`, method: "DELETE" }),
-			invalidatesTags: ["AdminBuildings"],
+			invalidatesTags: ["AdminBuildings", "Apartment"],
 		}),
 	}),
 });

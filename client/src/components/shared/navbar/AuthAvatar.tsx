@@ -15,59 +15,60 @@ import { LogOut, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { useAppSelector } from "@/lib/redux/hooks/typedHooks";
 
 export default function AuthAvatar() {
 	const { handleLogout } = useAuthNavigation();
+	const { isAuthenticated } = useAppSelector((state) => state.auth);
+	const { profile, isLoading } = useUserProfile();
 
-	const { profile, isLoading, isError } = useUserProfile();
-
-	if (isLoading) {
+	if (!isAuthenticated) {
 		return null;
 	}
 
-	if (isError) {
-		return null;
+	if (isLoading) {
+		return (
+			<div className="h-10 w-10 animate-pulse rounded-full bg-[#E5E7EB] dark:bg-[#2D3D4F]" />
+		);
 	}
 
 	return (
 		<div>
-			{profile && (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Avatar className="border-pumpkin cursor-pointer border-2">
-							<AvatarImage alt="auth image" src={profile.avatar} />
-							<AvatarFallback>
-								<Image
-									src="/assets/images/avatars/placeholder-neutral.svg"
-									alt="Avatar"
-									width={32}
-									height={32}
-									className="rounded-full"
-								/>
-							</AvatarFallback>
-						</Avatar>
-					</DropdownMenuTrigger>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Avatar className="border-pumpkin cursor-pointer border-2">
+						<AvatarImage alt="auth image" src={profile?.avatar} />
+						<AvatarFallback>
+							<Image
+								src="/assets/images/avatars/placeholder-neutral.svg"
+								alt="Avatar"
+								width={32}
+								height={32}
+								className="rounded-full"
+							/>
+						</AvatarFallback>
+					</Avatar>
+				</DropdownMenuTrigger>
 
-					<DropdownMenuContent className="bg-white dark:bg-gray-800 border shadow-lg dark:text-platinum">
-						<DropdownMenuLabel className="border-b-2">
-							Мій акаунт
-						</DropdownMenuLabel>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem className="auth-nav">
-							<Link href="/profile" className="flex-row-center">
-								<User className="mr-1" /> Профіль
-							</Link>
-						</DropdownMenuItem>
+				<DropdownMenuContent className="bg-white dark:bg-gray-800 border shadow-lg dark:text-platinum">
+					<DropdownMenuLabel className="border-b-2">
+						Мій акаунт
+					</DropdownMenuLabel>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem className="auth-nav">
+						<Link href="/profile" className="flex-row-center">
+							<User className="mr-1" /> Профіль
+						</Link>
+					</DropdownMenuItem>
 
-						<DropdownMenuItem
-							onClick={handleLogout}
-							className="flex-row-center auth-nav cursor-pointer"
-						>
-							<LogOut className="mr-1" /> Вийти
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			)}
+					<DropdownMenuItem
+						onClick={handleLogout}
+						className="flex-row-center auth-nav cursor-pointer"
+					>
+						<LogOut className="mr-1" /> Вийти
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</div>
 	);
 }

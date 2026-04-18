@@ -13,7 +13,7 @@ import { formatDate, getRepliesText, getViewText } from "@/utils";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { EyeIcon, MessageSquareQuoteIcon } from "lucide-react";
+import { EyeIcon, MessageSquareQuoteIcon, Hash } from "lucide-react";
 
 interface SlugParamsProps {
 	params: {
@@ -23,6 +23,8 @@ interface SlugParamsProps {
 
 export default function PostTagCard({ params }: SlugParamsProps) {
 	const { data, isLoading } = useGetPostsByTagQuery(params.tagSlug);
+	const decodedTag = decodeURIComponent(params.tagSlug);
+
 	if (isLoading) {
 		return (
 			<div className="flex-center pt-32">
@@ -31,72 +33,92 @@ export default function PostTagCard({ params }: SlugParamsProps) {
 		);
 	}
 
-	const posts = data?.posts_by_tag.results || [];
+	const posts = data?.posts_by_tag?.results || [];
 
 	return (
-		<div>
-			<h1 className="flex-center font-robotoSlab dark:text-pumpkin text-4xl">
-				Публікації з тегом{" "}
-				<span className="text-electricIndigo ml-1 dark:text-lime-500">
-					&ldquo;{params.tagSlug}&rdquo;
-				</span>
-			</h1>
-			<div className="mt-6 grid grid-cols-2 gap-6">
-				{posts.map((post) => (
-					<Card key={post.id} className="dark:border-gray rounded-lg border">
-						<CardHeader className="dark:text-platinum w-full pb-4">
-							<CardTitle className="font-robotoSlab text-center text-2xl">
-								{post.title.length > 25
-									? `${post.title.substring(0, 25)}....`
-									: post.title}
-							</CardTitle>
-							<CardDescription>
-								<div className="flex flex-row justify-between">
-									<div>
-										<span>Опубліковано</span>
-										<span className="dark:text-pumpkin ml-1">
-											{formatDate(post.created_at).toString()}
-										</span>
-									</div>
-									<div>
-										<span>Оновлено</span>
-										<span className="dark:text-pumpkin ml-1">
-											{formatDistanceToNow(parseISO(post.updated_at), {
-												addSuffix: true,
-											})}
-										</span>
-									</div>
-								</div>
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="border-t-deepBlueGrey dark:border-gray border-y py-4 text-sm">
-							<p className="dark:text-platinum">
-								{post.body.length > 65
-									? `${post.body.substring(0, 65)}....`
-									: post.body}
-							</p>
-						</CardContent>
+		<div className="flex flex-col gap-6">
+			<div className="flex items-center gap-3">
+				<div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF3FD] dark:bg-[#1A2E3A]">
+					<Hash className="h-6 w-6 text-[#2F6FED] dark:text-[#5BA3B5]" />
+				</div>
+				<div>
+					<h1 className="text-2xl font-bold text-[#111827] dark:text-[#F0EDE6]">
+						Публікації з тегом &ldquo;{decodedTag}&rdquo;
+					</h1>
+					<p className="text-sm text-[#6B7280] dark:text-[#8FA8B8]">
+						{posts.length > 0
+							? `Знайдено ${posts.length} публікацій`
+							: "Публікацій не знайдено"}
+					</p>
+				</div>
+			</div>
 
-						<div className="flex flex-row items-center justify-between p-2">
-							<div>
+			{posts.length === 0 ? (
+				<div className="rounded-2xl border border-[#E5E7EB] bg-white p-8 text-center shadow-sm dark:border-[#2D3D4F] dark:bg-[#162032]">
+					<p className="text-sm text-[#6B7280] dark:text-[#8FA8B8]">
+						За тегом &ldquo;{decodedTag}&rdquo; публікацій не знайдено.
+					</p>
+				</div>
+			) : (
+				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+					{posts.map((post) => (
+						<Card
+							key={post.id}
+							className="rounded-2xl border border-[#E5E7EB] bg-white shadow-sm transition-shadow hover:shadow-md dark:border-[#2D3D4F] dark:bg-[#162032]"
+						>
+							<CardHeader className="pb-3">
+								<CardTitle className="text-lg font-semibold text-[#111827] dark:text-[#F0EDE6] line-clamp-2">
+									{post.title}
+								</CardTitle>
+								<CardDescription>
+									<div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6B7280] dark:text-[#8FA8B8]">
+										<span>
+											Опубліковано{" "}
+											<span className="font-medium text-[#374151] dark:text-[#C5D0D8]">
+												{formatDate(post.created_at).toString()}
+											</span>
+										</span>
+										<span>
+											Оновлено{" "}
+											<span className="font-medium text-[#374151] dark:text-[#C5D0D8]">
+												{formatDistanceToNow(parseISO(post.updated_at), {
+													addSuffix: true,
+												})}
+											</span>
+										</span>
+									</div>
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="border-t border-[#E5E7EB] py-3 dark:border-[#2D3D4F]">
+								<p className="text-sm text-[#374151] dark:text-[#C5D0D8] line-clamp-3">
+									{post.body}
+								</p>
+							</CardContent>
+
+							<div className="flex items-center justify-between border-t border-[#E5E7EB] p-4 dark:border-[#2D3D4F]">
 								<Link href={`/post/${post.slug}`}>
-									<Button size="sm" className="lime-gradient text-babyPowder">
-										View Post
+									<Button
+										size="sm"
+										className="rounded-lg bg-[#2F6FED] text-white hover:bg-[#1E5BCC] dark:bg-[#5BA3B5] dark:hover:bg-[#4A8D9E]"
+									>
+										Переглянути
 									</Button>
 								</Link>
+								<div className="flex items-center gap-4 text-sm text-[#6B7280] dark:text-[#8FA8B8]">
+									<div className="flex items-center gap-1">
+										<EyeIcon className="h-4 w-4" />
+										<span>{getViewText(post.view_count)}</span>
+									</div>
+									<div className="flex items-center gap-1">
+										<MessageSquareQuoteIcon className="h-4 w-4" />
+										<span>{getRepliesText(post.replies_count)}</span>
+									</div>
+								</div>
 							</div>
-							<div className="flex-row-center dark:text-platinum">
-								<EyeIcon className="post-icon text-electricIndigo mr-1" />
-								{getViewText(post.view_count)}
-							</div>
-							<div className="flex-row-center dark:text-platinum">
-								<MessageSquareQuoteIcon className="post-icon text-electricIndigo mr-1" />
-								<span>{getRepliesText(post.replies_count)}</span>
-							</div>
-						</div>
-					</Card>
-				))}
-			</div>
+						</Card>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }

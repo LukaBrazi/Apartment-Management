@@ -30,7 +30,9 @@ import {
 	useGetAdminAllProfilesQuery,
 	useAdminUpdateProfileMutation,
 	useAdminCreateUserMutation,
+	useAdminGetBuildingsQuery,
 } from "@/lib/redux/features/admin/adminApiSlice";
+import { useGetUnitsByBuildingQuery } from "@/lib/redux/features/apartment/apartmentApiSlice";
 import { Profile, Occupation } from "@/types";
 import { extractErrorMessage } from "@/utils";
 
@@ -51,6 +53,7 @@ const editSchema = z.object({
 		"guard",
 	]),
 	bio: z.string().optional(),
+	unit_id: z.string().optional().nullable(),
 });
 
 const createSchema = z.object({
@@ -59,6 +62,7 @@ const createSchema = z.object({
 	first_name: z.string().min(1, "Обов'язкове поле"),
 	last_name: z.string().min(1, "Обов'язкове поле"),
 	password: z.string().min(6, "Мінімум 6 символів"),
+	unit_id: z.string().optional().nullable(),
 });
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -84,10 +88,27 @@ export default function AdminResidentsPage() {
 	const { data, isLoading } = useGetAdminAllProfilesQuery();
 	const [updateProfile, { isLoading: isUpdating }] = useAdminUpdateProfileMutation();
 	const [adminCreateUser, { isLoading: isCreating }] = useAdminCreateUserMutation();
+	const { data: buildingsData } = useAdminGetBuildingsQuery();
 
 	const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [showCreateForm, setShowCreateForm] = useState(false);
+
+	// Building & unit selection state for create and edit forms
+	const [createBuildingId, setCreateBuildingId] = useState<string>("");
+	const [editBuildingId, setEditBuildingId] = useState<string>("");
+	const [editUnitId, setEditUnitId] = useState<string>("");
+
+	const { data: createUnitsData } = useGetUnitsByBuildingQuery(createBuildingId, {
+		skip: !createBuildingId,
+	});
+	const { data: editUnitsData } = useGetUnitsByBuildingQuery(editBuildingId, {
+		skip: !editBuildingId,
+	});
+
+	const buildings = buildingsData?.buildings ?? [];
+	const createUnits = createUnitsData?.units ?? [];
+	const editUnits = editUnitsData?.units ?? [];
 
 	const {
 		register: registerEdit,
@@ -103,6 +124,7 @@ export default function AdminResidentsPage() {
 		register: registerCreate,
 		handleSubmit: handleSubmitCreate,
 		reset: resetCreate,
+		setValue: setValueCreate,
 		formState: { errors: errorsCreate },
 	} = useForm<CreateFormValues>({
 		resolver: zodResolver(createSchema),
@@ -110,6 +132,8 @@ export default function AdminResidentsPage() {
 
 	const openEdit = (profile: Profile) => {
 		setSelectedProfile(profile);
+		setEditBuildingId(profile.building_id ?? "");
+		setEditUnitId(profile.unit_id ?? "");
 		resetEdit({
 			first_name: profile.first_name,
 			last_name: profile.last_name,
@@ -117,6 +141,7 @@ export default function AdminResidentsPage() {
 			gender: profile.gender,
 			occupation: profile.occupation,
 			bio: profile.bio ?? "",
+			unit_id: profile.unit_id ?? null,
 		});
 		setDialogOpen(true);
 	};
@@ -124,7 +149,11 @@ export default function AdminResidentsPage() {
 	const onSubmitEdit = async (values: EditFormValues) => {
 		if (!selectedProfile) return;
 		try {
-			await updateProfile({ slug: selectedProfile.slug, ...values }).unwrap();
+			await updateProfile({
+				slug: selectedProfile.slug,
+				...values,
+				unit_id: values.unit_id || null,
+			}).unwrap();
 			toast.success("Профіль оновлено");
 			setDialogOpen(false);
 		} catch (e) {
@@ -134,9 +163,14 @@ export default function AdminResidentsPage() {
 
 	const onSubmitCreate = async (values: CreateFormValues) => {
 		try {
-			await adminCreateUser({ ...values, occupation: "tenant" }).unwrap();
+			await adminCreateUser({
+				...values,
+				occupation: "tenant",
+				unit_id: values.unit_id || null,
+			}).unwrap();
 			toast.success("Мешканця створено");
 			resetCreate();
+			setCreateBuildingId("");
 			setShowCreateForm(false);
 		} catch (e) {
 			toast.error(extractErrorMessage(e) || "Помилка створення");
@@ -173,7 +207,15 @@ export default function AdminResidentsPage() {
 			accessorKey: "apartment",
 			header: "Квартира",
 			cell: ({ row }) => {
-				const apt = row.original.apartment;
+				const p = row.original;
+				if (p.unit_number && p.building_name) {
+					return (
+						<span>
+							Кв. {p.unit_number}, {p.building_name}
+						</span>
+					);
+				}
+				const apt = p.apartment;
 				return apt ? (
 					<span>
 						{apt.unit_number}, {apt.building}
@@ -304,6 +346,45 @@ export default function AdminResidentsPage() {
 									className={`${inputCls} opacity-60 cursor-not-allowed`}
 								/>
 							</div>
+							<div className="space-y-1">
+								<label className={labelCls}>Будинок</label>
+								<Select
+									value={createBuildingId}
+									onValueChange={(val) => {
+										setCreateBuildingId(val);
+										setValueCreate("unit_id", null);
+									}}
+								>
+									<SelectTrigger className={inputCls}>
+										<SelectValue placeholder="Оберіть будинок" />
+									</SelectTrigger>
+									<SelectContent>
+										{buildings.map((b) => (
+											<SelectItem key={b.id} value={b.id}>
+												{b.name} — {b.address}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-1">
+								<label className={labelCls}>Квартира</label>
+								<Select
+									onValueChange={(val) => setValueCreate("unit_id", val)}
+									disabled={!createBuildingId || createUnits.length === 0}
+								>
+									<SelectTrigger className={inputCls}>
+										<SelectValue placeholder={!createBuildingId ? "Спершу оберіть будинок" : createUnits.length === 0 ? "Немає квартир" : "Оберіть квартиру"} />
+									</SelectTrigger>
+									<SelectContent>
+										{createUnits.map((u) => (
+											<SelectItem key={u.id} value={u.id}>
+												Кв. {u.number} (під&apos;їзд {u.entrance_name}{u.floor ? `, пов. ${u.floor}` : ""})
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
 						<div className="flex justify-end">
 							<button
@@ -420,6 +501,57 @@ export default function AdminResidentsPage() {
 									))}
 								</SelectContent>
 							</Select>
+						</div>
+
+						<div className="grid grid-cols-2 gap-3">
+							<div className="space-y-1">
+								<label className="text-xs font-medium text-[#6B7F8C]">
+									Будинок
+								</label>
+								<Select
+									value={editBuildingId || undefined}
+									onValueChange={(val) => {
+										setEditBuildingId(val);
+										setEditUnitId("");
+										setValueEdit("unit_id", null);
+									}}
+								>
+									<SelectTrigger className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A]">
+										<SelectValue placeholder="Оберіть будинок" />
+									</SelectTrigger>
+									<SelectContent>
+										{buildings.map((b) => (
+											<SelectItem key={b.id} value={b.id}>
+												{b.name} — {b.address}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-1">
+								<label className="text-xs font-medium text-[#6B7F8C]">
+									Квартира
+								</label>
+								<Select
+									value={editUnitId || undefined}
+									onValueChange={(val) => {
+										setEditUnitId(val);
+										setValueEdit("unit_id", val);
+									}}
+									disabled={!editBuildingId || editUnits.length === 0}
+								>
+									<SelectTrigger className="border-[#E2E5E8] dark:border-[#2D3D4F] bg-[#F7F6F2] dark:bg-[#1C2B3A]">
+										<SelectValue placeholder={!editBuildingId ? "Спершу оберіть будинок" : editUnits.length === 0 ? "Немає квартир" : "Оберіть квартиру"} />
+									</SelectTrigger>
+									<SelectContent>
+										{editUnits.map((u) => (
+											<SelectItem key={u.id} value={u.id}>
+												Кв. {u.number} (під&apos;їзд {u.entrance_name}{u.floor ? `, пов. ${u.floor}` : ""})
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 						</div>
 
 						<div className="space-y-1">
