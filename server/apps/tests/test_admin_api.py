@@ -113,8 +113,13 @@ class TestAdminBuildingCreate:
         resp = admin_client.post(self.url, self._payload(), format="json")
         assert resp.status_code == 201
         data = resp.json()
-        assert "building" in data or data.get("name") == "ЖК Тестовий" or True  # renderer wraps it
-        # Verify building was created
+        # DRF renderer wraps payloads — accept both shapes, but one of them
+        # MUST be present (no `or True` fallback that makes the assertion vacuous).
+        payload = data.get("building") or data
+        assert payload.get("name") == "ЖК Тестовий", (
+            f"Expected created building in response body, got: {data}"
+        )
+        # Verify building was persisted
         from apps.apartments.models import Building
         assert Building.objects.filter(name="ЖК Тестовий").exists()
 

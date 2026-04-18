@@ -161,10 +161,17 @@ class TestGDPRAuditLog:
         assert exists, "Audit log не створено для anonymize"
 
     def test_audit_log_ordering(self, active_user):
-        """GDPRAuditLog відсортований за -timestamp."""
+        """GDPRAuditLog відсортований за -timestamp (newest first)."""
         GDPRAuditLog.log(event=GDPRAuditLog.EventType.LOGIN, subject=active_user)
         GDPRAuditLog.log(event=GDPRAuditLog.EventType.DATA_EXPORT, subject=active_user)
 
         logs = list(GDPRAuditLog.objects.filter(subject=active_user))
-        if len(logs) >= 2:
-            assert logs[0].timestamp >= logs[1].timestamp
+        # Both .log() calls MUST create rows; a conditional guard here would
+        # let a silent-drop regression pass. Assert presence, then ordering.
+        assert len(logs) >= 2, (
+            f"Expected at least 2 audit log rows, got {len(logs)}: {logs}"
+        )
+        assert logs[0].timestamp >= logs[1].timestamp, (
+            f"GDPRAuditLog default ordering must be newest-first, got "
+            f"{logs[0].timestamp} before {logs[1].timestamp}"
+        )

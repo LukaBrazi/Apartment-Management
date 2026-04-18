@@ -47,8 +47,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     apartment = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     unit_number = serializers.ReadOnlyField(source="unit.number")
-    unit_id = serializers.IntegerField(source="unit.pk", read_only=True)
+    unit_id = serializers.ReadOnlyField(source="unit.id")
     building_name = serializers.ReadOnlyField(source="unit.entrance.building.name")
+    building_id = serializers.ReadOnlyField(source="unit.entrance.building.id")
     managed_buildings = serializers.SerializerMethodField()
 
     # Meta Class
@@ -82,6 +83,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "unit_id",
             "unit_number",
             "building_name",
+            "building_id",
             "managed_buildings",
             "average_rating",
         ]
@@ -201,10 +203,11 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
 
 
 class AdminUpdateProfileSerializer(serializers.ModelSerializer):
-    """Serializer for admin profile updates — allows changing occupation."""
+    """Serializer for admin profile updates — allows changing occupation and unit."""
 
     country_of_origin = CountryField(name_only=True)
     occupation = serializers.ChoiceField(choices=Profile.Occupation.choices, required=False)
+    unit_id = serializers.UUIDField(required=False, allow_null=True, write_only=True)
 
     class Meta:
         model = Profile
@@ -215,11 +218,19 @@ class AdminUpdateProfileSerializer(serializers.ModelSerializer):
             "bio",
             "occupation",
             "phone_number",
+            "unit_id",
         ]
 
     def update(self, instance, validated_data):
+        unit_id = validated_data.pop("unit_id", ...)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        if unit_id is not ...:
+            if unit_id is None:
+                instance.unit = None
+            else:
+                from apps.apartments.models import Unit
+                instance.unit = Unit.objects.get(id=unit_id)
         instance.save()
         return instance
 
@@ -231,6 +242,7 @@ class AdminCreateUserSerializer(serializers.Serializer):
     last_name = serializers.CharField()
     password = serializers.CharField(write_only=True)
     occupation = serializers.ChoiceField(choices=Profile.Occupation.choices)
+    unit_id = serializers.UUIDField(required=False, allow_null=True)
 
     def validate_email(self, value):
         from django.contrib.auth import get_user_model
@@ -251,10 +263,15 @@ class AdminCreateUserSerializer(serializers.Serializer):
         User = get_user_model()
         occupation = validated_data.pop("occupation")
         password = validated_data.pop("password")
+        unit_id = validated_data.pop("unit_id", None)
         user = User.objects.create(**validated_data, is_active=True)
         user.set_password(password)
         user.save()
-        Profile.objects.filter(user=user).update(occupation=occupation)
+        update_fields = {"occupation": occupation}
+        if unit_id:
+            from apps.apartments.models import Unit
+            update_fields["unit"] = Unit.objects.get(id=unit_id)
+        Profile.objects.filter(user=user).update(**update_fields)
         return user
 
 

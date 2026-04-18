@@ -33,7 +33,9 @@ class TestProfileSecurity:
     def test_tenant_cannot_change_own_occupation(self, tenant_client, tenant_user):
         """
         Test that a tenant cannot change their own occupation via PATCH.
-        The occupation field should be read-only and ignored if provided.
+        The occupation field is `read_only=True` in UpdateProfileSerializer,
+        so DRF must silently ignore it and return 200 with the PATCH succeeding
+        for other fields — occupation must remain unchanged.
         """
         initial_occupation = tenant_client.user.profile.occupation
         assert initial_occupation == "tenant"
@@ -41,13 +43,14 @@ class TestProfileSecurity:
         # Attempt to change occupation to GUARD
         resp = tenant_client.patch(
             self.url,
-            {"occupation": "guard"},
+            {"occupation": "guard", "bio": "noop update"},
             format="json"
         )
 
-        # Request should succeed (200 or 400 depending on implementation)
-        # But occupation should NOT change
-        assert resp.status_code in [200, 400, 403]
+        # DRF's `read_only` drops the field silently → must be 200, not 400/403.
+        assert resp.status_code == 200, (
+            f"PATCH with read-only field should succeed (DRF drops it silently), got {resp.status_code}: {resp.data}"
+        )
 
         # Refresh and verify occupation is still "tenant"
         tenant_client.user.refresh_from_db()
@@ -74,11 +77,13 @@ class TestProfileSecurity:
         # Verify response was successful (bio was updated)
         assert resp.status_code == 200
 
-        # Verify bio WAS updated (so API is working)
+        # Verify bio WAS updated — the API must be actually writing bio,
+        # otherwise this whole test proves nothing.
         tenant_client.user.refresh_from_db()
-        if resp.json().get("profile") or resp.json().get("bio"):
-            # API accepted the request
-            pass
+        assert tenant_client.user.profile.bio == "Updated bio", (
+            f"bio was not updated; API not writing whitelisted fields. "
+            f"Got: {tenant_client.user.profile.bio!r}"
+        )
 
         # Most important: verify occupation did NOT change
         assert tenant_client.user.profile.occupation == original_occupation, \
@@ -102,18 +107,23 @@ class TestProfileSecurity:
         """
         original_occupation = tenant_client.user.profile.occupation
 
-        # Try multiple different occupations
+        # Try multiple different occupations — each attempt MUST be accepted
+        # with 200 (read_only field dropped) AND the occupation MUST NOT change.
         for occupation in ["guard", "mason", "plumber", "electrician"]:
             resp = tenant_client.patch(
                 self.url,
-                {"occupation": occupation},
+                {"occupation": occupation, "bio": f"try-{occupation}"},
                 format="json"
             )
-            assert resp.status_code in [200, 400, 403]
-
-        # Occupation should still be original
-        tenant_client.user.refresh_from_db()
-        assert tenant_client.user.profile.occupation == original_occupation
+            assert resp.status_code == 200, (
+                f"PATCH with read-only occupation={occupation!r} should return 200, "
+                f"got {resp.status_code}: {resp.data}"
+            )
+            tenant_client.user.refresh_from_db()
+            assert tenant_client.user.profile.occupation == original_occupation, (
+                f"occupation mutated to {tenant_client.user.profile.occupation} "
+                f"on PATCH with {occupation!r}"
+            )
 
     def test_unauthenticated_cannot_update_profile(self, api_client):
         """

@@ -78,68 +78,56 @@ class TestRatingsPermissions:
         ).exists()
 
     def test_tenant_cannot_rate_tenant(self, tenant_client, another_tenant_user):
-        """
-        Test that a tenant cannot rate another tenant.
-        Should return 403 Forbidden or permission denied error.
-        """
+        """Tenant→Tenant must be rejected with 403 (PermissionDenied in view)."""
         resp = self._create_rating(tenant_client, another_tenant_user)
-
-        # Should be rejected
-        assert resp.status_code in [403, 400], \
-            f"Tenant should NOT be able to rate another tenant. Got {resp.status_code}: {resp.data}"
+        assert resp.status_code == 403, (
+            f"Tenant rating another tenant must return 403 PermissionDenied. "
+            f"Got {resp.status_code}: {resp.data}"
+        )
 
     def test_duplicate_rating_rejected(self, tenant_client, worker_user):
         """
-        Test that a tenant cannot rate the same worker twice.
-        The second rating should be rejected (unique_together constraint).
+        Second rating on same worker must be rejected with 400
+        (unique_together IntegrityError wrapped as ValidationError in the view).
         """
-        # Create first rating
         resp1 = self._create_rating(tenant_client, worker_user, rating=5)
         assert resp1.status_code == 201
 
-        # Attempt duplicate rating
         resp2 = self._create_rating(tenant_client, worker_user, rating=4)
-
-        # Should be rejected due to unique_together constraint
-        assert resp2.status_code in [400, 409], \
-            f"Duplicate rating should be rejected. Got {resp2.status_code}: {resp2.data}"
+        assert resp2.status_code == 400, (
+            f"Duplicate rating must return 400 ValidationError. "
+            f"Got {resp2.status_code}: {resp2.data}"
+        )
 
     def test_worker_cannot_rate_tenant(self, worker_user, tenant_user):
-        """
-        Test that a worker cannot rate a tenant.
-        Workers can only be rated by tenants, not the other way around.
-        """
+        """Worker→Tenant must be rejected with 403 (PermissionDenied in view)."""
         client = APIClient()
         client.force_authenticate(user=worker_user)
 
         resp = self._create_rating(client, tenant_user)
-
-        # Should be rejected
-        assert resp.status_code in [403, 400], \
-            f"Worker should NOT be able to rate a tenant. Got {resp.status_code}"
+        assert resp.status_code == 403, (
+            f"Worker rating a tenant must return 403 PermissionDenied. "
+            f"Got {resp.status_code}: {resp.data}"
+        )
 
     def test_worker_cannot_rate_self(self, worker_user):
-        """
-        Test that a worker cannot rate themselves.
-        """
+        """Self-rating must be rejected with 403 at the `rating_user == rated_user` guard."""
         client = APIClient()
         client.force_authenticate(user=worker_user)
 
         resp = self._create_rating(client, worker_user)
-
-        # Should be rejected
-        assert resp.status_code in [403, 400], \
-            f"User should NOT be able to rate themselves. Got {resp.status_code}"
+        assert resp.status_code == 403, (
+            f"Self-rating must return 403 PermissionDenied. "
+            f"Got {resp.status_code}: {resp.data}"
+        )
 
     def test_tenant_cannot_rate_self(self, tenant_client):
-        """
-        Test that a tenant cannot rate themselves.
-        """
+        """Self-rating must be rejected with 403 at the `rating_user == rated_user` guard."""
         resp = self._create_rating(tenant_client, tenant_client.user)
-
-        # Should be rejected
-        assert resp.status_code in [403, 400], \
-            f"Tenant should NOT be able to rate themselves. Got {resp.status_code}"
+        assert resp.status_code == 403, (
+            f"Tenant self-rating must return 403 PermissionDenied. "
+            f"Got {resp.status_code}: {resp.data}"
+        )
 
     def test_rating_with_invalid_user(self, tenant_client):
         """
@@ -195,8 +183,8 @@ class TestRatingsPermissions:
 
     def test_invalid_rating_value_rejected(self, tenant_client, worker_user):
         """
-        Test that invalid rating values are rejected.
-        Valid values are 1-5 only.
+        Invalid rating values must be rejected with 400 ValidationError
+        (raised by serializer choice/validator, not DB constraint).
         """
         for invalid_rating in [0, 6, 10, -1, 2.5]:
             resp = tenant_client.post(
@@ -209,8 +197,10 @@ class TestRatingsPermissions:
                 format="json"
             )
 
-            assert resp.status_code in [400, 409], \
-                f"Rating value {invalid_rating} should be rejected"
+            assert resp.status_code == 400, (
+                f"Rating value {invalid_rating!r} must be rejected with 400, "
+                f"got {resp.status_code}: {resp.data}"
+            )
 
     def test_unauthenticated_cannot_rate(self, api_client, worker_user):
         """

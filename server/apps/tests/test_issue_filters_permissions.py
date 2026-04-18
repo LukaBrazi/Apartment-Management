@@ -207,8 +207,12 @@ class TestIssueFiltering:
         resp = superuser_client.get(LIST_URL + "?priority=high")
         data = resp.json()
         results = data["issues"]["results"]
-        assert all(r["status"] is not None for r in results)
+        # Must filter down to exactly the priority=high row, and the row
+        # must actually report priority=high — not just "not None".
         assert len(results) == 1
+        assert results[0]["priority"] == "high", (
+            f"Expected priority=high, got {results[0].get('priority')!r}"
+        )
 
     def test_filter_by_category(self, superuser_client):
         cat_a = CategoryFactory()

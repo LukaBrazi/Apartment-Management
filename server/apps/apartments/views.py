@@ -1,8 +1,8 @@
 # Imports
 from typing import Any
 
-from apps.apartments.models import Apartment, Building, Entrance
-from apps.apartments.serializers import ApartmentSerializer, BuildingSerializer, EntranceSerializer
+from apps.apartments.models import Apartment, Building, Entrance, Unit
+from apps.apartments.serializers import ApartmentSerializer, BuildingSerializer, EntranceSerializer, UnitSerializer
 from apps.common.renderers import GenericJSONRenderer
 from apps.profiles.models import Profile
 from rest_framework import generics, status
@@ -61,7 +61,8 @@ class ApartmentCreateAPIView(generics.CreateAPIView):
         # Check if the user is authorized to create an apartment
         if user.is_superuser or (
             hasattr(user, "profile")
-            and user.profile.occupation == Profile.Occupation.TENANT
+            and user.profile.occupation
+            in (Profile.Occupation.TENANT, Profile.Occupation.GUARD)
         ):
             # Create the apartment
             return super().create(request, *args, **kwargs)
@@ -169,6 +170,23 @@ class EntranceListAPIView(generics.ListAPIView):
     def get_queryset(self):
         building_id = self.kwargs.get("building_id")
         return Entrance.objects.filter(building_id=building_id).order_by("name")
+
+
+class UnitsByBuildingListAPIView(generics.ListAPIView):
+    """List all units for a given building (across all entrances)."""
+
+    serializer_class = UnitSerializer
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "units"
+    pagination_class = None
+
+    def get_queryset(self):
+        building_id = self.kwargs.get("building_id")
+        return (
+            Unit.objects.filter(entrance__building_id=building_id)
+            .select_related("entrance", "entrance__building")
+            .order_by("entrance__name", "number")
+        )
 
 
 class AdminBuildingListCreateAPIView(generics.ListCreateAPIView):
