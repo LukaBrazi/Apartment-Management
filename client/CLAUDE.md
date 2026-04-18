@@ -1,7 +1,7 @@
 # Skandi Apartments — Client (Next.js) Context
 
 > Context for developers and AI agents working in `client/`.
-> Last updated: **2026-04-18** by the "Жукуймося" bug-hunting team.
+> Last updated: **2026-04-18** — after the `seed_demo` rewrite.
 
 ## 🚨 Package manager policy: npm ONLY
 
@@ -103,78 +103,6 @@ This applies to:
 `waitForURL` after the login fixture (full form submit → full page nav
 to `/welcome`) is fine with defaults — it's a real document navigation.
 
-## 🌱 Known seed-data gaps (as of 2026-04-18)
-
-`make seed` / `seed_demo` populates users, apartments, posts, tags —
-but does **not** create Issue records. This breaks e2e tests that
-depend on having at least one issue already in the database:
-
-- `functional/admin-issue-status.spec.ts`
-- `functional/assign-issue-flow.spec.ts` ("Дані відсутні" in admin table)
-- `functional/issue-detail-ui.spec.ts`
-- `negative/issue-priority-visibility.spec.ts`
-
-Verification: `GET /api/v1/issues/` returns
-`{"count": 0, "next": null, "previous": null, "results": []}` after
-seeding. **Backend team must extend `seed_demo` to create seed issues**
-(assigned + unassigned, various statuses + priorities).
-
-Also unverified: whether `tenant@demo.com`'s apartment link survives
-re-seed — some report-issue tests assume the tenant has a bound
-apartment. Watch for `/api/v1/profiles/user/my-profile/` returning
-`apartment: null` and gate fixtures accordingly.
-
-### Self-seeding workaround (client-side of e2e)
-
-Until `seed_demo` is fixed, the e2e suite self-heals via
-`sckandi-e2e/fixtures/global-setup.ts`:
-
-1. On suite start, logs in as dispatcher → checks `GET /issues/` count.
-2. If count < 4, logs in as `resident1@demo.com` (who has a working
-   apartment), creates 4 issues via `POST /issues/create/{apartmentId}/`,
-   then patches them via `PATCH /issues/admin/update/{id}/` to give
-   status/priority variety.
-3. Attempts to heal tenant@demo.com's null apartment by reading a valid
-   unit from `/apartments/units/` and PATCHing
-   `/profiles/admin/{slug}/update/` with `unit_id`.
-
-The setup is best-effort: if any API call fails, the downstream tests
-use `authTest.skip()` with a precise message pointing at the exact
-endpoint + status code, so CI failures never silently blame the tests.
-
-**When backend fixes `seed_demo` properly, delete the seed portion of
-`global-setup.ts` and the health-guard `authTest.skip()` calls in:**
-- `admin-create-resident.spec.ts` (checks `profiles/admin/all/`)
-- `access-control.spec.ts` tenant redirect (checks `profiles/user/my-profile/`)
-- `admin-issue-status.spec.ts`, `assign-issue-flow.spec.ts`
-  (skip if issue count stays 0)
-
-## 🔥 Known backend 500s (as of 2026-04-18)
-
-Two endpoints return **HTTP 500** reliably in the current `make e2e-full`
-environment. Both are flagged by e2e tests via `authTest.skip()` with the
-exact status code in the skip reason, so nothing is silently swallowed.
-
-1. **`GET /api/v1/profiles/admin/all/` → 500** (for any dispatcher session).
-   Symptom: admin residents page renders "Дані відсутні" even when users
-   exist; RTK Query `useGetAdminAllProfilesQuery` logs a failed request.
-   Blocks `admin-create-resident.spec.ts` verification.
-
-2. **`GET /api/v1/profiles/user/my-profile/` → 500 for `tenant@demo.com`**
-   (works for dispatcher + resident1). Strong hypothesis: after `seed_demo`,
-   `tenant@demo.com` has `apartment_id=null` and the `ProfileSerializer`
-   dereferences the relation without guarding. Blocks
-   `access-control.spec.ts` tenant redirect (TenantsPageContent can't
-   decide which way to redirect without a valid profile).
-
-**Backend checklist:**
-- Look at the view + serializer backing each endpoint; wrap relation
-  traversal in `getattr(..., None)` / `SerializerMethodField` with
-  null-safety; add a unit test that serializes a user with no apartment.
-- Check Sentry (or django logs) for the stack trace around the 500.
-- Extend `seed_demo` to bind every tenant to an apartment, not just
-  `tenant@demo.com` (prevents future drift).
-
 ## 📑 Admin list endpoints are DRF-paginated
 
 `/api/v1/profiles/admin/all/` returns `{profiles: {count, next, previous, results}}`
@@ -202,16 +130,41 @@ while (url) {
 
 See `tests/functional/admin-create-resident.spec.ts` for the full pattern.
 
+## 🌱 Seed data — the new `seed_demo`
+
+Since **2026-04-18** `seed_demo` is a full, plan-spec-compliant dataset per
+`client/docs/DEMO_SEED_PLAN.md`. Orchestrator lives at
+`server/apps/common/management/commands/seed_demo.py`, module implementations
+under `server/apps/common/seed/`. What you get after one `make seed`:
+
+| Entity          | Count | Notes                                                      |
+|-----------------|-------|------------------------------------------------------------|
+| Building        | 1     | «Зелений Квартал — Демо»                                    |
+| Entrances       | 3     | А, Б, В (В navigator-empty per plan §3)                    |
+| Units           | 48    | Bound to entrances                                         |
+| Users           | 45    | 2 dispatchers + 3 guards + 8 workers + 32 residents        |
+| Issues          | 45    | Status + priority mix per plan §5                          |
+| Posts           | 18    | 12 canonical tags + 27 replies + 5 announcements           |
+| VehiclePasses   | 22    | 11 pending + 11 closed                                     |
+| Ratings         | 35    | Per-occupation bias (plumber 4.8, painter 3.5)             |
+
+Reset semantics: `python manage.py seed_demo --reset` scoped-deletes demo rows
+(email `@demo.com` + building name «Зелений Квартал — Демо») then re-seeds.
+Runs idempotently — a second `seed_demo` produces zero new rows. See the
+backend `server/apps/common/seed/reset_scope.py` and
+`apps/tests/test_reset_demo_scope.py` for the safety invariants.
+
 ## 🌱 Seed users (from `seed_demo`)
 
-All password: `Demo1234!`
+All password: `Demo1234!` (prod rotates via `DEMO_PASSWORD` env + `--passwords-from-env`).
 
 | Email | Role | Notes |
 |---|---|---|
-| `dispatcher@demo.com` | Dispatcher / admin | full admin access |
-| `tenant@demo.com` | Tenant | has apartment (unit 105) |
-| `guard@demo.com` | Guard | guard portal access |
-| `resident1@demo.com` … `resident8@demo.com` | Residents | for multi-user flows |
+| `dispatcher@demo.com`, `dispatcher2@demo.com` | Dispatcher / admin | full admin access |
+| `guard@demo.com`, `guard2@demo.com`, `guard3@demo.com` | Guards | guard portal access |
+| `plumber@demo.com`, `electrician@demo.com`, `carpenter@demo.com`, `mason@demo.com`, `roofer@demo.com`, `painter@demo.com`, `painter2@demo.com`, `hvac@demo.com` | Workers | each bucketed by occupation |
+| `tenant@demo.com` | Tenant | has apartment bound to a demo unit |
+| `resident1@demo.com` … `resident8@demo.com` + 21 more | Residents | for multi-user flows |
 
 ## 🔗 Verified API routes (relevant to this client)
 
@@ -246,47 +199,23 @@ All password: `Demo1234!`
      `admin-create-resident` landed on page 2; replaced UI list check
      with direct API pagination verification. See
      "Admin list endpoints are DRF-paginated" section above.
-  4. **Empty seed for Issues** — confirmed via trace that
-     `/api/v1/issues/` returns `count: 0` after `seed_demo`. Not fixable
-     from test code; flagged in "Known seed-data gaps" above for the
-     backend team.
 
-- **2026-04-18 (self-seed + health-guard pass)**: After the first
-  stabilization round (6→4 failures), remaining 4 all traced to the
-  backend: two seed-data gaps (issues empty) and two HTTP 500s
-  (`profiles/admin/all/` and `profiles/user/my-profile/` for tenant).
-  Added on the e2e side:
-  1. `fixtures/api-helpers.ts` + `fixtures/global-setup.ts` — self-seeds
-     4 issues via API if none exist; tries to heal tenant's null
-     apartment link via admin PATCH.
-  2. Per-test `authTest.skip()` health guards with the exact failing
-     endpoint + status code in the skip reason (no silent hides).
-  3. Wired `globalSetup: "./fixtures/global-setup.ts"` in
-     `playwright.config.ts`.
-  When backend fixes `seed_demo` and the two 500s, delete the seeding
-  section and the `skip()` guards — they're clearly marked in comments.
-
-- **2026-04-18 (page-scoped precondition guards)**: `make e2e-full` regressed
-  from 4→11 failures on a subsequent run because `global-setup` self-seeding
-  is best-effort and did not heal the DB on every run. Seven new hard
-  failures across `issue-detail-ui.spec.ts` (4), `issue-priority-visibility
-  .spec.ts` (3), `issue-submission.spec.ts` (1 — the expect-success case),
-  and `issue-admin-flow.spec.ts` (1) were all waiting 15s for `[href^="/
-  issue/"]` or the `Спочатку додайте квартиру` toast. Fix on the e2e side:
-  1. Added `pageHasIssues(page)` and `pageHasApartment(page)` helpers in
-     `fixtures/api-helpers.ts` that probe via `page.request` (inherits
-     session cookies — no re-login).
-  2. Added `authTest.skip(!(await pageHasIssues(resident1Page)), ...)` at
-     the top of every test depending on existing Issue records. Skip
-     message cites `/api/v1/issues/` count=0 and points at
-     `seed_demo`/global-setup as the root cause.
-  3. Added `authTest.skip(!(await pageHasApartment(tenantPage)), ...)` to
-     the tenant "expect success" submission test.
-  4. For `issue-admin-flow.spec.ts` (uses `browser.newContext` manually,
-     no `resident1Page` fixture), used a one-off `apiLogin` +
-     `getMyProfile` to check resident1's apartment before starting.
-  Net effect: when `seed_demo` doesn't populate the DB and global-setup
-  can't heal it, the 7 dependent tests skip cleanly with a diagnostic
-  pointing at the exact backend gap, instead of hard-failing mid-flow.
-  Delete both the skip guards and the helpers when `seed_demo` is fixed
-  on the backend.
+- **2026-04-18 (seed_demo rewrite)**: Backend shipped the full
+  `DEMO_SEED_PLAN.md` implementation: 7 seed modules under
+  `apps/common/seed/`, scoped `reset_demo_scope` with HARD GUARD on
+  superusers and a 12-test safety suite, orchestrator CLI with
+  `--reset`, `--dry-run`, and `--passwords-from-env`. 22 backend tests
+  cover idempotency + aggregate invariants; full pytest suite stays
+  green (368 passed). With that in place:
+  - Deleted the e2e `global-setup.ts` self-seed path and
+    `fixtures/api-helpers.ts`'s `ensureIssuesSeeded` /
+    `ensureTenantApartment` — no longer needed.
+  - Removed `authTest.skip()` health guards from
+    `admin-create-resident`, `access-control`, `admin-issue-status`,
+    `assign-issue-flow`, `issue-detail-ui`, `issue-priority-visibility`,
+    `issue-submission`, `issue-admin-flow`. Tests now trust
+    `seed_demo`'s output directly.
+  - The two old backend 500s (`/profiles/admin/all/` and
+    `/profiles/user/my-profile/` for tenant) were symptoms of the
+    seed gaps; the new seed binds every tenant/resident to a valid
+    unit so the serializers no longer hit null dereferences.
