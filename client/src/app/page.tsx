@@ -46,7 +46,10 @@ async function getSiteSettings(): Promise<SiteSettings> {
 		});
 		if (!res.ok) return DEFAULTS;
 		const json = await res.json();
-		const data = (json.site_settings as SiteSettings) ?? DEFAULTS;
+		// Support both GenericJSONRenderer-wrapped ({ site_settings: { settings } })
+		// and direct API response ({ settings, contacts })
+		const payload = json.site_settings ?? json;
+		const data = (payload.settings as SiteSettings) ?? DEFAULTS;
 		return { ...DEFAULTS, ...data, links: data.links ?? [] };
 	} catch {
 		return DEFAULTS;

@@ -74,8 +74,10 @@ export const siteSettingsApiSlice = baseApiSlice.injectEndpoints({
      */
     getSiteSettings: builder.query<SiteSettingsResponse, void>({
       query: () => "/site-settings/",
-      transformResponse: (raw: { site_settings: SiteSettingsResponse }) =>
-        raw.site_settings,
+      // Support both GenericJSONRenderer-wrapped ({ site_settings: {...} })
+      // and direct API response ({ settings, contacts })
+      transformResponse: (raw: any): SiteSettingsResponse =>
+        raw.site_settings ?? raw,
       providesTags: ["SiteSettings"],
     }),
   }),
