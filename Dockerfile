@@ -23,8 +23,10 @@ COPY server/ /app/
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Collect static files
-RUN python manage.py collectstatic --no-input || true
+# NOTE: collectstatic is intentionally NOT run here.
+# At build-time R2_*, DJANGO_SECRET_KEY, DATABASE_URL are unavailable, so
+# collectstatic would silently fail. It is invoked at runtime in entrypoint.sh
+# for the `web` SERVICE_TYPE, where all env vars are injected by Railway.
 
 EXPOSE ${PORT:-8000}
 

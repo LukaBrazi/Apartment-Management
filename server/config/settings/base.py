@@ -46,7 +46,7 @@ LOCALE_PATHS = [str(BASE_DIR / "locale")]
 # Site settings
 # ------------------------------------------------------------------------------
 SITE_ID = 1
-SITE_NAME = env("SITE_NAME", default="EstateOS")
+SITE_NAME = env("SITE_NAME", default="ApartmentOS")
 PLATFORM_DOMAINS = env.list("PLATFORM_DOMAINS", default=["estateos.com"])
 
 
@@ -298,7 +298,7 @@ REST_FRAMEWORK = {
 # DRF Spectacular Config
 # -------------------------------------------------------------------------------
 SPECTACULAR_SETTINGS = {
-    "TITLE": f"{env('SITE_NAME', default='EstateOS')} API",
+    "TITLE": f"{env('SITE_NAME', default='ApartmentOS')} API",
     "DESCRIPTION": "Residential complex management platform API. Tenants can report issues, request vehicle passes, view news and announcements. Built with Django REST Framework.",
     "VERSION": "1.0.0",
     "CONTACT": {"name": "Andriienko Dmytro", "email": "d.andriienko@propmanager.local"},
