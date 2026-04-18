@@ -74,6 +74,8 @@ export const siteSettingsApiSlice = baseApiSlice.injectEndpoints({
      */
     getSiteSettings: builder.query<SiteSettingsResponse, void>({
       query: () => "/site-settings/",
+      transformResponse: (raw: { site_settings: SiteSettingsResponse }) =>
+        raw.site_settings,
       providesTags: ["SiteSettings"],
     }),
   }),
