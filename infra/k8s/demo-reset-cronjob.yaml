@@ -1,0 +1,137 @@
+# Demo reset — nightly CronJob
+#
+# Reference: client/docs/DEMO_SEED_PLAN.md §10.2
+#
+# Runs `python manage.py seed_demo --reset --passwords-from-env` every night
+# at 23:00 Europe/Kyiv, which scoped-deletes every demo row (by email domain
+# and building slug) and seeds a fresh, deterministic demo dataset.
+#
+# Why 23:00 Kyiv and not 03:00 UTC:
+# - Product and clients are Ukrainian. 23:00 local = end of workday,
+#   nobody is looking. Demo is clean and ready by 23:05.
+# - `spec.timeZone` requires Kubernetes 1.27+. If stuck on 1.26 or older,
+#   pin `schedule: "0 20 * * *"` (summer UTC, 21:00 UTC in winter) and
+#   flip twice a year — or just upgrade K8s.
+#
+# Manual kill-switch (daytime emergency reset):
+#
+#   kubectl exec deployment/apartmentos-backend -- \
+#     python manage.py seed_demo --reset --passwords-from-env
+#
+# Secret setup (ONE TIME, per cluster):
+#
+#   kubectl create secret generic demo-seed-secrets \
+#     --from-literal=DEMO_PASSWORD='<strong-demo-password>' \
+#     -n apartmentos
+#
+# Do NOT commit the real DEMO_PASSWORD to Git. This manifest references it
+# by name only.
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: demo-reset-nightly
+  namespace: apartmentos
+  labels:
+    app.kubernetes.io/name: apartmentos
+    app.kubernetes.io/component: demo-reset
+    app.kubernetes.io/part-of: apartmentos
+spec:
+  # 23:00 Europe/Kyiv, every day. K8s 1.27+ resolves DST via `timeZone`.
+  schedule: "0 23 * * *"
+  timeZone: "Europe/Kyiv"
+  # If yesterday's reset is somehow still running, skip tonight's instead of
+  # overlapping — seed_demo wraps everything in a single transaction, and
+  # two concurrent runs would deadlock on row locks anyway.
+  concurrencyPolicy: Forbid
+  # Miss-trigger guard — if the controller was down when 23:00 passed,
+  # don't try to "catch up" 6 hours later when people may be back on the
+  # demo. Skip the missed run, wait for tomorrow.
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # One retry, then give up and page. Don't hammer the DB on a bad seed.
+      backoffLimit: 1
+      # Reset should finish in ≤60s per plan §10.5. Give it 5 minutes hard
+      # ceiling — if we hit that, something is very wrong.
+      activeDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: apartmentos
+            app.kubernetes.io/component: demo-reset
+        spec:
+          restartPolicy: OnFailure
+          # Pin a service account with only the DB creds it needs — don't
+          # reuse the web pod's SA here.
+          serviceAccountName: demo-reset
+          containers:
+            - name: reset
+              # Replace with the deployed backend tag at apply time. A
+              # typical pipeline runs `kubectl set image` or kustomize
+              # overlay so every deploy picks up the latest.
+              image: apartmentos-backend:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - python
+                - manage.py
+                - seed_demo
+                - --reset
+                - --passwords-from-env
+              env:
+                - name: DJANGO_SETTINGS_MODULE
+                  value: "core.settings.production"
+                - name: DEMO_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: demo-seed-secrets
+                      key: DEMO_PASSWORD
+                # DB credentials and everything else that a regular backend
+                # pod needs — reference the same ConfigMap/Secret the web
+                # Deployment uses so the reset hits the same DB.
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: apartmentos-db
+                      key: DATABASE_URL
+              resources:
+                requests:
+                  cpu: "200m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "1000m"
+                  memory: "512Mi"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                runAsUser: 1000
+                capabilities:
+                  drop:
+                    - ALL
+              # seed_demo uses /tmp for Faker caches and Django's file-field
+              # temp uploads (avatars). The rootfs is read-only, so give it
+              # a writable tmpfs.
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir:
+                medium: Memory
+                sizeLimit: 64Mi
+---
+# Minimal SA for the reset Job. Intentionally separate from the web pod SA
+# so a compromise of one doesn't grant destructive access via the other.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: demo-reset
+  namespace: apartmentos
+  labels:
+    app.kubernetes.io/name: apartmentos
+    app.kubernetes.io/component: demo-reset
+automountServiceAccountToken: false
