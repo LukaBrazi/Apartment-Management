@@ -9,5 +9,5 @@
   <!-- Roof peak -->
   <path d="M0 15 L13 4 L26 15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   <!-- Brand text (white for dark bg) -->
-  <text x="34" y="27" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="white" letter-spacing="-0.5">Skandi</text>
+  <text x="34" y="26" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="white" letter-spacing="-0.3">ApartmentOS</text>
 </svg>
