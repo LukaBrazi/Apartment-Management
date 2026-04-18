@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build artifacts
+*.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env
+.env*.local
+
+# --- Package manager discipline ---
+# This project uses npm (see Dockerfile → `npm ci`).
+# Do not commit other package managers' lockfiles — they cause install-time drift
+# between local dev and the Docker-based CI pipeline.
+yarn.lock
+pnpm-lock.yaml
+
+# Misc caches
+.pytest_cache/
