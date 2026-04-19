@@ -45,6 +45,7 @@ import os
 import sys
 from dataclasses import asdict
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.common.seed import (
@@ -126,6 +127,13 @@ class Command(BaseCommand):
         reset = opts["reset"]
         dry_run = opts["dry_run"]
         use_env_password = opts["passwords_from_env"]
+
+        # ── PR-12 env guard ─────────────────────────────────────────────
+        # The destructive --reset path is blocked in production unless the
+        # operator has explicitly flipped ALLOW_DEMO_RESET on the worker.
+        # --dry-run counts only (no writes) so we allow it through — it is
+        # a legitimate audit tool on prod.
+        self._assert_reset_allowed_in_env(reset=reset, dry_run=dry_run)
 
         # ── Resolve password ────────────────────────────────────────────
         password = self._resolve_password(use_env_password)
@@ -226,6 +234,28 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("✅ seed_demo: complete"))
 
     # ────────────────────────── helpers ──────────────────────────────
+
+    def _assert_reset_allowed_in_env(self, *, reset: bool, dry_run: bool) -> None:
+        """Refuse ``--reset`` on production unless ``ALLOW_DEMO_RESET`` is set.
+
+        Only ``--reset`` is gated; idempotent (non-reset) seeding is
+        harmless, and ``--dry-run`` is read-only. The flag lives in
+        settings (wired from the ``ALLOW_DEMO_RESET`` env var in
+        ``config/settings/base.py``) so operators can flip it on a
+        specific worker without redeploying code.
+        """
+        if not reset or dry_run:
+            return
+        environment = getattr(settings, "ENVIRONMENT", "unknown")
+        allow_reset = getattr(settings, "ALLOW_DEMO_RESET", False)
+        if environment == "production" and not allow_reset:
+            raise CommandError(
+                "seed_demo --reset refuses to run in ENVIRONMENT=production "
+                "without ALLOW_DEMO_RESET=True. This is the PR-12 safety "
+                "rail — nothing has been written to the DB. Set the env "
+                "var on the Celery worker to unlock, or run with --dry-run "
+                "to audit scope without any writes.",
+            )
 
     def _resolve_password(self, use_env: bool) -> str:
         """Pick the password according to the ``--passwords-from-env`` flag.

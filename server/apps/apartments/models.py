@@ -74,6 +74,19 @@ class Building(TimeStampedModel):
         blank=True,
         help_text=_("Organization that owns this building"),
     )
+    # Demo-scope marker — defense-in-depth for ``seed_demo --reset``. The
+    # reset filter matches on ``is_demo=True`` AND the exact demo name
+    # constant. A real building that happens to share the demo name stays
+    # safe as long as this flag is False.
+    is_demo = models.BooleanField(
+        _("Demo Building"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "Marks seed-created demo buildings. The nightly reset only "
+            "deletes buildings with is_demo=True."
+        ),
+    )
 
     class Meta:
         verbose_name = _("Building")

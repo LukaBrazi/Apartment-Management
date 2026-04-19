@@ -334,9 +334,16 @@ def _ensure_user(
             "last_name": last,
             "is_staff": is_staff,
             "is_active": True,
+            # PR-12 safety: all seed-created users MUST carry is_demo=True
+            # so the nightly reset filter can match them. Without this,
+            # users created after the flag was added would survive
+            # reset_demo_scope forever.
+            "is_demo": True,
         },
     )
-    # Keep fields in sync on rerun even if user already existed.
+    # Keep fields in sync on rerun even if user already existed. Notably
+    # re-assert is_demo so hand-edits that clear the flag don't leak a
+    # demo account past the nightly reset.
     dirty = False
     for attr, value in (
         ("username", username),
@@ -345,6 +352,7 @@ def _ensure_user(
         ("is_staff", is_staff),
         ("is_active", True),
         ("is_superuser", False),
+        ("is_demo", True),
     ):
         if getattr(user, attr) != value:
             setattr(user, attr, value)

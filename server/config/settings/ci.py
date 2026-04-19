@@ -9,6 +9,11 @@ ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:8080"]
 SITE_NAME = "ApartmentOS"
 
+# Environment tag — see base.py and apps/common/seed/reset_scope.py.
+ENVIRONMENT = "ci"
+# CI containers are ephemeral, reset-in-place is always safe.
+ALLOW_DEMO_RESET = True
+
 
 # Caches
 # ------------------------------------------------------------------------------

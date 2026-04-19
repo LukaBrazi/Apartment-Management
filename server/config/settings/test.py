@@ -7,6 +7,13 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 SITE_NAME = "ApartmentOS Test"
 
+# Environment tag — see base.py and apps/common/seed/reset_scope.py.
+ENVIRONMENT = "test"
+# Test DB is rebuilt every run, so --reset is inherently safe. Tests that
+# want to exercise the prod-refusal path override ENVIRONMENT explicitly
+# via ``override_settings``.
+ALLOW_DEMO_RESET = True
+
 # SQLite for fast tests — no Postgres needed
 import os
 _TEST_DB = os.environ.get("TEST_DB_PATH", ":memory:")

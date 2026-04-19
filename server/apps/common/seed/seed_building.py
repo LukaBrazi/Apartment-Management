@@ -86,14 +86,24 @@ def seed() -> BuildingSeedResult:
             "address": DEMO_BUILDING_ADDRESS,
             "city": DEMO_BUILDING_CITY,
             "is_active": True,
+            # PR-12 safety: every seed-created building MUST carry the
+            # demo marker so the reset filter can match it.
+            "is_demo": True,
         },
     )
     # Defensive update: if the building existed but was deactivated or
-    # moved, re-assert the demo metadata.  Guard so we don't write on a
-    # no-op.
+    # moved, re-assert the demo metadata.  Also re-assert ``is_demo`` on
+    # rerun — if a hand-edit ever toggled it off the reset would skip
+    # this row indefinitely.
+    dirty = []
     if not building.is_active:
         building.is_active = True
-        building.save(update_fields=["is_active"])
+        dirty.append("is_active")
+    if not building.is_demo:
+        building.is_demo = True
+        dirty.append("is_demo")
+    if dirty:
+        building.save(update_fields=dirty)
 
     result = BuildingSeedResult(building=building)
 

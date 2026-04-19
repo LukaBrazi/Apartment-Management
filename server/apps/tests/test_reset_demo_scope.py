@@ -19,6 +19,8 @@ from django.contrib.auth import get_user_model
 from apps.apartments.models import Building
 from apps.common.seed.helpers import DEMO_BUILDING_NAME, DEMO_EMAIL_DOMAIN
 from apps.common.seed.reset_scope import (
+    MAX_NON_DEMO_BUILDINGS,
+    MAX_NON_DEMO_USERS,
     DemoResetSafetyError,
     ResetReport,
     reset_demo_scope,
@@ -59,13 +61,18 @@ def real_users(db):
 
 @pytest.fixture
 def demo_users(db):
-    """Users that ``reset_demo_scope`` is expected to delete."""
+    """Users that ``reset_demo_scope`` is expected to delete.
+
+    PR-12: demo users carry ``is_demo=True`` in addition to the
+    ``@demo.com`` email — the filter ANDs both.
+    """
     d = User.objects.create_user(
         email="dispatcher@demo.com",
         username="dispatcher_demo",
         first_name="Tetiana",
         last_name="Romanenko",
         password="x",  # noqa: S106
+        is_demo=True,
     )
     r = User.objects.create_user(
         email="tenant@demo.com",
@@ -73,6 +80,7 @@ def demo_users(db):
         first_name="Ivan",
         last_name="Test",
         password="x",  # noqa: S106
+        is_demo=True,
     )
     return d, r
 
@@ -94,6 +102,7 @@ def demo_building(db):
         address="вул. Академіка Заболотного, 15",
         city="Київ",
         is_active=True,
+        is_demo=True,
     )
 
 
@@ -185,7 +194,11 @@ def test_superuser_with_demo_email_is_never_deleted():
 
 @pytest.mark.django_db
 def test_real_building_with_similar_name_is_not_deleted():
-    """Filter uses exact ``name==`` match, not ``icontains`` or ``startswith``."""
+    """Filter uses exact ``name==`` match, not ``icontains`` or ``startswith``.
+
+    PR-12: target building carries ``is_demo=True``; decoys do not.  Even
+    without the name check, the is_demo filter would protect them.
+    """
     decoys = [
         Building.objects.create(name="Зелений Квартал", address="a", city="Київ"),
         Building.objects.create(name="Зелений Квартал 2", address="b", city="Київ"),
@@ -194,7 +207,7 @@ def test_real_building_with_similar_name_is_not_deleted():
         ),
     ]
     target = Building.objects.create(
-        name=DEMO_BUILDING_NAME, address="d", city="Київ",
+        name=DEMO_BUILDING_NAME, address="d", city="Київ", is_demo=True,
     )
 
     report = reset_demo_scope()
@@ -212,13 +225,14 @@ def test_email_match_is_case_insensitive_and_suffix_only():
     """``email__iendswith`` — matches ``@demo.com`` regardless of case.
 
     Users whose local-part merely *contains* the domain (``demo.com@real.io``)
-    are NOT matched.
+    are NOT matched.  PR-12: targets carry ``is_demo=True``; impersonator
+    does not.
     """
     target_lower = User.objects.create_user(
-        email="lower@demo.com", username="ul", password="x",  # noqa: S106
+        email="lower@demo.com", username="ul", password="x", is_demo=True,  # noqa: S106
     )
     target_upper = User.objects.create_user(
-        email="UPPER@Demo.Com", username="uu", password="x",  # noqa: S106
+        email="UPPER@Demo.Com", username="uu", password="x", is_demo=True,  # noqa: S106
     )
     impersonator = User.objects.create_user(
         email="demo.com@real.io", username="imp", password="x",  # noqa: S106
@@ -290,7 +304,7 @@ def test_report_counts_superusers_correctly():
         email="op2@internal.co", username="op2", password="x",  # noqa: S106
     )
     User.objects.create_user(
-        email="demo1@demo.com", username="demo1", password="x",  # noqa: S106
+        email="demo1@demo.com", username="demo1", password="x", is_demo=True,  # noqa: S106
     )
     report = reset_demo_scope()
 
@@ -312,5 +326,184 @@ def test_public_api_surface():
     assert hasattr(reset_scope, "reset_demo_scope")
     assert hasattr(reset_scope, "ResetReport")
     assert hasattr(reset_scope, "DemoResetSafetyError")
+    assert hasattr(reset_scope, "MAX_NON_DEMO_USERS")
+    assert hasattr(reset_scope, "MAX_NON_DEMO_BUILDINGS")
     # Exception hierarchy — callers may write generic error handlers.
     assert issubclass(DemoResetSafetyError, RuntimeError)
+
+
+# ─────────────────────────── PR-12: is_demo gate ─────────────────────────────
+
+
+@pytest.mark.django_db
+def test_user_with_demo_email_but_is_demo_false_is_not_deleted():
+    """Belt-and-braces: a @demo.com user without ``is_demo=True`` is spared.
+
+    This is the scenario we're defending against: a real human who happens
+    to run their email through a @demo.com alias (or a hand-created
+    account that somebody forgot to mark) must survive the nightly reset.
+    """
+    impostor = User.objects.create_user(
+        email="real@demo.com",
+        username="real_demo",
+        first_name="Real",
+        last_name="Person",
+        password="x",  # noqa: S106
+        # NOTE: is_demo defaults to False.
+    )
+    report = reset_demo_scope()
+
+    assert report.demo_users_matched == 0
+    assert User.objects.filter(pk=impostor.pk).exists()
+
+
+@pytest.mark.django_db
+def test_building_with_demo_name_but_is_demo_false_is_not_deleted():
+    """A hand-created Building that shares the demo name survives."""
+    impostor = Building.objects.create(
+        name=DEMO_BUILDING_NAME,
+        address="вул. Реальна, 1",
+        city="Київ",
+        is_active=True,
+        # NOTE: is_demo defaults to False.
+    )
+    report = reset_demo_scope()
+
+    assert report.demo_buildings_matched == 0
+    assert Building.objects.filter(pk=impostor.pk).exists()
+
+
+@pytest.mark.django_db
+def test_is_demo_user_without_demo_email_is_not_deleted():
+    """A ``is_demo=True`` flag alone is not enough — the email must match too.
+
+    Protects against a stray DB edit flipping ``is_demo`` on a real user.
+    """
+    flagged = User.objects.create_user(
+        email="real@customer.example",
+        username="real_customer",
+        first_name="Real",
+        last_name="Customer",
+        password="x",  # noqa: S106
+        is_demo=True,  # ← flag set but email is not @demo.com
+    )
+    report = reset_demo_scope()
+
+    assert report.demo_users_matched == 0
+    assert User.objects.filter(pk=flagged.pk).exists()
+
+
+# ─────────────────────── PR-12: sanity thresholds ────────────────────────────
+
+
+@pytest.mark.django_db
+def test_reset_refuses_when_non_demo_users_exceed_threshold(demo_users):
+    """Too many non-demo users → refuse before scanning anything."""
+    # Create MAX_NON_DEMO_USERS + 1 non-demo users.
+    for i in range(MAX_NON_DEMO_USERS + 1):
+        User.objects.create_user(
+            email=f"real{i}@customer.example",
+            username=f"real_customer_{i}",
+            password="x",  # noqa: S106
+        )
+
+    with pytest.raises(DemoResetSafetyError) as excinfo:
+        reset_demo_scope()
+    assert "non-demo users" in str(excinfo.value)
+
+    # And nothing was deleted — demo users still present.
+    for demo in demo_users:
+        assert User.objects.filter(pk=demo.pk).exists(), (
+            "Demo user was deleted despite the sanity-threshold refusal"
+        )
+
+
+@pytest.mark.django_db
+def test_reset_refuses_when_non_demo_buildings_exceed_threshold(demo_building):
+    """More non-demo Buildings than the threshold → refuse."""
+    for i in range(MAX_NON_DEMO_BUILDINGS + 1):
+        Building.objects.create(
+            name=f"Real Customer Building {i}",
+            address=f"addr {i}",
+            city="Київ",
+        )
+
+    with pytest.raises(DemoResetSafetyError) as excinfo:
+        reset_demo_scope()
+    assert "non-demo Building" in str(excinfo.value)
+
+    assert Building.objects.filter(pk=demo_building.pk).exists()
+
+
+@pytest.mark.django_db
+def test_dry_run_also_enforces_sanity_thresholds():
+    """Dry-run is read-only but still refuses past the threshold.
+
+    If someone's running a dry-run on the wrong DB we want them to see the
+    refusal in the audit output, not a fake "safe" report.
+    """
+    for i in range(MAX_NON_DEMO_USERS + 1):
+        User.objects.create_user(
+            email=f"real{i}@customer.example",
+            username=f"real_customer_{i}",
+            password="x",  # noqa: S106
+        )
+
+    with pytest.raises(DemoResetSafetyError):
+        reset_demo_scope(dry_run=True)
+
+
+# ───────────────────── PR-12: env guard in seed_demo ─────────────────────────
+
+
+@pytest.mark.django_db
+def test_seed_demo_command_refuses_reset_in_production_without_opt_in():
+    """``seed_demo --reset`` aborts in production unless ALLOW_DEMO_RESET=True.
+
+    Simulates a misconfigured Celery Beat tick against a prod DB with no
+    opt-in — the guard should stop the command before any DB mutation.
+    """
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+    from django.test import override_settings
+
+    with override_settings(ENVIRONMENT="production", ALLOW_DEMO_RESET=False):
+        with pytest.raises(CommandError) as excinfo:
+            call_command("seed_demo", reset=True, passwords_from_env=False)
+        assert "ALLOW_DEMO_RESET" in str(excinfo.value)
+
+
+@pytest.mark.django_db
+def test_seed_demo_command_allows_dryrun_in_production_without_opt_in():
+    """``--reset --dry-run`` is a legitimate prod audit tool — permitted.
+
+    Dry-run performs no writes and returns counts.  We want operators to
+    be able to validate the scope BEFORE flipping ALLOW_DEMO_RESET on.
+    """
+    from django.core.management import call_command
+    from django.test import override_settings
+
+    # override_settings + a clean DB — dry-run should return cleanly.
+    with override_settings(ENVIRONMENT="production", ALLOW_DEMO_RESET=False):
+        call_command(
+            "seed_demo",
+            reset=True,
+            dry_run=True,
+            passwords_from_env=False,
+        )
+
+
+@pytest.mark.django_db
+def test_seed_demo_command_allows_reset_with_explicit_opt_in():
+    """``ALLOW_DEMO_RESET=True`` unblocks ``--reset`` in production."""
+    from django.core.management import call_command
+    from django.test import override_settings
+
+    with override_settings(ENVIRONMENT="production", ALLOW_DEMO_RESET=True):
+        # Would normally hit DEMO_PASSWORD resolution; disable env sourcing.
+        call_command(
+            "seed_demo",
+            reset=True,
+            dry_run=True,
+            passwords_from_env=False,
+        )
