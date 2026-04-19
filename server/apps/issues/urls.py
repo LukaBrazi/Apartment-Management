@@ -24,12 +24,9 @@ urlpatterns = [
         IssueCreateAPIView.as_view(),
         name="create-issue-by-unit",
     ),
-    # Legacy Apartment-based path — retained for one release, removed in PR-6.
-    path(
-        "create/<uuid:apartment_id>/",
-        IssueCreateAPIView.as_view(),
-        name="create-issue",
-    ),
+    # PR-6 removed ``create/<uuid:apartment_id>/`` — the frontend no
+    # longer sends apartment IDs and the legacy Apartment model itself
+    # is being dropped in PR-7.
     path("<uuid:id>/", IssueDetailAPIView.as_view(), name="detail-issue"),
     path("update/<uuid:id>/", IssueUpdateAPIView.as_view(), name="update-issue"),
     path("delete/<uuid:id>/", IssueDeleteAPIView.as_view(), name="delete-issue"),

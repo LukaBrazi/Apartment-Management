@@ -14,20 +14,18 @@ class ApartmentSerializer(serializers.ModelSerializer):
 
 # ── PR-3 compat shim ───────────────────────────────────────────────────────
 #
-# The client (Next.js RTK Query) reads ``profile.apartment`` and
-# ``/apartments/my-apartment/`` as an Apartment-shaped object:
+# The last surviving reader of this shim is ``ProfileSerializer.apartment``
+# (the ``/apartments/my-apartment/`` endpoint it also served was removed
+# in PR-6).  The frontend still consumes the Apartment-shaped payload:
 #
 #     {"id": UUID, "created_at": iso8601, "unit_number": str,
 #      "building": str, "floor": int}
 #
-# After PR-3 the source of truth is ``Unit`` + ``Profile.unit``; the
-# legacy ``Apartment`` row may disappear in PR-7.  This helper renders
-# a ``Unit`` in the legacy Apartment JSON shape so the frontend contract
-# stays byte-identical until PR-4 migrates off it.
-#
-# ``tenant`` is intentionally omitted because ``ApartmentSerializer``
-# declares ``tenant = HiddenField`` — the legacy wire format has no
-# tenant key.  ``_apartment_fields`` below is the authoritative key set.
+# Source of truth is ``Unit`` + ``Profile.unit``; the legacy ``Apartment``
+# row disappears in PR-7 along with this helper.  ``tenant`` is omitted
+# because ``ApartmentSerializer`` declares ``tenant = HiddenField`` — the
+# legacy wire format has no tenant key.  ``_apartment_fields`` below is
+# the authoritative key set.
 _APARTMENT_FIELDS = ("id", "created_at", "unit_number", "building", "floor")
 
 

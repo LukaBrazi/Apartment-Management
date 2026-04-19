@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from apps.apartments.models import Apartment, Unit
+from apps.apartments.models import Unit
 from apps.common.models import ContentView
 from apps.common.renderers import GenericJSONRenderer
 from apps.issues.emails import send_issue_confirmation_email
@@ -227,19 +227,14 @@ class IssueCreateAPIView(generics.CreateAPIView):
     def perform_create(self, serializer: IssueCreateSerializer) -> None:
         """Create an issue.
 
-        Resolution order (PR-4):
-        1. explicit ``unit_id`` in URL (dispatcher path) — must be own Unit
-           unless staff.
-        2. default — ``request.user.profile.unit`` (tenant self-service).
-        3. legacy ``apartment_id`` in URL — still honored, removed in PR-6.
+        Resolution order (post-PR-6):
+        1. Explicit ``unit_id`` in URL (dispatcher path) — must be the
+           reporter's own Unit unless they are staff.
+        2. Default — ``request.user.profile.unit`` (tenant self-service).
         """
 
-        apartment_id = self.kwargs.get("apartment_id")
         unit_id = self.kwargs.get("unit_id")
         user = self.request.user
-
-        unit = None
-        apartment = None
 
         if unit_id:
             # Explicit Unit targeting.
@@ -253,18 +248,6 @@ class IssueCreateAPIView(generics.CreateAPIView):
                     raise PermissionDenied(
                         "You can only report issues for your own unit."
                     )
-            apartment = unit.apartment
-
-        elif apartment_id:
-            # Legacy path: create via Apartment. Removed in PR-6.
-            try:
-                apartment = Apartment.objects.get(id=apartment_id, tenant=user)
-            except Apartment.DoesNotExist:
-                raise PermissionDenied(
-                    "You do not have permission to report issues for this apartment."
-                )
-            unit = getattr(apartment, "unit", None)
-
         else:
             # Default: derive Unit from the reporter's profile.
             unit = getattr(getattr(user, "profile", None), "unit", None)
@@ -275,7 +258,10 @@ class IssueCreateAPIView(generics.CreateAPIView):
                         "Contact an administrator."
                     )
                 })
-            apartment = unit.apartment
+
+        # ``unit.apartment`` is the legacy bridge; PR-7 drops the FK
+        # entirely so the ``apartment`` kwarg disappears with it.
+        apartment = getattr(unit, "apartment", None)
 
         issue = serializer.save(
             reported_by=user,

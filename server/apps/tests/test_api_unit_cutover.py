@@ -1,24 +1,22 @@
 """Tests for the PR-3 backend API cutover to Unit.
 
-PR-3 swaps the backend read path from legacy ``Apartment`` to ``Unit``
-while preserving the wire format used by the frontend.  The checks
-here lock in two guarantees:
+PR-3 swapped the backend read path from legacy ``Apartment`` to
+``Unit`` while preserving the wire format used by the frontend.  After
+PR-6 the ``/apartments/my-apartment/`` endpoint is gone, so those
+tests were removed; the remaining checks still lock in two contracts
+the surviving serializers depend on:
 
-1. ``unit_as_legacy_apartment`` renders a Unit with **exactly** the keys
-   ``ApartmentSerializer`` returns, so the frontend sees no diff.
-2. ``/apartments/my-apartment/`` and ``ProfileSerializer.apartment``
-   both prefer ``profile.unit`` but fall back to the legacy path when
-   the backfill hasn't run — keeping older data readable.
-
-PR-4 (frontend) can now migrate off ``profile.apartment`` at its own
-pace without fear of a hot break.
+1. ``unit_as_legacy_apartment`` renders a Unit with **exactly** the
+   keys ``ApartmentSerializer`` returns, so any caller still using the
+   shim sees no diff.
+2. ``ProfileSerializer.apartment`` prefers ``profile.unit`` but falls
+   back to the legacy ``Apartment`` for unbridged rows — the field
+   stays in the payload until PR-7 drops the Apartment model.
 """
 from __future__ import annotations
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.urls import reverse
-from rest_framework.test import APIClient
 
 from apps.apartments.models import Apartment, Building, Entrance, Unit
 from apps.apartments.serializers import (
@@ -143,54 +141,3 @@ class TestProfileApartmentField:
         profile = Profile.objects.get(user=user)
         data = ProfileSerializer(profile).data
         assert data["apartment"] is None
-
-
-# ───────────────────────── /my-apartment/ endpoint ─────────────────────────
-
-
-class TestMyApartmentEndpoint:
-    """GET /apartments/my-apartment/ must return unit-sourced JSON."""
-
-    def _client(self, user):
-        c = APIClient()
-        c.force_authenticate(user)
-        return c
-
-    def test_returns_unit_data_when_profile_unit_set(self, db, user, bridged):
-        apt, unit, _ = bridged
-        apt.tenant = user
-        apt.save()
-        profile = Profile.objects.get(user=user)
-        profile.unit = unit
-        profile.save()
-
-        resp = self._client(user).get(reverse("my-apartment"))
-
-        assert resp.status_code == 200
-        body = resp.json()
-        # GenericJSONRenderer wraps payload under "apartment"
-        apt_data = body.get("apartment", body)
-        assert apt_data["unit_number"] == unit.number
-        assert apt_data["building"] == "Block A"
-        assert apt_data["id"] == str(apt.id)
-
-    def test_falls_back_to_legacy_apartment(self, db, user):
-        """If profile.unit is unset but user.apartment exists, still works."""
-        apt = Apartment.objects.create(
-            unit_number="99", building="Old", floor=9, tenant=user
-        )
-
-        resp = self._client(user).get(reverse("my-apartment"))
-
-        assert resp.status_code == 200
-        body = resp.json()
-        apt_data = body.get("apartment", body)
-        assert apt_data["unit_number"] == apt.unit_number
-        assert apt_data["building"] == "Old"
-
-    def test_empty_when_nothing_linked(self, db, user):
-        resp = self._client(user).get(reverse("my-apartment"))
-        assert resp.status_code == 200
-        body = resp.json()
-        apt_data = body.get("apartment", {})
-        assert apt_data == {} or apt_data is None
