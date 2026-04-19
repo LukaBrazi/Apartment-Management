@@ -31,48 +31,54 @@ export default function IssueCard({ issue }: IssueCardProps) {
 	const { data: currentUser } = useGetUserProfileQuery();
 	const isStaff = currentUser?.profile.is_staff ?? false;
 
+	// Mobile-first: padded card with line-clamp (instead of string .substring
+	// which strips diacritics mid-word) so long Ukrainian titles/descriptions
+	// wrap cleanly on 375px viewports. Footer uses flex-wrap so Status and
+	// Priority chips stack onto a second row when both visible.
 	return (
-		<Link href={`/issue/${issue.id}`} key={issue.id}>
+		<Link href={`/issue/${issue.id}`} key={issue.id} className="block">
 			<Card
 				key={issue.id}
-				className="hover:border-pumpkin dark:border-gray hover:dark:border-platinum rounded-xl border border-dashed"
+				className="rounded-xl border border-dashed border-[#E5E7EB] transition-colors hover:border-pumpkin dark:border-[#2D3D4F] hover:dark:border-platinum"
 			>
-				<CardHeader>
-					<CardTitle className="flex-center h3-semibold font-robotoSlab dark:text-pumpkin" title={issue.title}>
-						{issue.title.length > 20
-							? `${issue.title.substring(0, 20)}....`
-							: issue.title}
+				<CardHeader className="p-4 md:p-6">
+					<CardTitle
+						className="h3-semibold font-robotoSlab line-clamp-2 text-base md:text-xl dark:text-pumpkin"
+						title={issue.title}
+					>
+						{issue.title}
 					</CardTitle>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="space-y-3 px-4 pb-2 md:px-6">
 					<CardDescription className="dark:text-platinum">
-						<p className="h4-semibold" title={issue.description}>
-							{issue.description.length > 35
-								? `${issue.description.substring(0, 35)}....`
-								: issue.description}
+						<p
+							className="h4-semibold line-clamp-3 text-sm md:text-base"
+							title={issue.description}
+						>
+							{issue.description}
+						</p>
+					</CardDescription>
+
+					<CardDescription className="dark:text-platinum">
+						<p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+							<Hotel className="tab-icon flex-shrink-0" />
+							<span className="tab-font text-sm">Номер квартири:</span>
+							<span className="text-base md:text-lg">
+								{issue.unit_number ?? "—"}
+							</span>
 						</p>
 					</CardDescription>
 				</CardContent>
 
-				<CardContent>
-					<CardDescription className="dark:text-platinum">
-						<p className="flex items-center space-x-2">
-							<Hotel className="tab-icon" />
-							<span className="tab-font">Номер квартири: </span>
-							<span className="text-lg">{issue.unit_number ?? "—"}</span>
-						</p>
-					</CardDescription>
-				</CardContent>
-
-				<CardFooter className="dark:text-babyPowder flex flex-row justify-between">
-					<p className="flex items-center gap-1.5">
-						<span className="mr-0.5 font-bold">Статус: </span>
+				<CardFooter className="flex flex-row flex-wrap justify-between gap-2 p-4 md:p-6 dark:text-babyPowder">
+					<p className="flex items-center gap-1.5 text-sm">
+						<span className="mr-0.5 font-bold">Статус:</span>
 						<StatusBadge value={issue.status} />
 					</p>
 
 					{isStaff && (
-						<p className="flex items-center gap-1.5">
-							<span className="mr-0.5 font-bold">Пріоритет: </span>
+						<p className="flex items-center gap-1.5 text-sm">
+							<span className="mr-0.5 font-bold">Пріоритет:</span>
 							<StatusBadge value={issue.priority} type="priority" />
 						</p>
 					)}

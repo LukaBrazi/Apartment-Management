@@ -130,9 +130,12 @@ function AboutContent() {
 					</div>
 				</div>
 			</div>
-			<div className="flex cursor-pointer flex-row justify-between p-4">
-				<Link href="/profile/edit">
-					<Button className="h3-semibold electricIndigo-gradient text-babyPowder w-64 rounded-lg">
+			{/* Mobile-first: full-width CTA button on phones (easier tap
+			    target within thumb reach), fixed 256px width at md+ with
+			    left-aligned placement matching the legacy desktop layout. */}
+			<div className="flex cursor-pointer p-4">
+				<Link href="/profile/edit" className="w-full md:w-auto">
+					<Button className="tap h3-semibold electricIndigo-gradient w-full rounded-lg text-babyPowder md:w-64">
 						Оновити профіль
 					</Button>
 				</Link>

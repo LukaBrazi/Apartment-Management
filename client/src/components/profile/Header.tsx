@@ -9,9 +9,11 @@ function HeaderContent() {
 	const { data } = useGetUserProfileQuery();
 	const { theme } = useTheme();
 	const profile = data?.profile;
+	// Mobile-first: compact avatar (80px) + readable name (text-2xl) on phones.
+	// Desktop (md+) keeps the original hero-size avatar + 5xl name.
 	return (
-		<div className="flex flex-col gap-2">
-			<Avatar className="border-pumpkin mx-auto size-32 overflow-hidden rounded-full border-4 object-cover">
+		<div className="flex flex-col items-center gap-2 md:gap-3">
+			<Avatar className="mx-auto size-20 overflow-hidden rounded-full border-4 border-pumpkin object-cover md:size-32">
 				<AvatarImage
 					src={
 						profile?.avatar ||
@@ -24,11 +26,13 @@ function HeaderContent() {
 					height={128}
 				/>
 			</Avatar>
-			<div className="flex flex-col items-center justify-center space-y-3">
-				<h1 className="font-robotoSlab dark:text-platinum text-5xl font-semibold">
+			<div className="flex flex-col items-center justify-center gap-1 md:space-y-3">
+				<h1 className="font-robotoSlab text-2xl font-semibold text-center md:text-5xl dark:text-platinum">
 					{profile?.full_name}
 				</h1>
-				<p className="dark:text-lime-500">@{profile?.username}</p>
+				<p className="text-sm md:text-base dark:text-lime-500">
+					@{profile?.username}
+				</p>
 			</div>
 		</div>
 	);

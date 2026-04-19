@@ -145,18 +145,27 @@ export default function ResidentDashboard() {
 							</div>
 						) : (
 							previewIssues.map((issue) => (
+								// Mobile-first row: title on line 1 (with icon + chevron),
+								// chips on line 2 so narrow phones don't squeeze the title
+								// to a single character. Desktop keeps the single-line
+								// layout via the md: breakpoint.
 								<Link
 									key={issue.id}
 									href={`/issue/${issue.id}`}
-									className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[#F7F8FA] dark:hover:bg-[#1E2D3D]"
+									className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-[#F7F8FA] md:flex-row md:items-center md:gap-3 md:px-5 md:py-3.5 dark:hover:bg-[#1E2D3D]"
 								>
-									<ClipboardList className="h-4 w-4 flex-shrink-0 text-[#9CA3AF]" />
-									<span className="flex-1 truncate text-sm font-medium text-[#111827] dark:text-[#F0EDE6]">
-										{issue.title}
-									</span>
-									<StatusChip status={issue.status} />
-									<SlaChip slaDeadline={(issue as any).sla_deadline} />
-									<ChevronRight className="h-4 w-4 flex-shrink-0 text-[#9CA3AF]" />
+									<div className="flex items-center gap-3 md:flex-1 md:min-w-0">
+										<ClipboardList className="h-4 w-4 flex-shrink-0 text-[#9CA3AF]" />
+										<span className="min-w-0 flex-1 truncate text-sm font-medium text-[#111827] dark:text-[#F0EDE6]">
+											{issue.title}
+										</span>
+										<ChevronRight className="h-4 w-4 flex-shrink-0 text-[#9CA3AF] md:hidden" />
+									</div>
+									<div className="flex flex-wrap items-center gap-2">
+										<StatusChip status={issue.status} />
+										<SlaChip slaDeadline={(issue as any).sla_deadline} />
+									</div>
+									<ChevronRight className="hidden h-4 w-4 flex-shrink-0 text-[#9CA3AF] md:block" />
 								</Link>
 							))
 						)}

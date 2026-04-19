@@ -54,31 +54,39 @@ export default function PassesMiniPanel() {
 					</div>
 				) : (
 					activePasses.map((pass) => (
+						// Mobile-first row: two-tier layout that wraps gracefully
+						// on 375px. Car number + status chip stay on the first
+						// line; comment/date + delete button on the second.
+						// On md+ everything collapses back to a single row.
 						<div
 							key={pass.id}
-							className="flex items-center gap-3 px-5 py-3 hover:bg-[#F7F8FA] dark:hover:bg-[#1E2D3D] transition-colors"
+							className="flex flex-col gap-1.5 px-5 py-3 transition-colors hover:bg-[#F7F8FA] md:flex-row md:items-center md:gap-3 dark:hover:bg-[#1E2D3D]"
 						>
-							<span className="font-mono text-sm font-semibold text-[#111827] dark:text-[#F0EDE6]">
-								{pass.car_number}
-							</span>
-							<span className="flex-1 truncate text-xs text-[#6B7280] dark:text-[#8FA8B8]">
-								{pass.comment || pass.visit_date}
-							</span>
-							<span className="flex-shrink-0 rounded-full bg-[#EDFAF6] px-2 py-0.5 text-xs font-medium text-[#2E7D6B]">
-								Активна
-							</span>
-							<button
-								onClick={() => {
-									if (window.confirm("Видалити цю перепустку?")) {
-										deletePass(pass.id);
-									}
-								}}
-								disabled={isDeleting}
-								className="flex-shrink-0 rounded-lg p-1.5 text-[#9CA3AF] transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-								title="Видалити перепустку"
-							>
-								<Trash2 className="h-3.5 w-3.5" />
-							</button>
+							<div className="flex items-center gap-3 md:flex-1 md:min-w-0">
+								<span className="font-mono text-sm font-semibold text-[#111827] dark:text-[#F0EDE6]">
+									{pass.car_number}
+								</span>
+								<span className="min-w-0 flex-1 truncate text-xs text-[#6B7280] dark:text-[#8FA8B8]">
+									{pass.comment || pass.visit_date}
+								</span>
+							</div>
+							<div className="flex items-center justify-between gap-2 md:justify-start">
+								<span className="flex-shrink-0 rounded-full bg-[#EDFAF6] px-2 py-0.5 text-xs font-medium text-[#2E7D6B]">
+									Активна
+								</span>
+								<button
+									onClick={() => {
+										if (window.confirm("Видалити цю перепустку?")) {
+											deletePass(pass.id);
+										}
+									}}
+									disabled={isDeleting}
+									aria-label={`Видалити перепустку ${pass.car_number}`}
+									className="tap flex flex-shrink-0 items-center justify-center rounded-lg p-1.5 text-[#9CA3AF] transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+								>
+									<Trash2 className="h-4 w-4" />
+								</button>
+							</div>
 						</div>
 					))
 				)}

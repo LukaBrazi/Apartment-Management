@@ -252,4 +252,15 @@ body {
   @media (prefers-reduced-motion: reduce) {
     .motion-reduce\:transition-none { transition: none !important; }
   }
+
+  /* Hide scrollbar while keeping overflow scrollable — used on
+     horizontally scrollable tab strips and chip filters on mobile
+     so the bar doesn't eat vertical space or look noisy. */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
