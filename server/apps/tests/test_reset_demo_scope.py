@@ -546,6 +546,12 @@ def test_reset_deletes_demo_organizations_and_preserves_real_ones():
     """PR-13: ``is_demo=True`` orgs go; every other org is untouched."""
     from apps.organizations.models import Organization, OrganizationType
 
+    # Data migration ``organizations/0004_backfill_demo_organization``
+    # pre-seeds the canonical demo org so fresh customer envs heal on
+    # deploy. Clear it here so the arithmetic below stays 1:1 with the
+    # single ``demo_org`` the test itself cares about.
+    Organization.objects.filter(is_demo=True).delete()
+
     # Explicit slugs — Django's default slugify strips non-ASCII, which
     # collapses multiple Cyrillic-only names to the same empty slug and
     # trips the UNIQUE constraint during the test setup.
@@ -574,6 +580,10 @@ def test_reset_deletes_demo_organizations_and_preserves_real_ones():
 def test_reset_does_not_touch_org_with_demo_looking_name_but_flag_false():
     """Name alone doesn't select an Organization — only the ``is_demo`` flag."""
     from apps.organizations.models import Organization, OrganizationType
+
+    # See sibling test: clear the migration-seeded demo org so the
+    # assertion below counts only the impostor.
+    Organization.objects.filter(is_demo=True).delete()
 
     impostor = Organization.objects.create(
         name="ОСББ «Зелений Квартал — Демо»",
