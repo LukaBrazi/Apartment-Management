@@ -20,7 +20,7 @@ from apps.ratings.models import Rating
 from apps.reports.models import Report
 from apps.passes.models import VehiclePass
 from apps.issues.models import Issue, Category
-from apps.apartments.models import Apartment
+from apps.apartments.models import Building, Entrance, Unit
 from apps.posts.models import Post, Reply
 from apps.news.models import News
 
@@ -44,13 +44,13 @@ def user_b(db):
 
 
 @pytest.fixture
-def apartment(db, user_a):
-    return Apartment.objects.create(
-        unit_number="gdpr2_101",
-        floor=1,
-        building="Тестовий будинок",
-        tenant=user_a,
+def unit(db):
+    """Unit-based anchor for Issue fixtures (PR-5: no more legacy Apartment)."""
+    building = Building.objects.create(
+        name="Тестовий будинок GDPR2", address="вул. Тест, 1", city="Київ",
     )
+    entrance = Entrance.objects.create(building=building, name="1")
+    return Unit.objects.create(entrance=entrance, number="gdpr2_101", floor=1)
 
 
 # ── Rating ────────────────────────────────────────────────────────────────────
@@ -145,10 +145,10 @@ class TestVehiclePassSetNull:
 # ── Issue ─────────────────────────────────────────────────────────────────────
 
 class TestIssueSetNull:
-    def test_issue_survives_reporter_deletion(self, user_a, apartment):
+    def test_issue_survives_reporter_deletion(self, user_a, unit):
         """Заявка залишається після видалення мешканця (SET_NULL)."""
         issue = Issue.objects.create(
-            apartment=apartment,
+            unit=unit,
             reported_by=user_a,
             title="Тестова заявка",
             description="Тест видалення reporter",

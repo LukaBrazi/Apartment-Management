@@ -81,10 +81,31 @@ class CategoryFactory(DjangoModelFactory):
 
 
 class IssueFactory(DjangoModelFactory):
+    """Legacy Apartment-anchored Issue factory.
+
+    Kept until PR-7 drops the ``Apartment`` model.  New tests should
+    prefer :class:`UnitIssueFactory`, which creates Unit-anchored Issues
+    directly — the canonical link post-PR-2.
+    """
+
     class Meta:
         model = "issues.Issue"
 
     apartment = factory.SubFactory(ApartmentFactory)
+    reported_by = factory.SubFactory(UserFactory)
+    title = factory.Sequence(lambda n: f"Issue {n}")
+    description = factory.Faker("text", max_nb_chars=200)
+    status = "reported"
+    priority = "low"
+
+
+class UnitIssueFactory(DjangoModelFactory):
+    """Unit-anchored Issue factory (PR-5 — no legacy Apartment needed)."""
+
+    class Meta:
+        model = "issues.Issue"
+
+    unit = factory.SubFactory(UnitFactory)
     reported_by = factory.SubFactory(UserFactory)
     title = factory.Sequence(lambda n: f"Issue {n}")
     description = factory.Faker("text", max_nb_chars=200)

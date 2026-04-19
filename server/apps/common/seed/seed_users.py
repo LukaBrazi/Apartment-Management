@@ -212,7 +212,9 @@ def seed(
         ),
         unit=tenant_unit,
     )
-    _bind_apartment(tenant_unit, tenant_user)
+    # PR-5: ``Profile.unit`` is canonical (PR-3 cutover).  We used to
+    # also mirror onto ``Apartment.tenant`` via ``_bind_apartment`` —
+    # removed with the rest of the legacy Apartment write path.
     result.tenant = SeededUser(
         email="tenant@demo.com", user=tenant_user, unit=tenant_unit, role="tenant",
     )
@@ -245,7 +247,6 @@ def seed(
             ),
             unit=unit,
         )
-        _bind_apartment(unit, user)
         result.residents.append(
             SeededUser(email=email, user=user, unit=unit, role="resident"),
         )
@@ -390,19 +391,6 @@ def _patch_profile(
     profile = user.profile
     if not profile.slug:
         profile.save(update_fields=[])  # trigger AutoSlugField
-
-
-def _bind_apartment(unit, user) -> None:
-    """Link the legacy ``Apartment`` to the seeded tenant user.
-
-    Separate from Profile.unit — the legacy API surface queries
-    ``Apartment.tenant`` directly (issue creation, my-apartment endpoint).
-    """
-    if unit.apartment_id is None:
-        return
-    # Use .update() to avoid hitting Apartment.save() (if any custom logic).
-    from apps.apartments.models import Apartment
-    Apartment.objects.filter(pk=unit.apartment_id).update(tenant=user)
 
 
 def _available_units(building_result, *, skip_unit) -> list:

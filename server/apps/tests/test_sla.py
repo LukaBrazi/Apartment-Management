@@ -1,21 +1,31 @@
-"""Tests for Issue status flow + SLA."""
+"""Tests for Issue status flow + SLA.
+
+Post-PR-5: anchors Issues on ``Unit`` via :class:`UnitIssueFactory` so
+the legacy ``Apartment`` model can be removed in PR-7 without this
+suite breaking.
+"""
 import pytest
 from datetime import timedelta
 
 from django.utils import timezone
 
 from apps.issues.models import Issue, ALLOWED_TRANSITIONS
-from apps.tests.factories import ApartmentFactory, CategoryFactory, IssueFactory, UserFactory
+from apps.tests.factories import (
+    CategoryFactory,
+    UnitFactory,
+    UnitIssueFactory,
+    UserFactory,
+)
 
 
 @pytest.mark.django_db
 def test_due_at_computed_on_create():
     """due_at = created_at + sla_hours when category is set."""
     category = CategoryFactory(sla_hours=48)
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
     before = timezone.now()
-    issue = IssueFactory(apartment=apt, reported_by=user, category=category)
+    issue = UnitIssueFactory(unit=unit, reported_by=user, category=category)
     after = timezone.now()
 
     assert issue.due_at is not None
@@ -25,18 +35,18 @@ def test_due_at_computed_on_create():
 
 @pytest.mark.django_db
 def test_due_at_not_set_without_category():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(apartment=apt, reported_by=user, category=None)
+    issue = UnitIssueFactory(unit=unit, reported_by=user, category=None)
     assert issue.due_at is None
 
 
 @pytest.mark.django_db
 def test_is_overdue_true_when_past_due():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(
-        apartment=apt,
+    issue = UnitIssueFactory(
+        unit=unit,
         reported_by=user,
         due_at=timezone.now() - timedelta(hours=1),
         status="reported",
@@ -46,10 +56,10 @@ def test_is_overdue_true_when_past_due():
 
 @pytest.mark.django_db
 def test_is_overdue_false_when_not_yet_due():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(
-        apartment=apt,
+    issue = UnitIssueFactory(
+        unit=unit,
         reported_by=user,
         due_at=timezone.now() + timedelta(hours=24),
         status="reported",
@@ -59,10 +69,10 @@ def test_is_overdue_false_when_not_yet_due():
 
 @pytest.mark.django_db
 def test_is_overdue_false_when_done():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(
-        apartment=apt,
+    issue = UnitIssueFactory(
+        unit=unit,
         reported_by=user,
         due_at=timezone.now() - timedelta(hours=1),
         status="done",
@@ -72,9 +82,9 @@ def test_is_overdue_false_when_done():
 
 @pytest.mark.django_db
 def test_valid_transition_reported_to_accepted():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(apartment=apt, reported_by=user, status="reported")
+    issue = UnitIssueFactory(unit=unit, reported_by=user, status="reported")
     issue.transition_to("accepted")
     issue.refresh_from_db()
     assert issue.status == "accepted"
@@ -82,9 +92,9 @@ def test_valid_transition_reported_to_accepted():
 
 @pytest.mark.django_db
 def test_valid_transition_accepted_to_in_progress():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(apartment=apt, reported_by=user, status="accepted")
+    issue = UnitIssueFactory(unit=unit, reported_by=user, status="accepted")
     issue.transition_to("in_progress")
     issue.refresh_from_db()
     assert issue.status == "in_progress"
@@ -92,9 +102,9 @@ def test_valid_transition_accepted_to_in_progress():
 
 @pytest.mark.django_db
 def test_valid_transition_in_progress_to_done_sets_resolved_on():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(apartment=apt, reported_by=user, status="in_progress")
+    issue = UnitIssueFactory(unit=unit, reported_by=user, status="in_progress")
     issue.transition_to("done")
     issue.refresh_from_db()
     assert issue.status == "done"
@@ -103,17 +113,17 @@ def test_valid_transition_in_progress_to_done_sets_resolved_on():
 
 @pytest.mark.django_db
 def test_invalid_transition_raises_value_error():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(apartment=apt, reported_by=user, status="reported")
+    issue = UnitIssueFactory(unit=unit, reported_by=user, status="reported")
     with pytest.raises(ValueError, match="Cannot transition"):
         issue.transition_to("done")
 
 
 @pytest.mark.django_db
 def test_terminal_state_no_transitions():
-    apt = ApartmentFactory()
+    unit = UnitFactory()
     user = UserFactory()
-    issue = IssueFactory(apartment=apt, reported_by=user, status="done")
+    issue = UnitIssueFactory(unit=unit, reported_by=user, status="done")
     with pytest.raises(ValueError):
         issue.transition_to("in_progress")

@@ -6,15 +6,18 @@ Per plan §3:
 * 3 Entrances named "А", "Б", "В" — last one intentionally empty (showcase
   for the data model; some real buildings do have unused entrance shells).
 * 4 × 6 = 24 Units in А, same in Б (48 units total).
-* Every seeded Unit also gets a mirroring legacy ``Apartment`` row and the
-  two are stitched via the ``Unit.apartment`` OneToOne — kept for
-  backwards compatibility with the older API surface that still queries
-  ``Apartment`` directly.
+
+Historical note (PR-5 of the legacy-Apartment removal):
+Prior to PR-5 the seed mirrored every Unit into a legacy ``Apartment`` row
+and stitched them via ``Unit.apartment``.  After PR-3 the backend reads
+Unit directly, so the mirror is dead weight — we stopped producing it
+here so PR-7 can drop the model without a cleanup dance.  Residual
+Apartment rows left over from pre-PR-5 runs are swept by
+``reset_scope.reset_demo_scope`` on the next ``--reset``.
 
 Idempotency: built on ``get_or_create`` with natural keys
-(``Building.name``; ``Entrance (building, name)``; ``Unit (entrance, number)``;
-``Apartment (building, unit_number)``).  Rerunning without ``--reset`` is a
-no-op.
+(``Building.name``; ``Entrance (building, name)``; ``Unit (entrance, number)``).
+Rerunning without ``--reset`` is a no-op.
 """
 from __future__ import annotations
 
@@ -35,7 +38,6 @@ from .helpers import (
 
 if TYPE_CHECKING:  # pragma: no cover
     from apps.apartments.models import (
-        Apartment,
         Building,
         Entrance,
         ResidentialComplex,
@@ -61,7 +63,6 @@ class BuildingSeedResult:
         default_factory=dict, repr=False,
     )
     created_units: int = 0
-    created_apartments: int = 0
 
 
 @transaction.atomic
@@ -77,7 +78,6 @@ def seed() -> BuildingSeedResult:
     """
     # Deferred imports — see note in reset_scope.py.
     from apps.apartments.models import (
-        Apartment,
         Building,
         Entrance,
         ResidentialComplex,
@@ -122,7 +122,11 @@ def seed() -> BuildingSeedResult:
         )
         result.entrances[name] = entrance
 
-    # Units + mirrored Apartment rows ─────────────────────────────────────────
+    # Units ───────────────────────────────────────────────────────────────────
+    # PR-5: legacy Apartment mirroring was removed.  Unit is the single
+    # source of truth post PR-3; any residual ``Unit.apartment`` FKs
+    # pointing at pre-PR-5 Apartment rows stay SET_NULL after the next
+    # reset sweeps those rows.
     for entrance_name in POPULATED_ENTRANCES:
         entrance = result.entrances[entrance_name]
         for floor in range(1, FLOORS_PER_ENTRANCE + 1):
@@ -135,47 +139,12 @@ def seed() -> BuildingSeedResult:
                 )
                 if unit_created:
                     result.created_units += 1
-
-                # Legacy Apartment has unique_together (building, unit_number)
-                # and no Entrance concept — so we prefix the number with the
-                # entrance letter to keep А-101 and Б-101 distinct legacy rows.
-                legacy_number = f"{entrance_name}{number}"
-                apt, apt_created = Apartment.objects.get_or_create(
-                    unit_number=legacy_number,
-                    building=building.name,
-                    defaults={"floor": floor},
-                )
-                if apt_created:
-                    result.created_apartments += 1
-
-                _link_unit_apartment(unit, apt)
                 result.units_by_key[(entrance_name, number)] = unit
 
     logger.info(
         "seed_building: complex=%s building=%s entrances=%d "
-        "units_created=%d apartments_created=%d",
+        "units_created=%d",
         complex_obj.name, building.name, len(result.entrances),
-        result.created_units, result.created_apartments,
+        result.created_units,
     )
     return result
-
-
-# ───────────────────────────── internal helpers ──────────────────────────────
-
-
-def _link_unit_apartment(unit: "Unit", apartment: "Apartment") -> None:
-    """Attach ``apartment`` to ``unit`` if the OneToOne slot is free.
-
-    OneToOne is SET_NULL on delete, so a previous reset may leave orphan
-    apartments.  We also defensively check the current link — if the Unit is
-    already pointing at the right Apartment, we skip the UPDATE entirely
-    (keeps idempotent-rerun SQL output tidy).
-    """
-    unit.refresh_from_db(fields=["apartment"])
-    if unit.apartment_id == apartment.pk:
-        return
-    if unit.apartment_id is not None:
-        # Another apartment already claims this unit; don't clobber.
-        return
-    unit.apartment = apartment
-    unit.save(update_fields=["apartment"])

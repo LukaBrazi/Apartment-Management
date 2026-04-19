@@ -20,7 +20,7 @@ from apps.profiles.models import Profile
 from apps.issues.models import Issue
 from apps.ratings.models import Rating
 from apps.passes.models import VehiclePass
-from apps.apartments.models import Apartment
+from apps.apartments.models import Building, Entrance, Unit
 
 User = get_user_model()
 
@@ -53,13 +53,15 @@ def other_user(db):
 
 
 @pytest.fixture
-def owner_apartment(db, owner):
-    return Apartment.objects.create(
-        unit_number="gdpr4_202",
-        floor=2,
-        building="Тест Будинок",
-        tenant=owner,
+def owner_unit(db, owner):
+    """Unit anchor (PR-5: legacy Apartment removed from the Issue path)."""
+    building = Building.objects.create(
+        name="Тест Будинок GDPR4", address="вул. Тест, 2", city="Київ",
     )
+    entrance = Entrance.objects.create(building=building, name="1")
+    unit = Unit.objects.create(entrance=entrance, number="gdpr4_202", floor=2)
+    Profile.objects.filter(user=owner).update(unit=unit)
+    return unit
 
 
 @pytest.mark.django_db
@@ -103,26 +105,30 @@ class TestGDPRDataExport:
         assert account["first_name"] == "Власник"
         assert account["last_name"] == "Даних"
 
-    def test_only_own_issues_exported(self, owner, other_user, owner_apartment):
+    def test_only_own_issues_exported(self, owner, other_user, owner_unit):
         """issues містять тільки заявки поточного user."""
         # Issue для owner
         Issue.objects.create(
-            apartment=owner_apartment,
+            unit=owner_unit,
             reported_by=owner,
             title="Моя заявка",
             description="Опис",
             status=Issue.IssueStatus.REPORTED,
             priority=Issue.Priority.LOW,
         )
-        # Issue для іншого user
-        other_apt = Apartment.objects.create(
-            unit_number="gdpr4_303",
-            floor=3,
-            building="Тест",
-            tenant=other_user,
+        # Issue для іншого user — на окремому Unit (PR-5: без Apartment)
+        other_building = Building.objects.create(
+            name="Тест GDPR4 other", address="вул. Інша, 3", city="Київ",
         )
+        other_entrance = Entrance.objects.create(
+            building=other_building, name="1",
+        )
+        other_unit = Unit.objects.create(
+            entrance=other_entrance, number="gdpr4_303", floor=3,
+        )
+        Profile.objects.filter(user=other_user).update(unit=other_unit)
         Issue.objects.create(
-            apartment=other_apt,
+            unit=other_unit,
             reported_by=other_user,
             title="Чужа заявка",
             description="Не моя",

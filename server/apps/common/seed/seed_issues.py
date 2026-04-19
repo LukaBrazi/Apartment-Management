@@ -392,7 +392,8 @@ def seed(
 
                 natural_key = {"title": title, "reported_by": reporter.user}
                 defaults = {
-                    "apartment": _apartment_for(reporter),
+                    # PR-5: no more legacy Apartment mirror; Issue.unit
+                    # is the canonical link post-PR-2 dual-read cutover.
                     "unit": reporter.unit,
                     "category": category,
                     "description": description,
@@ -513,13 +514,6 @@ def _reporter_pool(users_result: "UsersSeedResult") -> list["SeededUser"]:
         if r.unit is not None:
             pool.append(r)
     return pool
-
-
-def _apartment_for(reporter: "SeededUser"):
-    """Legacy Apartment FK from the unit's OneToOne link."""
-    if reporter.unit is None:
-        return None
-    return reporter.unit.apartment  # may be None; Issue.apartment is nullable
 
 
 def _choose_assignee(

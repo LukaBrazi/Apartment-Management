@@ -159,8 +159,7 @@ class Command(BaseCommand):
             f"  • building={building_result.building.name!r} "
             f"entrances={len(building_result.entrances)} "
             f"units={len(building_result.units_by_key)} "
-            f"(+{building_result.created_units} new, "
-            f"+{building_result.created_apartments} legacy apts)"
+            f"(+{building_result.created_units} new)"
         )
 
         users_result = seed_users.seed(
