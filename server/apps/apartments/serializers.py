@@ -12,6 +12,53 @@ class ApartmentSerializer(serializers.ModelSerializer):
         exclude = ("pkid", "updated_at")
 
 
+# ── PR-3 compat shim ───────────────────────────────────────────────────────
+#
+# The client (Next.js RTK Query) reads ``profile.apartment`` and
+# ``/apartments/my-apartment/`` as an Apartment-shaped object:
+#
+#     {"id": UUID, "created_at": iso8601, "unit_number": str,
+#      "building": str, "floor": int}
+#
+# After PR-3 the source of truth is ``Unit`` + ``Profile.unit``; the
+# legacy ``Apartment`` row may disappear in PR-7.  This helper renders
+# a ``Unit`` in the legacy Apartment JSON shape so the frontend contract
+# stays byte-identical until PR-4 migrates off it.
+#
+# ``tenant`` is intentionally omitted because ``ApartmentSerializer``
+# declares ``tenant = HiddenField`` — the legacy wire format has no
+# tenant key.  ``_apartment_fields`` below is the authoritative key set.
+_APARTMENT_FIELDS = ("id", "created_at", "unit_number", "building", "floor")
+
+
+def unit_as_legacy_apartment(unit: Unit, *, tenant_id=None) -> dict:
+    """Return a dict that matches ApartmentSerializer's output shape.
+
+    ``tenant_id`` is accepted for call-site documentation only — the
+    legacy JSON has no tenant key — so callers don't have to branch on
+    the shim vs. the real serializer.
+    """
+    del tenant_id  # intentionally unused; see docstring
+
+    legacy_apt = getattr(unit, "apartment", None)
+    # Prefer the legacy Apartment's UUID so existing frontend caches
+    # stay hot during the transition; fall back to the Unit's UUID
+    # once the Apartment row is gone (PR-7).
+    primary_id = legacy_apt.id if legacy_apt is not None else unit.id
+
+    building_name = ""
+    if unit.entrance_id:
+        building_name = unit.entrance.building.name
+
+    return {
+        "id": str(primary_id),
+        "created_at": unit.created_at.isoformat() if unit.created_at else None,
+        "unit_number": unit.number,
+        "building": building_name,
+        "floor": unit.floor,
+    }
+
+
 # ── New domain serializers ─────────────────────────────────────────────────
 
 class ResidentialComplexSerializer(serializers.ModelSerializer):

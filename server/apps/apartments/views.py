@@ -2,7 +2,13 @@
 from typing import Any
 
 from apps.apartments.models import Apartment, Building, Entrance, Unit
-from apps.apartments.serializers import ApartmentSerializer, BuildingSerializer, EntranceSerializer, UnitSerializer
+from apps.apartments.serializers import (
+    ApartmentSerializer,
+    BuildingSerializer,
+    EntranceSerializer,
+    UnitSerializer,
+    unit_as_legacy_apartment,
+)
 from apps.common.renderers import GenericJSONRenderer
 from apps.profiles.models import Profile
 from rest_framework import generics, status
@@ -118,6 +124,13 @@ class MyApartmentAPIView(generics.RetrieveAPIView):
     GET /apartments/my-apartment/
     → Renderer wraps as {"status_code": 200, "apartment": {...}}
     → null/empty when user has no apartment
+
+    PR-3 cutover: prefers ``request.user.profile.unit`` (new canonical
+    source) rendered in the legacy Apartment JSON shape via
+    ``unit_as_legacy_apartment``.  Falls back to ``request.user.apartment
+    .first()`` only for rows still unbridged after PR-1 (audit flags
+    these).  JSON shape is byte-compatible with the previous contract
+    so PR-4 can migrate the frontend independently.
     """
 
     serializer_class = ApartmentSerializer
@@ -125,6 +138,11 @@ class MyApartmentAPIView(generics.RetrieveAPIView):
     object_label = "apartment"
 
     def get_object(self):
+        # Preferred: Profile.unit set by PR-1 backfill.
+        profile = getattr(self.request.user, "profile", None)
+        if profile is not None and profile.unit_id:
+            return profile.unit
+        # Legacy fallback
         return self.request.user.apartment.first()
 
     def retrieve(self, request: Request, *args: Any, **kwargs: Any) -> Response:
@@ -133,6 +151,9 @@ class MyApartmentAPIView(generics.RetrieveAPIView):
             # Renderer will produce {"status_code": 200, "apartment": {}}
             # Frontend transformResponse → {apartment: {}} → apartment.id = undefined
             return Response({}, status=status.HTTP_200_OK)
+        if isinstance(instance, Unit):
+            data = unit_as_legacy_apartment(instance, tenant_id=request.user.id)
+            return Response(data, status=status.HTTP_200_OK)
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

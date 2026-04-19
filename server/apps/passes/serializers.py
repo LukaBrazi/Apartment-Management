@@ -19,11 +19,23 @@ class VehiclePassCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
-        unit = (
-            Unit.objects.filter(apartment__tenant=user)
-            .select_related("entrance__building")
-            .first()
-        )
+        # PR-3: prefer Profile.unit (canonical) over the legacy
+        # Apartment.tenant traversal so we keep working once the
+        # Apartment model is removed in PR-7.
+        unit = None
+        profile = getattr(user, "profile", None)
+        if profile is not None and profile.unit_id:
+            unit = (
+                Unit.objects.filter(pkid=profile.unit_id)
+                .select_related("entrance__building")
+                .first()
+            )
+        if unit is None:
+            unit = (
+                Unit.objects.filter(apartment__tenant=user)
+                .select_related("entrance__building")
+                .first()
+            )
         if not validated_data.get("organization"):
             from apps.organizations.utils import get_user_primary_organization
             org = get_user_primary_organization(user)
