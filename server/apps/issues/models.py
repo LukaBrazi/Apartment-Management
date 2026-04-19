@@ -215,6 +215,12 @@ class Issue(TimeStampedModel):
     def save(self, *args: Dict, **kwargs: Dict) -> None:
         """Save the issue and notify the assigned user.
 
+        During the ``refactor/remove-legacy-apartment`` dual-read window
+        (PR-2), callers may still write ``apartment`` only.  Mirror
+        ``apartment.unit`` into ``self.unit`` so downstream readers that
+        have already cut over to Unit never see a null.  Never overwrite
+        an explicit ``unit`` value — operator intent always wins.
+
         Args:
             *args (dict): The arguments.
             **kwargs (dict): The keyword arguments.
@@ -222,6 +228,18 @@ class Issue(TimeStampedModel):
         Raises:
             Exception: If the email sending fails.
         """
+
+        # Dual-read guarantee: backfill unit from apartment.unit on save.
+        if self.unit_id is None and self.apartment_id is not None:
+            linked_unit = Unit.objects.filter(
+                apartment_id=self.apartment_id
+            ).only("pkid").first()
+            if linked_unit is not None:
+                self.unit_id = linked_unit.pkid
+                # If update_fields was passed, extend it so the field is persisted.
+                update_fields = kwargs.get("update_fields")
+                if update_fields is not None and "unit" not in update_fields:
+                    kwargs["update_fields"] = list(update_fields) + ["unit"]
 
         # Compute due_at on first save when category is set
         is_existing = self.pk is not None

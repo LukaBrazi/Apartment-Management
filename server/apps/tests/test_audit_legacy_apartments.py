@@ -151,19 +151,22 @@ class TestAuditBridgeGap:
 
 
 class TestAuditIssueCutover:
-    """Issue.apartment set without Issue.unit is a PR-2 blocker."""
+    """Issue.apartment set without Issue.unit is a PR-2 blocker.
 
-    def test_issue_with_apartment_without_unit(
-        self, db, bridged_factory, tenant_user
-    ):
-        legacy, _unit, _bld = bridged_factory()
-        # Attach an Issue to the legacy apartment but NOT to the unit.
+    After PR-2, ``Issue.save()`` mirrors ``apartment.unit → self.unit``
+    whenever a bridge exists; the only way to land in this state now is
+    via an *unbridged* Apartment — exactly the shape this audit flags.
+    """
+
+    def test_issue_with_apartment_without_unit(self, db, tenant_user):
+        legacy = Apartment.objects.create(
+            unit_number="orphan", building="Nowhere", floor=1
+        )
         Issue.objects.create(
             reported_by=tenant_user,
             title="Leak",
             description="Kitchen tap leaks",
             apartment=legacy,
-            # unit intentionally omitted
         )
         stdout, _, _ = _run(as_json=True)
         payload = json.loads(stdout)

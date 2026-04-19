@@ -35,9 +35,12 @@ class IssueAdmin(admin.ModelAdmin):
         get_total_views: Get the total views.
     """
 
-    # Attributes
+    # Attributes — Unit is the new source of truth; `apartment` is displayed
+    # during the dual-read window (PR-2 of refactor/remove-legacy-apartment)
+    # so operators can spot any row still missing the bridge.
     list_display = (
         "id",
+        "unit",
         "apartment",
         "reported_by",
         "assigned_to",
@@ -45,15 +48,17 @@ class IssueAdmin(admin.ModelAdmin):
         "priority",
         "get_total_views",
     )
-    list_display_links = ("id", "apartment")
-    list_filter = ("status", "priority")
+    list_display_links = ("id", "unit")
+    list_filter = ("status", "priority", "unit__entrance__building")
     search_fields = (
+        "unit__number",
+        "unit__entrance__building__name",
         "apartment__unit_number",
         "reported_by__first_name",
         "assigned_to__first_name",
     )
     ordering = ("-created_at",)
-    autocomplete_fields = ("apartment", "reported_by", "assigned_to")
+    autocomplete_fields = ("unit", "apartment", "reported_by", "assigned_to")
     inlines = (ContentViewInline,)
 
     # Method to get the total views
