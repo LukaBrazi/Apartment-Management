@@ -6,7 +6,6 @@ from rest_framework.test import APIClient
 
 from apps.tests.factories import (
     AdminUserFactory,
-    ApartmentFactory,
     BuildingFactory,
     CategoryFactory,
     EntranceFactory,
@@ -79,8 +78,7 @@ class TestIssuePermissions:
 
     def test_tenant_sees_only_own_issues(self, tenant_client):
         client, user = tenant_client
-        apt = ApartmentFactory(tenant=user)
-        IssueFactory(apartment=apt, reported_by=user)
+        IssueFactory(reported_by=user)
         IssueFactory()  # another user's issue
         resp = client.get(MY_ISSUES_URL)
         assert resp.status_code == 200
@@ -90,8 +88,7 @@ class TestIssuePermissions:
 
     def test_detail_tenant_sees_own_issue(self, tenant_client):
         client, user = tenant_client
-        apt = ApartmentFactory(tenant=user)
-        issue = IssueFactory(apartment=apt, reported_by=user)
+        issue = IssueFactory(reported_by=user)
         resp = client.get(f"/api/v1/issues/{issue.id}/")
         assert resp.status_code == 200
 

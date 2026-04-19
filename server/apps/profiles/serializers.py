@@ -1,8 +1,4 @@
 # Imports
-from apps.apartments.serializers import (
-    ApartmentSerializer,
-    unit_as_legacy_apartment,
-)
 from apps.profiles.models import Profile
 from django_countries.serializer_fields import CountryField
 from rest_framework import serializers
@@ -114,32 +110,37 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     # Method to get the apartment
     def get_apartment(self, obj: Profile) -> dict | None:
-        """Get the apartment the user belongs to (Apartment-shaped JSON).
+        """Render ``profile.unit`` in the legacy Apartment JSON shape.
 
-        PR-3 cutover: prefer ``profile.unit`` (the new canonical source)
-        and render it through ``unit_as_legacy_apartment`` so the
-        frontend contract stays byte-compatible until PR-4 migrates the
-        client off ``profile.apartment``.  Falls back to the legacy
-        ``user.apartment.first()`` reverse lookup only for any rows
-        still unbridged after PR-1 (audit would flag those).
+        PR-7 deleted the ``unit_as_legacy_apartment`` helper and the
+        ``Apartment.tenant`` fallback; this method now builds the
+        payload inline.  The field is kept in the Profile payload until
+        the frontend drops it entirely — ``About.tsx`` already reads
+        ``profile.unit_number`` / ``profile.building_name`` as of PR-4.
 
         Args:
             obj (Profile): The profile.
 
         Returns:
-            dict | None: The apartment the user belongs to, or None.
+            dict | None: The apartment-shaped payload, or None when the
+            profile has no linked Unit.
         """
 
-        # Preferred path: Profile.unit populated by PR-1 backfill.
-        if obj.unit_id:
-            return unit_as_legacy_apartment(obj.unit, tenant_id=obj.user_id)
+        if not obj.unit_id:
+            return None
 
-        # Legacy fallback — should be empty after PR-1 backfill.
-        apartment = obj.user.apartment.first()
-        if apartment:
-            return ApartmentSerializer(apartment).data
+        unit = obj.unit
+        building_name = ""
+        if unit.entrance_id:
+            building_name = unit.entrance.building.name
 
-        return None
+        return {
+            "id": str(unit.id),
+            "created_at": unit.created_at.isoformat() if unit.created_at else None,
+            "unit_number": unit.number,
+            "building": building_name,
+            "floor": unit.floor,
+        }
 
     def get_managed_buildings(self, obj: Profile) -> list:
         return list(obj.buildings.values("id", "name", "address"))

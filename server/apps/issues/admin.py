@@ -35,13 +35,11 @@ class IssueAdmin(admin.ModelAdmin):
         get_total_views: Get the total views.
     """
 
-    # Attributes — Unit is the new source of truth; `apartment` is displayed
-    # during the dual-read window (PR-2 of refactor/remove-legacy-apartment)
-    # so operators can spot any row still missing the bridge.
+    # Attributes — PR-7: legacy ``apartment`` FK was removed; Unit is now
+    # the sole location anchor on Issue.
     list_display = (
         "id",
         "unit",
-        "apartment",
         "reported_by",
         "assigned_to",
         "status",
@@ -53,12 +51,11 @@ class IssueAdmin(admin.ModelAdmin):
     search_fields = (
         "unit__number",
         "unit__entrance__building__name",
-        "apartment__unit_number",
         "reported_by__first_name",
         "assigned_to__first_name",
     )
     ordering = ("-created_at",)
-    autocomplete_fields = ("unit", "apartment", "reported_by", "assigned_to")
+    autocomplete_fields = ("unit", "reported_by", "assigned_to")
     inlines = (ContentViewInline,)
 
     # Method to get the total views

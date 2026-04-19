@@ -1,5 +1,5 @@
 """Announcement API views."""
-from apps.apartments.models import Building, Unit
+from apps.apartments.models import Building
 from apps.posts.models import Announcement
 from rest_framework import generics, permissions, serializers
 
@@ -39,11 +39,12 @@ class AnnouncementListAPIView(generics.ListAPIView):
                 return qs.filter(building__organization__in=user_orgs)
             return qs
 
-        # Tenant: filter to their building via Unit → Entrance → Building
-        unit = Unit.objects.filter(apartment__tenant=user).select_related(
-            "entrance__building"
-        ).first()
-        if unit:
+        # Tenant: filter to their building via Profile.unit → Entrance → Building.
+        # PR-7 dropped the legacy ``Unit.apartment.tenant`` path; ownership
+        # lives on ``Profile.unit`` exclusively now.
+        profile = getattr(user, "profile", None)
+        unit = getattr(profile, "unit", None) if profile is not None else None
+        if unit is not None and unit.entrance_id:
             return qs.filter(building=unit.entrance.building)
         # Fallback: no unit linked → no announcements
         return qs.none()

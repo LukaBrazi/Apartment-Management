@@ -27,7 +27,6 @@ def _issue_base_qs():
     """Return the standard optimised Issue queryset used by all views."""
     return (
         Issue.objects.select_related(
-            "apartment",
             "unit__entrance__building",
             "category",
             "reported_by",
@@ -259,13 +258,8 @@ class IssueCreateAPIView(generics.CreateAPIView):
                     )
                 })
 
-        # ``unit.apartment`` is the legacy bridge; PR-7 drops the FK
-        # entirely so the ``apartment`` kwarg disappears with it.
-        apartment = getattr(unit, "apartment", None)
-
         issue = serializer.save(
             reported_by=user,
-            apartment=apartment,
             unit=unit,
         )
 

@@ -3,7 +3,7 @@ import logging
 from datetime import timedelta
 from typing import Dict
 
-from apps.apartments.models import Apartment, Unit
+from apps.apartments.models import Unit
 from apps.common.models import ContentView, TimeStampedModel
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -70,7 +70,7 @@ class Issue(TimeStampedModel):
         TimeStampedModel
 
     Attributes:
-        apartment (ForeignKey): The apartment the issue belongs to.
+        unit (ForeignKey): The unit the issue belongs to.
         reported_by (ForeignKey): The user who reported the issue.
         assigned_to (ForeignKey): The user assigned to the issue.
         title (str): The title of the issue.
@@ -106,15 +106,9 @@ class Issue(TimeStampedModel):
         HIGH = ("high", _("High"))
 
     # Attributes
-    apartment = models.ForeignKey(
-        Apartment,
-        on_delete=models.CASCADE,
-        related_name="issues",
-        verbose_name=_("Apartment"),
-        null=True,
-        blank=True,
-    )
-    # New: link to Unit (preferred over apartment FK going forward)
+    # PR-7 dropped ``Issue.apartment`` — ``unit`` is the only location
+    # link on Issue now.  The column survives in migration history for
+    # replay but the ORM field is gone.
     unit = models.ForeignKey(
         Unit,
         on_delete=models.SET_NULL,
@@ -215,11 +209,10 @@ class Issue(TimeStampedModel):
     def save(self, *args: Dict, **kwargs: Dict) -> None:
         """Save the issue and notify the assigned user.
 
-        During the ``refactor/remove-legacy-apartment`` dual-read window
-        (PR-2), callers may still write ``apartment`` only.  Mirror
-        ``apartment.unit`` into ``self.unit`` so downstream readers that
-        have already cut over to Unit never see a null.  Never overwrite
-        an explicit ``unit`` value — operator intent always wins.
+        PR-7 dropped the ``apartment`` FK and the dual-read shim that
+        backfilled ``unit`` from the legacy column — ``unit`` is now the
+        only location link and callers must set it explicitly (or rely
+        on ``IssueCreateAPIView`` to default to ``profile.unit``).
 
         Args:
             *args (dict): The arguments.
@@ -228,18 +221,6 @@ class Issue(TimeStampedModel):
         Raises:
             Exception: If the email sending fails.
         """
-
-        # Dual-read guarantee: backfill unit from apartment.unit on save.
-        if self.unit_id is None and self.apartment_id is not None:
-            linked_unit = Unit.objects.filter(
-                apartment_id=self.apartment_id
-            ).only("pkid").first()
-            if linked_unit is not None:
-                self.unit_id = linked_unit.pkid
-                # If update_fields was passed, extend it so the field is persisted.
-                update_fields = kwargs.get("update_fields")
-                if update_fields is not None and "unit" not in update_fields:
-                    kwargs["update_fields"] = list(update_fields) + ["unit"]
 
         # Compute due_at on first save when category is set
         is_existing = self.pk is not None

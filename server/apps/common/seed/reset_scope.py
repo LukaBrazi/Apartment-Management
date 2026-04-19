@@ -63,7 +63,6 @@ class ResetReport:
     demo_posts_matched: int = 0
     demo_passes_matched: int = 0
     demo_ratings_matched: int = 0
-    demo_apartments_matched: int = 0
     orphan_tags_removed: int = 0
 
     def as_dict(self) -> "Mapping[str, object]":
@@ -97,7 +96,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
     # Deferred imports: these apps may not be importable at module load time in
     # every manage.py path.  Lazy import avoids circularity in the management-
     # command loader.
-    from apps.apartments.models import Apartment, Building
+    from apps.apartments.models import Building
     from apps.issues.models import Issue
     from apps.passes.models import VehiclePass
     from apps.posts.models import Post
@@ -139,23 +138,21 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
     demo_ratings_qs = Rating.objects.filter(
         rating_user_id__in=user_ids,
     ) | Rating.objects.filter(rated_user_id__in=user_ids)
-    # Apartment is a legacy model with a ``tenant`` FK (SET_NULL on User
-    # delete).  Catch rows seed_users created for the demo cohort by tenant pk.
-    demo_apartments_qs = Apartment.objects.filter(tenant_id__in=user_ids)
+    # PR-7 dropped the legacy ``Apartment`` model — no tenant→Apartment
+    # rows survive for the reset to scoop up.
 
     matched_issues = demo_issues_qs.count()
     matched_posts = demo_posts_qs.count()
     matched_passes = demo_passes_qs.count()
     matched_ratings = demo_ratings_qs.count()
-    matched_apartments = demo_apartments_qs.count()
 
     logger.info(
         "reset_demo_scope: dry_run=%s  demo_users=%d  demo_buildings=%d  "
         "demo_issues=%d  demo_posts=%d  demo_passes=%d  demo_ratings=%d  "
-        "demo_apartments=%d  pre_superusers=%d  pre_non_demo_users=%d",
+        "pre_superusers=%d  pre_non_demo_users=%d",
         dry_run, matched_users, matched_buildings,
         matched_issues, matched_posts, matched_passes, matched_ratings,
-        matched_apartments, pre_superusers, pre_non_demo_users,
+        pre_superusers, pre_non_demo_users,
     )
 
     if dry_run:
@@ -167,7 +164,6 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
             demo_posts_matched=matched_posts,
             demo_passes_matched=matched_passes,
             demo_ratings_matched=matched_ratings,
-            demo_apartments_matched=matched_apartments,
             superusers_preserved=pre_superusers,
             non_demo_users_preserved=pre_non_demo_users,
         )
@@ -183,7 +179,6 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         demo_passes_qs.delete()
         demo_posts_qs.delete()        # Replies cascade via Post.replies → Post
         demo_issues_qs.delete()       # Issue has its own table; no children
-        demo_apartments_qs.delete()
 
         # Django cascades handle User children: Profile (O2O CASCADE),
         # OrganizationMembership (FK CASCADE), TelegramProfile (O2O CASCADE),
@@ -225,7 +220,6 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         demo_posts_matched=matched_posts,
         demo_passes_matched=matched_passes,
         demo_ratings_matched=matched_ratings,
-        demo_apartments_matched=matched_apartments,
         superusers_preserved=pre_superusers,
         non_demo_users_preserved=pre_non_demo_users,
         orphan_tags_removed=orphan_tags_removed,

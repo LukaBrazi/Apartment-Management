@@ -3,7 +3,7 @@ import factory
 from django.contrib.auth import get_user_model
 from factory.django import DjangoModelFactory
 
-from apps.apartments.models import Apartment, Building, Entrance, Unit
+from apps.apartments.models import Building, Entrance, Unit
 
 User = get_user_model()
 
@@ -53,15 +53,6 @@ class UnitFactory(DjangoModelFactory):
     floor = factory.Sequence(lambda n: (n % 9) + 1)
 
 
-class ApartmentFactory(DjangoModelFactory):
-    class Meta:
-        model = Apartment
-
-    unit_number = factory.Sequence(lambda n: f"A{n:03d}")
-    building = factory.Sequence(lambda n: f"Block {n}")
-    floor = factory.Sequence(lambda n: (n % 9) + 1)
-
-
 class AnnouncementFactory(DjangoModelFactory):
     class Meta:
         model = "posts.Announcement"
@@ -81,26 +72,12 @@ class CategoryFactory(DjangoModelFactory):
 
 
 class IssueFactory(DjangoModelFactory):
-    """Legacy Apartment-anchored Issue factory.
+    """Unit-anchored Issue factory.
 
-    Kept until PR-7 drops the ``Apartment`` model.  New tests should
-    prefer :class:`UnitIssueFactory`, which creates Unit-anchored Issues
-    directly — the canonical link post-PR-2.
+    PR-7 dropped the legacy ``Apartment`` anchor; ``unit`` is now the
+    only location link on Issue.  ``UnitIssueFactory`` is retained as
+    an alias so existing test imports keep working.
     """
-
-    class Meta:
-        model = "issues.Issue"
-
-    apartment = factory.SubFactory(ApartmentFactory)
-    reported_by = factory.SubFactory(UserFactory)
-    title = factory.Sequence(lambda n: f"Issue {n}")
-    description = factory.Faker("text", max_nb_chars=200)
-    status = "reported"
-    priority = "low"
-
-
-class UnitIssueFactory(DjangoModelFactory):
-    """Unit-anchored Issue factory (PR-5 — no legacy Apartment needed)."""
 
     class Meta:
         model = "issues.Issue"
@@ -111,6 +88,12 @@ class UnitIssueFactory(DjangoModelFactory):
     description = factory.Faker("text", max_nb_chars=200)
     status = "reported"
     priority = "low"
+
+
+# Alias retained for legacy imports (PR-5 named ``UnitIssueFactory`` to
+# distinguish it from the legacy Apartment-anchored factory, which is
+# now gone).
+UnitIssueFactory = IssueFactory
 
 
 # ── News ──────────────────────────────────────────────────────────────────────

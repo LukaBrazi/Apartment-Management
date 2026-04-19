@@ -3,10 +3,10 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from apps.profiles.models import Profile
 from apps.tests.factories import (
     AdminUserFactory,
     AnnouncementFactory,
-    ApartmentFactory,
     BuildingFactory,
     EntranceFactory,
     UnitFactory,
@@ -15,11 +15,21 @@ from apps.tests.factories import (
 
 
 def make_tenant_in_building(building):
-    """Create a tenant user with a Unit linked to `building`."""
+    """Create a tenant user with Profile.unit linked to `building`.
+
+    PR-7: announcements scope tenants by ``Profile.unit`` exclusively.
+    """
     tenant = UserFactory()
-    apt = ApartmentFactory(tenant=tenant)
     entrance = EntranceFactory(building=building)
-    UnitFactory(entrance=entrance, number=apt.unit_number, apartment=apt)
+    unit = UnitFactory(entrance=entrance)
+    profile = Profile.objects.get(user=tenant)
+    profile.unit = unit
+    profile.save(update_fields=["unit"])
+    # Bust any cached reverse-OneToOne descriptor on ``tenant`` so that
+    # ``force_authenticate(user=tenant)`` in DRF sees the fresh profile
+    # (otherwise ``user.profile.unit`` still reads as ``None`` in the view).
+    if hasattr(tenant, "_state") and "profile" in getattr(tenant, "_state").fields_cache:
+        tenant._state.fields_cache.pop("profile", None)
     return tenant
 
 

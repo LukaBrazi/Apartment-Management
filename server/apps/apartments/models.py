@@ -1,11 +1,7 @@
 # Imports
 from apps.common.models import TimeStampedModel
-from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
-# Get the user model
-User = get_user_model()
 
 
 # ── Residential Complex (ЖК) ───────────────────────────────────────────────
@@ -115,15 +111,9 @@ class Unit(TimeStampedModel):
     )
     number = models.CharField(_("Unit Number"), max_length=20)
     floor = models.PositiveIntegerField(_("Floor"), null=True, blank=True)
-    # Backward-compat link to legacy Apartment (populated by data migration)
-    apartment = models.OneToOneField(
-        "apartments.Apartment",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="unit",
-        verbose_name=_("Legacy Apartment"),
-    )
+    # PR-7 dropped the ``Unit.apartment`` OneToOne bridge along with the
+    # legacy ``Apartment`` model — tenant ownership lives on
+    # ``Profile.unit`` now.
     organization = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.CASCADE,
@@ -148,53 +138,7 @@ class Unit(TimeStampedModel):
         super().save(*args, **kwargs)
 
 
-# ── Legacy Apartment Model (kept for backward compatibility) ────────────────
-
-class Apartment(TimeStampedModel):
-    """Apartment
-
-    Apartment class is used to represent an apartment in the database.
-
-    Extends:
-        TimeStampedModel
-
-    Attributes:
-        unit_number (str): The unit number of the apartment.
-        building (str): The building of the apartment.
-        floor (int): The floor of the apartment.
-        tenant (ForeignKey): The tenant of the apartment.
-
-    Methods:
-        __str__(): Return the string representation of the apartment.
-    """
-
-    # Attributes
-    unit_number = models.CharField(
-        max_length=10, verbose_name=_("Unit Number")
-    )
-    building = models.CharField(max_length=50, verbose_name=_("Building"))
-    floor = models.PositiveIntegerField(verbose_name=_("Floor"))
-    tenant = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="apartment",
-        verbose_name=_("Tenant"),
-    )
-
-    class Meta:
-        verbose_name = _("Apartment")
-        verbose_name_plural = _("Apartments")
-        unique_together = [("building", "unit_number")]
-
-    # String Representation
-    def __str__(self) -> str:
-        """Return the string representation of the apartment.
-
-        Returns:
-            str: The string representation of the apartment.
-        """
-
-        # Return the string representation
-        return f"Unit: {self.unit_number} - Building: {self.building} - Floor: {self.floor}"
+# PR-7 deleted the legacy ``Apartment`` model.  Its schema survives only
+# in migration history (``apartments.0001`` → ``0005``) for replay.  The
+# canonical chain is now ResidentialComplex → Building → Entrance → Unit,
+# with ``Profile.unit`` holding the tenant→unit link.

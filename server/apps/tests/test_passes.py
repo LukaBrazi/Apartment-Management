@@ -5,8 +5,8 @@ import pytest
 from rest_framework.test import APIClient
 
 from apps.passes.models import VehiclePass
+from apps.profiles.models import Profile
 from apps.tests.factories import (
-    ApartmentFactory,
     BuildingFactory,
     EntranceFactory,
     UnitFactory,
@@ -22,12 +22,18 @@ def _make_profile(user, occupation):
 
 
 def _make_tenant_with_unit():
+    """Create a tenant wired to a Unit via ``Profile.unit`` (PR-7 canonical)."""
     user = UserFactory()
     _make_profile(user, "tenant")
     building = BuildingFactory()
     entrance = EntranceFactory(building=building)
-    apartment = ApartmentFactory(tenant=user)
-    UnitFactory(entrance=entrance, apartment=apartment)
+    unit = UnitFactory(entrance=entrance)
+    profile = Profile.objects.get(user=user)
+    profile.unit = unit
+    profile.save(update_fields=["unit"])
+    # Bust any cached reverse OneToOne descriptor on the user
+    if hasattr(user, "_state") and "profile" in getattr(user, "_state").fields_cache:
+        user._state.fields_cache.pop("profile", None)
     return user, building
 
 
