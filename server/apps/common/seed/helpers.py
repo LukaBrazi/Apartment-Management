@@ -27,12 +27,25 @@ from faker import Faker
 
 # ───────────────────────────────── constants ──────────────────────────────────
 
-# Scope markers — these are the two strings that define "this is demo data".
+# Scope markers — these are the strings that define "this is demo data".
 # NEVER read from env: env overrides are the attack surface that lets a misconfigured
 # pod wipe production.  Renaming either constant requires updating the pin tests in
 # ``apps/tests/test_reset_demo_scope.py``.
 DEMO_EMAIL_DOMAIN = "@demo.com"
-DEMO_BUILDING_NAME = "Зелений Квартал — Демо"
+# PR-13 widens the demo scope to cover two buildings (the apartment block
+# and a single-unit cottage). The shared prefix is the canonical "demo"
+# namespace — ``reset_scope`` matches on ``name__startswith`` so both
+# buildings fall inside the reset filter without us having to hand-maintain
+# a growing tuple of exact names.
+DEMO_BUILDING_NAME_PREFIX = "Зелений Квартал — Демо"
+DEMO_BUILDING_NAME = DEMO_BUILDING_NAME_PREFIX            # apartment block
+DEMO_BUILDING_COTTAGE_NAME = (
+    f"{DEMO_BUILDING_NAME_PREFIX} · Котедж"  # PR-13: single-unit example
+)
+# Canonical demo ОСББ / Organization. Seeded with type=SINGLE_BUILDING
+# because the demo is one ЖК wrapped around one apartment block plus a
+# showcase cottage. ``is_demo=True`` on this row; reset deletes it.
+DEMO_ORGANIZATION_NAME = "ОСББ «Зелений Квартал — Демо»"
 
 # Kyiv timezone — product and clients live in UA, all timestamps must make sense
 # to a person reading the admin at 09:00 Kyiv.

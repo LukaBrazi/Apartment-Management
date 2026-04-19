@@ -131,6 +131,20 @@ class Organization(TimeStampedModel):
         default=True,
         db_index=True,
     )
+    # PR-13: demo-scope marker — defense-in-depth for ``seed_demo --reset``.
+    # The reset filter deletes ``is_demo=True`` organizations. An
+    # organization that a human operator created by hand stays safe as
+    # long as this flag is False — which is the default for every row
+    # created outside the seed module.
+    is_demo = models.BooleanField(
+        _("Demo Organization"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "Marks seed-created demo organizations. The nightly reset "
+            "only deletes organizations with is_demo=True."
+        ),
+    )
 
     # Meta Class
     class Meta:

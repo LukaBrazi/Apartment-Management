@@ -507,3 +507,115 @@ def test_seed_demo_command_allows_reset_with_explicit_opt_in():
             dry_run=True,
             passwords_from_env=False,
         )
+
+
+# ─────────────────────────── PR-13: cottage + org ────────────────────────────
+
+
+@pytest.mark.django_db
+def test_reset_matches_buildings_via_name_prefix(demo_users):
+    """The cottage building is inside the scope — prefix match covers both.
+
+    PR-13 switched from exact-name to ``name__startswith``; the two demo
+    buildings (apartment block + cottage) must both be matched and deleted.
+    """
+    apartment = Building.objects.create(
+        name=DEMO_BUILDING_NAME,
+        address="addr",
+        city="Київ",
+        is_active=True,
+        is_demo=True,
+    )
+    cottage = Building.objects.create(
+        name=DEMO_BUILDING_NAME + " · Котедж",
+        address="addr2",
+        city="Київ",
+        is_active=True,
+        is_demo=True,
+    )
+
+    report = reset_demo_scope()
+
+    assert report.demo_buildings_matched == 2
+    assert not Building.objects.filter(pk=apartment.pk).exists()
+    assert not Building.objects.filter(pk=cottage.pk).exists()
+
+
+@pytest.mark.django_db
+def test_reset_deletes_demo_organizations_and_preserves_real_ones():
+    """PR-13: ``is_demo=True`` orgs go; every other org is untouched."""
+    from apps.organizations.models import Organization, OrganizationType
+
+    # Explicit slugs — Django's default slugify strips non-ASCII, which
+    # collapses multiple Cyrillic-only names to the same empty slug and
+    # trips the UNIQUE constraint during the test setup.
+    demo_org = Organization.objects.create(
+        name="ОСББ «Зелений Квартал — Демо»",
+        slug="osbb-demo",
+        type=OrganizationType.SINGLE_BUILDING,
+        is_demo=True,
+    )
+    real_org = Organization.objects.create(
+        name="Реальна Управляюча Компанія",
+        slug="real-mgmt-co",
+        type=OrganizationType.MANAGEMENT_COMPANY,
+        is_demo=False,
+    )
+
+    report = reset_demo_scope()
+
+    assert report.demo_organizations_matched == 1
+    assert report.non_demo_organizations_preserved == 1
+    assert not Organization.objects.filter(pk=demo_org.pk).exists()
+    assert Organization.objects.filter(pk=real_org.pk).exists()
+
+
+@pytest.mark.django_db
+def test_reset_does_not_touch_org_with_demo_looking_name_but_flag_false():
+    """Name alone doesn't select an Organization — only the ``is_demo`` flag."""
+    from apps.organizations.models import Organization, OrganizationType
+
+    impostor = Organization.objects.create(
+        name="ОСББ «Зелений Квартал — Демо»",
+        slug="osbb-impostor",
+        type=OrganizationType.SINGLE_BUILDING,
+        is_demo=False,  # ← flag explicitly off
+    )
+
+    report = reset_demo_scope()
+
+    assert report.demo_organizations_matched == 0
+    assert Organization.objects.filter(pk=impostor.pk).exists()
+
+
+@pytest.mark.django_db
+def test_non_demo_organization_count_invariant_holds():
+    """Post-delete invariant: non-demo org count must be stable.
+
+    Mirrors the User / Building invariants that were there before.
+    """
+    from apps.organizations.models import Organization, OrganizationType
+
+    Organization.objects.create(
+        name="Справжня Компанія А",
+        slug="real-a",
+        type=OrganizationType.HOUSING_COMPLEX,
+        is_demo=False,
+    )
+    Organization.objects.create(
+        name="Справжня Компанія B",
+        slug="real-b",
+        type=OrganizationType.HOUSING_COMPLEX,
+        is_demo=False,
+    )
+    Organization.objects.create(
+        name="Демо Організація",
+        slug="demo-org",
+        type=OrganizationType.SINGLE_BUILDING,
+        is_demo=True,
+    )
+
+    report = reset_demo_scope()
+
+    assert report.non_demo_organizations_preserved == 2
+    assert Organization.objects.filter(is_demo=False).count() == 2
