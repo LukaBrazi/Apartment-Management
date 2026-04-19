@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>ApartmentOS — Mobile-First Concept</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: { DEFAULT: '#2F6FED', hover: '#2460D4', light: '#EEF3FD' },
+          saas: { bg: '#F7F8FA', card: '#FFFFFF', text: '#111827', muted: '#6B7280', border: '#E5E7EB' },
+          success: { DEFAULT: '#10B981', light: '#D1FAE5' },
+          warning: { DEFAULT: '#F59E0B', light: '#FEF3C7' },
+          danger:  { DEFAULT: '#EF4444', light: '#FEE2E2' },
+        },
+        fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+        boxShadow: { soft: '0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)' },
+      }
+    }
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { font-family: 'Inter', system-ui, sans-serif; }
+  .phone {
+    width: 375px;
+    height: 812px;
+    border-radius: 48px;
+    background: #fff;
+    box-shadow:
+      0 40px 80px -20px rgba(16,24,40,.25),
+      0 0 0 12px #1C2B3A,
+      0 0 0 14px #0F1923;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .phone .screen { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; background:#F7F8FA; }
+  .phone .screen::-webkit-scrollbar { display: none; }
+  .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 26px; background:#0F1923; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; z-index: 50; }
+  .status-bar { height: 44px; padding: 0 24px; display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:600; color:#0F1923; background: transparent; position: relative; z-index: 10; }
+  .tab-bar {
+    position: absolute; bottom:0; left:0; right:0;
+    height: 84px; padding: 8px 8px 28px;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid #E5E7EB;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    z-index: 30;
+  }
+  .tab-item { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:10px; font-weight:500; color:#6B7280; min-height:48px; }
+  .tab-item.active { color:#2F6FED; }
+  .tab-item svg { width:24px; height:24px; }
+  .scroll-content { padding-bottom: 100px; }
+  .fab {
+    position: absolute; right: 20px; bottom: 104px;
+    width: 56px; height: 56px; border-radius: 18px;
+    background: #2F6FED; color: #fff;
+    box-shadow: 0 8px 24px rgba(47,111,237,.4);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 25;
+  }
+  .badge-dot { width:8px; height:8px; border-radius:999px; background:#EF4444; position:absolute; top:4px; right:4px; }
+  .status-pill { display:inline-flex; align-items:center; gap:4px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .chip { padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .chip-active { background:#2F6FED; color:#fff; }
+  .chip-idle { background:#fff; color:#6B7280; border:1px solid #E5E7EB; }
+  .tap { min-height: 44px; min-width: 44px; }
+  .row-scroll { scrollbar-width: none; }
+  .row-scroll::-webkit-scrollbar { display:none; }
+</style>
+</head>
+<body class="bg-slate-100">
+
+<!-- HEADER INTRO -->
+<header class="max-w-6xl mx-auto px-6 pt-10 pb-6">
+  <div class="flex items-center gap-3 mb-2">
+    <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold">A</div>
+    <div>
+      <h1 class="text-2xl font-bold text-saas-text">ApartmentOS — Mobile-First Concept</h1>
+      <p class="text-sm text-saas-muted">Phase 1: App Shell + 5 основних екранів · 375px viewport · iPhone SE baseline</p>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-3 mt-5 text-sm">
+    <div class="bg-white rounded-xl p-4 shadow-soft border border-saas-border">
+      <div class="text-primary font-semibold mb-1">Bottom Tab Bar</div>
+      <p class="text-saas-muted">5 вкладок, тап-таргети ≥ 44px, safe-area inset, активний стан через primary color.</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-soft border border-saas-border">
+      <div class="text-primary font-semibold mb-1">Unified Tokens</div>
+      <p class="text-saas-muted">Тільки <code class="text-xs bg-saas-bg px-1 rounded">primary.*</code> + <code class="text-xs bg-saas-bg px-1 rounded">saas.*</code>. Nordic deprecated.</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-soft border border-saas-border">
+      <div class="text-primary font-semibold mb-1">Thumb Zone</div>
+      <p class="text-saas-muted">FAB + primary CTA у нижній третині. Навігація — виключно великим пальцем.</p>
+    </div>
+  </div>
+</header>
+
+<!-- PHONES ROW -->
+<section class="w-full overflow-x-auto row-scroll pb-16">
+  <div class="flex gap-12 px-12 min-w-max">
+
+    <!-- ============ SCREEN 1 — DASHBOARD ============ -->
+    <div class="flex flex-col items-center gap-3">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+
+          <div class="status-bar pt-5">
+            <span>9:41</span>
+            <div class="flex items-center gap-1">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="1" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="9" y="3" width="3" height="8" rx="1"/><rect x="13" y="1" width="3" height="10" rx="1"/></svg>
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="16" height="8" rx="2"/><rect x="2.5" y="3.5" width="13" height="5" fill="currentColor"/><rect x="18" y="5" width="1.5" height="2" rx=".5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="scroll-content px-5 pt-1">
+            <!-- App Header -->
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <div class="text-xs text-saas-muted">Доброго ранку 👋</div>
+                <div class="text-xl font-bold text-saas-text">Дмитро</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="tap relative w-11 h-11 rounded-xl bg-white border border-saas-border flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span class="badge-dot"></span>
+                </button>
+                <div class="tap w-11 h-11 rounded-xl bg-primary text-white font-semibold flex items-center justify-center">Д</div>
+              </div>
+            </div>
+
+            <!-- Hero Card: Next Pass -->
+            <div class="rounded-2xl bg-gradient-to-br from-primary to-primary-hover p-5 text-white shadow-soft mb-5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold opacity-90 uppercase tracking-wide">Активна перепустка</span>
+                <span class="status-pill bg-white/20 text-white">● Активна</span>
+              </div>
+              <div class="text-2xl font-bold mb-1">АА 1234 ВВ</div>
+              <div class="text-sm opacity-90 mb-4">Гість · Toyota Camry (сірий)</div>
+              <div class="flex items-center justify-between pt-3 border-t border-white/20">
+                <div>
+                  <div class="text-[11px] opacity-75">До</div>
+                  <div class="text-sm font-semibold">Сьогодні · 20:00</div>
+                </div>
+                <button class="tap px-4 py-2 rounded-xl bg-white text-primary text-sm font-semibold">Деталі</button>
+              </div>
+            </div>
+
+            <!-- Quick Actions Grid 2x2 -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+              <button class="tap bg-white rounded-2xl p-4 text-left shadow-soft border border-saas-border flex flex-col gap-2">
+                <div class="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V15c0 .55.45 1 1 1h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+                </div>
+                <div class="text-sm font-semibold text-saas-text">Нова перепустка</div>
+                <div class="text-xs text-saas-muted">Запросити гостя</div>
+              </button>
+              <button class="tap bg-white rounded-2xl p-4 text-left shadow-soft border border-saas-border flex flex-col gap-2">
+                <div class="w-10 h-10 rounded-xl bg-warning-light flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                </div>
+                <div class="text-sm font-semibold text-saas-text">Заявка</div>
+                <div class="text-xs text-saas-muted">Повідомити про проблему</div>
+              </button>
+              <button class="tap bg-white rounded-2xl p-4 text-left shadow-soft border border-saas-border flex flex-col gap-2">
+                <div class="w-10 h-10 rounded-xl bg-success-light flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div class="text-sm font-semibold text-saas-text">Оголошення</div>
+                <div class="text-xs text-saas-muted">3 нових</div>
+              </button>
+              <button class="tap bg-white rounded-2xl p-4 text-left shadow-soft border border-saas-border flex flex-col gap-2">
+                <div class="w-10 h-10 rounded-xl bg-danger-light flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                </div>
+                <div class="text-sm font-semibold text-saas-text">Оплати</div>
+                <div class="text-xs text-saas-muted">Комунальні</div>
+              </button>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-sm font-semibold text-saas-text">Остання активність</div>
+              <button class="text-xs font-semibold text-primary">Усе</button>
+            </div>
+            <div class="bg-white rounded-2xl border border-saas-border divide-y divide-saas-border shadow-soft">
+              <div class="p-4 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-success-light flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-saas-text">Перепустка закрита</div>
+                  <div class="text-xs text-saas-muted truncate">АА 5678 ВВ · 14:22</div>
+                </div>
+              </div>
+              <div class="p-4 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-primary-light flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-saas-text">Відповідь на заявку #142</div>
+                  <div class="text-xs text-saas-muted truncate">Диспетчер · 12:05</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab Bar -->
+          <nav class="tab-bar">
+            <div class="tab-item active">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
+              <span>Головна</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span>Заявки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V15c0 .55.45 1 1 1h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+              <span>Перепустки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Новини</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span>Профіль</span>
+            </div>
+          </nav>
+
+        </div>
+      </div>
+      <div class="text-xs font-semibold text-saas-muted">1 · Dashboard / Головна</div>
+    </div>
+
+    <!-- ============ SCREEN 2 — PASSES ============ -->
+    <div class="flex flex-col items-center gap-3">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+
+          <div class="status-bar pt-5">
+            <span>9:41</span>
+            <div class="flex items-center gap-1">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="1" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="9" y="3" width="3" height="8" rx="1"/><rect x="13" y="1" width="3" height="10" rx="1"/></svg>
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="16" height="8" rx="2"/><rect x="2.5" y="3.5" width="13" height="5" fill="currentColor"/><rect x="18" y="5" width="1.5" height="2" rx=".5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="scroll-content px-5 pt-1">
+            <div class="flex items-center justify-between mb-4">
+              <h1 class="text-2xl font-bold text-saas-text">Перепустки</h1>
+              <button class="tap w-11 h-11 rounded-xl bg-white border border-saas-border flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+            </div>
+
+            <!-- Filter chips, horizontal scroll -->
+            <div class="flex gap-2 mb-5 overflow-x-auto row-scroll -mx-5 px-5">
+              <button class="chip chip-active">Активні · 2</button>
+              <button class="chip chip-idle">Заплановані · 1</button>
+              <button class="chip chip-idle">Історія</button>
+              <button class="chip chip-idle">Усі</button>
+            </div>
+
+            <!-- Active pass hero -->
+            <div class="rounded-2xl bg-white border border-primary-light p-5 shadow-soft mb-4">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-2xl font-bold text-saas-text tracking-wide">АА 1234 ВВ</div>
+                  <div class="text-sm text-saas-muted mt-1">Toyota Camry · Сірий</div>
+                </div>
+                <span class="status-pill bg-success-light text-success">● Активна</span>
+              </div>
+              <div class="bg-saas-bg rounded-xl p-3 mb-3">
+                <div class="text-xs text-saas-muted mb-1">Гість</div>
+                <div class="text-sm font-semibold text-saas-text">Олексій Петренко</div>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <div class="text-saas-muted">Створено</div>
+                  <div class="font-semibold text-saas-text mt-0.5">Сьогодні · 09:15</div>
+                </div>
+                <div>
+                  <div class="text-saas-muted">Дійсна до</div>
+                  <div class="font-semibold text-saas-text mt-0.5">Сьогодні · 20:00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Other passes -->
+            <div class="bg-white rounded-2xl border border-saas-border divide-y divide-saas-border shadow-soft mb-4">
+              <div class="p-4 flex items-center gap-3 tap">
+                <div class="w-10 h-10 rounded-xl bg-success-light flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-saas-text">ВВ 9876 СТ</div>
+                  <div class="text-xs text-saas-muted">Курʼєр Нова Пошта · до 18:00</div>
+                </div>
+                <span class="status-pill bg-success-light text-success">Активна</span>
+              </div>
+              <div class="p-4 flex items-center gap-3 tap">
+                <div class="w-10 h-10 rounded-xl bg-warning-light flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-saas-text">КА 5500 ВО</div>
+                  <div class="text-xs text-saas-muted">Завтра · 10:00–14:00</div>
+                </div>
+                <span class="status-pill bg-warning-light text-warning">Очікує</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- FAB -->
+          <button class="fab">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+
+          <nav class="tab-bar">
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
+              <span>Головна</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              <span>Заявки</span>
+            </div>
+            <div class="tab-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V15c0 .55.45 1 1 1h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+              <span>Перепустки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Новини</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span>Профіль</span>
+            </div>
+          </nav>
+
+        </div>
+      </div>
+      <div class="text-xs font-semibold text-saas-muted">2 · Passes / Перепустки</div>
+    </div>
+
+    <!-- ============ SCREEN 3 — ISSUES ============ -->
+    <div class="flex flex-col items-center gap-3">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+
+          <div class="status-bar pt-5">
+            <span>9:41</span>
+            <div class="flex items-center gap-1">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="1" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="9" y="3" width="3" height="8" rx="1"/><rect x="13" y="1" width="3" height="10" rx="1"/></svg>
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="16" height="8" rx="2"/><rect x="2.5" y="3.5" width="13" height="5" fill="currentColor"/><rect x="18" y="5" width="1.5" height="2" rx=".5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="scroll-content px-5 pt-1">
+            <div class="flex items-center justify-between mb-4">
+              <h1 class="text-2xl font-bold text-saas-text">Мої заявки</h1>
+              <button class="tap w-11 h-11 rounded-xl bg-white border border-saas-border flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              </button>
+            </div>
+
+            <div class="flex gap-2 mb-5 overflow-x-auto row-scroll -mx-5 px-5">
+              <button class="chip chip-active">Відкриті · 3</button>
+              <button class="chip chip-idle">В роботі · 1</button>
+              <button class="chip chip-idle">Закриті</button>
+              <button class="chip chip-idle">Усі</button>
+            </div>
+
+            <!-- Issue card, prominent -->
+            <div class="bg-white rounded-2xl border border-saas-border p-4 shadow-soft mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-saas-muted">#148 · Ліфт</span>
+                <span class="status-pill bg-warning-light text-warning">В роботі</span>
+              </div>
+              <div class="text-base font-semibold text-saas-text mb-1">Не працює ліфт у 2-му під'їзді</div>
+              <div class="text-sm text-saas-muted mb-3 line-clamp-2">Застряг на 3-му поверсі, двері не відкриваються. Потрібно терміново.</div>
+              <div class="flex items-center justify-between pt-3 border-t border-saas-border">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center">МК</div>
+                  <div class="text-xs text-saas-muted">Майстер Коля</div>
+                </div>
+                <div class="text-xs text-saas-muted">2 год тому</div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-saas-border p-4 shadow-soft mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-saas-muted">#145 · Освітлення</span>
+                <span class="status-pill bg-primary-light text-primary">Відкрита</span>
+              </div>
+              <div class="text-base font-semibold text-saas-text mb-1">Перегоріла лампа в під'їзді</div>
+              <div class="text-sm text-saas-muted mb-3 line-clamp-2">1-й під'їзд, 4-й поверх — темно біля ліфта.</div>
+              <div class="flex items-center justify-between pt-3 border-t border-saas-border">
+                <div class="text-xs text-saas-muted">Створено вчора</div>
+                <button class="tap text-xs font-semibold text-primary">Деталі →</button>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-saas-border p-4 shadow-soft mb-3 opacity-75">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-saas-muted">#139 · Прибирання</span>
+                <span class="status-pill bg-success-light text-success">Закрита ✓</span>
+              </div>
+              <div class="text-base font-semibold text-saas-text mb-1">Сміття біля контейнерів</div>
+              <div class="text-xs text-saas-muted">Закрито 2 дні тому</div>
+            </div>
+          </div>
+
+          <button class="fab">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+
+          <nav class="tab-bar">
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
+              <span>Головна</span>
+            </div>
+            <div class="tab-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span>Заявки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V15c0 .55.45 1 1 1h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+              <span>Перепустки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Новини</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span>Профіль</span>
+            </div>
+          </nav>
+
+        </div>
+      </div>
+      <div class="text-xs font-semibold text-saas-muted">3 · Issues / Заявки</div>
+    </div>
+
+    <!-- ============ SCREEN 4 — NEWS ============ -->
+    <div class="flex flex-col items-center gap-3">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+
+          <div class="status-bar pt-5">
+            <span>9:41</span>
+            <div class="flex items-center gap-1">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="1" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="9" y="3" width="3" height="8" rx="1"/><rect x="13" y="1" width="3" height="10" rx="1"/></svg>
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="16" height="8" rx="2"/><rect x="2.5" y="3.5" width="13" height="5" fill="currentColor"/><rect x="18" y="5" width="1.5" height="2" rx=".5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="scroll-content px-5 pt-1">
+            <div class="flex items-center justify-between mb-4">
+              <h1 class="text-2xl font-bold text-saas-text">Новини</h1>
+              <button class="tap w-11 h-11 rounded-xl bg-white border border-saas-border flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+            </div>
+
+            <div class="flex gap-2 mb-5 overflow-x-auto row-scroll -mx-5 px-5">
+              <button class="chip chip-active">Усі</button>
+              <button class="chip chip-idle">Оголошення</button>
+              <button class="chip chip-idle">Події</button>
+              <button class="chip chip-idle">Сусіди</button>
+            </div>
+
+            <!-- Pinned announcement -->
+            <div class="rounded-2xl bg-primary-light border border-primary/20 p-4 mb-4">
+              <div class="flex items-center gap-2 text-xs font-semibold text-primary mb-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l-5.5 9h11L12 2zM5.5 22h13l-2-4h-9l-2 4z"/></svg>
+                ЗАКРІПЛЕНО · ОСББ
+              </div>
+              <div class="text-base font-semibold text-saas-text mb-1">Планове відключення води</div>
+              <div class="text-sm text-saas-muted">Завтра з 10:00 до 14:00. Просимо набрати воду заздалегідь.</div>
+              <div class="text-xs text-primary font-semibold mt-3">2 год тому</div>
+            </div>
+
+            <!-- Feed cards -->
+            <div class="bg-white rounded-2xl border border-saas-border shadow-soft mb-3 overflow-hidden">
+              <div class="h-40 bg-gradient-to-br from-primary/70 to-primary/30 flex items-center justify-center text-white text-4xl">🎄</div>
+              <div class="p-4">
+                <div class="text-xs font-semibold text-saas-muted mb-1">ПОДІЯ · 22 квітня</div>
+                <div class="text-base font-semibold text-saas-text mb-2">Суботник у дворі</div>
+                <div class="text-sm text-saas-muted line-clamp-2">Запрошуємо сусідів на весняне прибирання території. Інвентар забезпечено.</div>
+                <div class="flex items-center gap-4 mt-3 pt-3 border-t border-saas-border text-xs text-saas-muted">
+                  <span class="flex items-center gap-1">❤️ 24</span>
+                  <span class="flex items-center gap-1">💬 8</span>
+                  <span class="ml-auto">Учора</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-saas-border shadow-soft mb-3 p-4">
+              <div class="text-xs font-semibold text-saas-muted mb-1">ДИСПЕТЧЕР</div>
+              <div class="text-base font-semibold text-saas-text mb-1">Нові правила в'їзду</div>
+              <div class="text-sm text-saas-muted line-clamp-2">З 1 травня всі перепустки оформлюються тільки через додаток.</div>
+              <div class="text-xs text-saas-muted mt-2">3 дні тому</div>
+            </div>
+          </div>
+
+          <nav class="tab-bar">
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
+              <span>Головна</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              <span>Заявки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V15c0 .55.45 1 1 1h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+              <span>Перепустки</span>
+            </div>
+            <div class="tab-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Новини</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span>Профіль</span>
+            </div>
+          </nav>
+
+        </div>
+      </div>
+      <div class="text-xs font-semibold text-saas-muted">4 · News / Новини</div>
+    </div>
+
+    <!-- ============ SCREEN 5 — PROFILE ============ -->
+    <div class="flex flex-col items-center gap-3">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+
+          <div class="status-bar pt-5">
+            <span>9:41</span>
+            <div class="flex items-center gap-1">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="1" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="9" y="3" width="3" height="8" rx="1"/><rect x="13" y="1" width="3" height="10" rx="1"/></svg>
+              <svg width="20" height="12" viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="16" height="8" rx="2"/><rect x="2.5" y="3.5" width="13" height="5" fill="currentColor"/><rect x="18" y="5" width="1.5" height="2" rx=".5" fill="currentColor"/></svg>
+            </div>
+          </div>
+
+          <div class="scroll-content px-5 pt-1">
+            <div class="flex items-center justify-between mb-5">
+              <h1 class="text-2xl font-bold text-saas-text">Профіль</h1>
+              <button class="tap w-11 h-11 rounded-xl bg-white border border-saas-border flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+            </div>
+
+            <!-- User card -->
+            <div class="bg-white rounded-2xl border border-saas-border p-5 shadow-soft mb-5 flex items-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-white text-xl font-bold flex items-center justify-center">Д</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-base font-bold text-saas-text">Дмитро Андрієнко</div>
+                <div class="text-sm text-saas-muted truncate">dmitry@apartmentos.org</div>
+                <div class="mt-2">
+                  <span class="status-pill bg-primary-light text-primary">Мешканець</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Apartment card -->
+            <div class="bg-white rounded-2xl border border-saas-border p-4 shadow-soft mb-5">
+              <div class="text-xs font-semibold text-saas-muted uppercase tracking-wide mb-3">Моя квартира</div>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-semibold text-saas-text">Зелений Квартал</div>
+                  <div class="text-xs text-saas-muted">Під'їзд А · Кв. 105 · 1 поверх</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Settings list -->
+            <div class="bg-white rounded-2xl border border-saas-border divide-y divide-saas-border shadow-soft mb-5">
+              <button class="tap w-full p-4 flex items-center gap-3 text-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+                <span class="flex-1 text-sm font-medium text-saas-text">Сповіщення</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="tap w-full p-4 flex items-center gap-3 text-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span class="flex-1 text-sm font-medium text-saas-text">Безпека</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="tap w-full p-4 flex items-center gap-3 text-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span class="flex-1 text-sm font-medium text-saas-text">Мова</span>
+                <span class="text-xs text-saas-muted">Українська</span>
+              </button>
+              <button class="tap w-full p-4 flex items-center gap-3 text-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span class="flex-1 text-sm font-medium text-saas-text">Допомога</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <button class="tap w-full py-4 rounded-2xl bg-white border border-saas-border text-danger font-semibold shadow-soft">Вийти</button>
+          </div>
+
+          <nav class="tab-bar">
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
+              <span>Головна</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              <span>Заявки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V15c0 .55.45 1 1 1h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+              <span>Перепустки</span>
+            </div>
+            <div class="tab-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span>Новини</span>
+            </div>
+            <div class="tab-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              <span>Профіль</span>
+            </div>
+          </nav>
+
+        </div>
+      </div>
+      <div class="text-xs font-semibold text-saas-muted">5 · Profile / Профіль</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER NOTES -->
+<footer class="max-w-6xl mx-auto px-6 pb-16">
+  <div class="bg-white rounded-2xl border border-saas-border shadow-soft p-6">
+    <h2 class="text-lg font-bold text-saas-text mb-3">Design Decisions · Phase 1 Scope</h2>
+    <div class="grid md:grid-cols-2 gap-4 text-sm text-saas-text">
+      <div>
+        <div class="font-semibold mb-1">Bottom tab bar замість RightNavbar</div>
+        <p class="text-saas-muted">На мобілі RightNavbar з <code class="text-xs bg-saas-bg px-1 rounded">min-w-[260px]</code> зникає. Desktop зберігає sidebar через <code class="text-xs bg-saas-bg px-1 rounded">md:</code> breakpoint.</p>
+      </div>
+      <div>
+        <div class="font-semibold mb-1">FAB для primary action</div>
+        <p class="text-saas-muted">"+" у thumb zone. Passes / Issues мають FAB; Dashboard / News / Profile — ні.</p>
+      </div>
+      <div>
+        <div class="font-semibold mb-1">44×44 touch targets</div>
+        <p class="text-saas-muted">Усі інтерактивні елементи мають <code class="text-xs bg-saas-bg px-1 rounded">.tap</code> class. WCAG 2.5.5.</p>
+      </div>
+      <div>
+        <div class="font-semibold mb-1">Уніфіковані токени</div>
+        <p class="text-saas-muted">Тільки <code class="text-xs bg-saas-bg px-1 rounded">primary.*</code>, <code class="text-xs bg-saas-bg px-1 rounded">saas.*</code>, <code class="text-xs bg-saas-bg px-1 rounded">success/warning/danger</code>. <code class="text-xs bg-saas-bg px-1 rounded">nordic.*</code> — deprecated.</p>
+      </div>
+      <div>
+        <div class="font-semibold mb-1">Safe-area inset</div>
+        <p class="text-saas-muted">Tab bar має <code class="text-xs bg-saas-bg px-1 rounded">padding-bottom: env(safe-area-inset-bottom)</code> для iPhone notch.</p>
+      </div>
+      <div>
+        <div class="font-semibold mb-1">Role-aware shell</div>
+        <p class="text-saas-muted">Tenant бачить 5 tabs. Guard / Dispatcher — інший набір (буде в Phase 2). Admin залишається desktop-only.</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
