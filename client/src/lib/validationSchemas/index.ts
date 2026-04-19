@@ -10,8 +10,8 @@ export type { TPasswordResetRequestSchema } from "./PasswordResetRequestSchema";
 export { profileSchema } from "./ProfileSchema";
 export type { TProfileSchema } from "./ProfileSchema";
 
-export type { TApartmentCreateSchema } from "./ApartmentCreateSchema";
-export { apartmentCreateSchema } from "./ApartmentCreateSchema";
+// PR-4: apartmentCreateSchema removed together with the self-serve
+// "Add apartment" form — Unit membership is now admin-managed.
 
 export type { TIssueUpdateSchema } from "./IssueUpdateSchema";
 export { issueUpdateSchema } from "./IssueUpdateSchema";

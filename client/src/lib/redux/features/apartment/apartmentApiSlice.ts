@@ -1,26 +1,18 @@
-import { ApartmentData, ApartmentResponse, BuildingsResponse, EntrancesResponse, UnitsResponse } from "@/types";
+import { BuildingsResponse, EntrancesResponse, UnitsResponse } from "@/types";
 import { baseApiSlice } from "../api/baseApiSlice";
 
+/**
+ * Building/Entrance/Unit lookups for location pickers.
+ *
+ * PR-4: the tenant-facing "create apartment" mutation and the
+ * "get-my-apartment" reader were removed — Unit membership is
+ * admin-managed and canonical Unit data flows via the Profile
+ * endpoint.  The remaining queries survive PR-6 because they're
+ * used by staff-side forms (location picker, Units-by-Building
+ * admin table).
+ */
 export const apartmentApiSlice = baseApiSlice.injectEndpoints({
 	endpoints: (builder) => ({
-		createApartment: builder.mutation<ApartmentResponse, ApartmentData>({
-			query: (formData) => ({
-				url: "/apartments/add/",
-				method: "POST",
-				body: formData,
-			}),
-			invalidatesTags: ["Apartment", "User"],
-		}),
-
-		getMyApartment: builder.query<ApartmentResponse, void>({
-			query: () => "/apartments/my-apartment/",
-			// Backend returns { apartment: {...} } (singular object).
-			transformResponse: (response: any): ApartmentResponse => {
-				return { apartment: response?.apartment ?? null };
-			},
-			providesTags: ["Apartment"],
-		}),
-
 		getBuildings: builder.query<BuildingsResponse, void>({
 			query: () => "/apartments/buildings/",
 			providesTags: ["Apartment"],
@@ -39,8 +31,6 @@ export const apartmentApiSlice = baseApiSlice.injectEndpoints({
 });
 
 export const {
-	useCreateApartmentMutation,
-	useGetMyApartmentQuery,
 	useGetBuildingsQuery,
 	useGetEntrancesQuery,
 	useGetUnitsByBuildingQuery,

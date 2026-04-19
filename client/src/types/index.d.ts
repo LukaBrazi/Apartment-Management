@@ -230,8 +230,14 @@ export interface IssueData {
 	location_note?: string;
 }
 
+/**
+ * PR-4: Issue reporting is Unit-scoped now.  The backend resolves the
+ * Unit from ``request.user.profile.unit`` by default, so no identifier
+ * is required in the payload.  ``unitId`` is forwarded only when the
+ * reporter is a dispatcher acting on a foreign Unit.
+ */
 export interface ReportIssueData extends IssueData {
-	apartmentId: string;
+	unitId?: string;
 }
 
 export interface Issue {
@@ -289,12 +295,18 @@ export interface MyAssignedIssuesResponse {
 		results: Issue[];
 	};
 }
+/**
+ * @deprecated PR-4: no frontend caller uses these since the
+ * ``createApartment`` mutation and ``getMyApartment`` query were
+ * removed.  Kept as a type-only stub until PR-6 cleanup drops them.
+ */
 export interface ApartmentData {
 	unit_number: string;
 	building: string;
 	floor: number;
 }
 
+/** @deprecated PR-4 — see ``ApartmentData``. */
 export interface ApartmentResponse {
 	apartment: {
 		id: string;
@@ -380,17 +392,22 @@ export interface Profile {
 	date_joined: string;
 	avatar?: string;
 	average_rating: number;
-	apartment: {
+	/**
+	 * PR-3/PR-4: ``unit_*`` / ``building_*`` are the canonical fields.
+	 * ``apartment`` is kept as an optional back-compat shim for callers
+	 * still reading from the legacy JSON; it will be dropped in PR-7.
+	 */
+	unit_id?: string | null;
+	unit_number?: string | null;
+	building_name?: string | null;
+	building_id?: string | null;
+	apartment?: {
 		id: string;
 		created_at: string;
 		unit_number: string;
 		building: string;
 		floor: number;
 	} | null;
-	unit_id?: string | null;
-	unit_number?: string | null;
-	building_name?: string | null;
-	building_id?: string | null;
 }
 
 export interface ProfilesResponse {

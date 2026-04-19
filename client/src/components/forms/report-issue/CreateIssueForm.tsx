@@ -3,8 +3,8 @@
 import {
 	useGetBuildingsQuery,
 	useGetEntrancesQuery,
-	useGetMyApartmentQuery,
 } from "@/lib/redux/features/apartment/apartmentApiSlice";
+import { useGetUserProfileQuery } from "@/lib/redux/features/users/usersApiSlice";
 import { useReportIssueMutation } from "@/lib/redux/features/issues/issueApiSlice";
 import { issueCreateSchema, TIssueCreateSchema } from "@/lib/validationSchemas";
 import { extractErrorMessage } from "@/utils";
@@ -27,8 +27,11 @@ const ClientOnly = dynamic<{ children: React.ReactNode }>(
 );
 
 export default function CreateIssueForm() {
-	const { data } = useGetMyApartmentQuery();
-	const apartment = data?.apartment;
+	// PR-4: the reporter's Unit is read from their Profile.  Backend
+	// derives the target Unit from ``profile.unit`` when no id is sent.
+	const { data: profileData } = useGetUserProfileQuery();
+	const profile = profileData?.profile;
+	const hasUnit = Boolean(profile?.unit_id);
 
 	const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 	const [notBuildingRelated, setNotBuildingRelated] = useState(false);
@@ -67,15 +70,16 @@ export default function CreateIssueForm() {
 		})) ?? [];
 
 	const onSubmit = async (formValues: TIssueCreateSchema) => {
-		if (!apartment?.id) {
+		if (!hasUnit) {
 			toast.error(
-				"Спочатку додайте квартиру у профілі, перед тим як подавати заявку",
+				"До вашого профілю не прив'язано квартиру. Зверніться до адміністратора.",
 			);
 			return;
 		}
 
 		try {
-			await reportIssue({ ...formValues, apartmentId: apartment.id }).unwrap();
+			// Backend resolves the Unit from request.user.profile.unit.
+			await reportIssue(formValues).unwrap();
 			toast.success("Заявку подано. Підтвердження надіслано на вашу пошту.");
 			reset();
 			setSelectedBuildingId(null);

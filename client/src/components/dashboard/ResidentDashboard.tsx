@@ -38,9 +38,9 @@ export default function ResidentDashboard() {
 
 	const buildingName =
 		(issues[0] as any)?.building_name ??
-		profile?.apartment?.building ??
+		profile?.building_name ??
 		"—";
-	const unitNumber = profile?.apartment?.unit_number ?? "—";
+	const unitNumber = profile?.unit_number ?? "—";
 	const firstName = profile?.first_name ?? "";
 
 	const previewIssues = issues.slice(0, 5);

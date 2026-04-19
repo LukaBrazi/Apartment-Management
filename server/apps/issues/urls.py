@@ -16,11 +16,19 @@ urlpatterns = [
     path("", IssueListAPIView.as_view(), name="list-issues"),
     path("assigned/", AssignedIssuesListAPIView.as_view(), name="list-assigned-issues"),
     path("my-issues/", MyIssuesListAPIView.as_view(), name="list-my-issues"),
+    # PR-4: default path — resolves unit from request.user.profile.unit.
+    path("create/", IssueCreateAPIView.as_view(), name="create-issue-default"),
+    # Explicit Unit targeting (used by dispatchers reporting for a foreign unit).
     path(
-        "create/<uuid:apartment_id>/", IssueCreateAPIView.as_view(), name="create-issue"
+        "create/unit/<uuid:unit_id>/",
+        IssueCreateAPIView.as_view(),
+        name="create-issue-by-unit",
     ),
+    # Legacy Apartment-based path — retained for one release, removed in PR-6.
     path(
-        "create/unit/<int:unit_id>/", IssueCreateAPIView.as_view(), name="create-issue-by-unit"
+        "create/<uuid:apartment_id>/",
+        IssueCreateAPIView.as_view(),
+        name="create-issue",
     ),
     path("<uuid:id>/", IssueDetailAPIView.as_view(), name="detail-issue"),
     path("update/<uuid:id>/", IssueUpdateAPIView.as_view(), name="update-issue"),

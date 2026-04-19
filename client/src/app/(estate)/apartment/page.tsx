@@ -1,26 +1,10 @@
-import ApartmentCreateForm from "@/components/forms/apartment/ApartmentCreateForm";
-import { AuthFormHeader } from "@/components/forms/auth";
-import type { Metadata } from "next";
+/**
+ * PR-4: the self-serve "Add apartment" page is gone.  Unit membership
+ * is admin-managed now, so this route no longer makes sense.  The file
+ * is kept as a 404 stub until the deletion lands alongside PR-6 cleanup.
+ */
+import { notFound } from "next/navigation";
 
-export const metadata: Metadata = {
-	title: "ApartmentOS | Додати квартиру",
-	description: "Авторизовані користувачі можуть додати дані своєї квартири",
-};
-
-export default function AddApartmentPage() {
-	return (
-		<div>
-			<AuthFormHeader
-				title="Додати квартиру"
-				staticText="Хочете повернутись?"
-				linkText="До профілю"
-				linkHref="/profile"
-			/>
-			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">
-				<div className="bg-lightGrey dark:bg-deepBlueGrey rounded-xl px-6 py-12 shadow sm:rounded-lg sm:px-12 md:rounded-3xl">
-					<ApartmentCreateForm />
-				</div>
-			</div>
-		</div>
-	);
+export default function DeprecatedAddApartmentPage() {
+	notFound();
 }

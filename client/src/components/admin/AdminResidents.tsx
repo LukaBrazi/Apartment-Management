@@ -69,12 +69,13 @@ export default function AdminResidents() {
 			),
 		},
 		{
-			accessorKey: "apartment",
+			// PR-4: unit/building come straight off the Profile payload.
+			accessorKey: "unit_number",
 			header: "Квартира",
 			cell: ({ row }) =>
-				row.original.apartment ? (
+				row.original.unit_number ? (
 					<span className="text-sm">
-						{row.original.apartment.building} / кв. {row.original.apartment.unit_number}
+						{row.original.building_name ?? "—"} / кв. {row.original.unit_number}
 					</span>
 				) : (
 					<span className="text-xs text-[#6B7F8C]">—</span>

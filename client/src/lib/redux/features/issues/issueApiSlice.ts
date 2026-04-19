@@ -11,8 +11,10 @@ import { baseApiSlice } from "../api/baseApiSlice";
 export const issueApiSlice = baseApiSlice.injectEndpoints({
 	endpoints: (builder) => ({
 		reportIssue: builder.mutation<IssueResponse, ReportIssueData>({
-			query: ({ apartmentId, ...issueData }) => ({
-				url: `/issues/create/${apartmentId}/`,
+			// PR-4: default to the Unit on the reporter's profile; when a
+			// dispatcher passes ``unitId`` we target that Unit explicitly.
+			query: ({ unitId, ...issueData }) => ({
+				url: unitId ? `/issues/create/unit/${unitId}/` : "/issues/create/",
 				method: "POST",
 				body: issueData,
 			}),

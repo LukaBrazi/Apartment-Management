@@ -75,16 +75,16 @@ function TenantRow({ tenant }: { tenant: Profile }) {
 				{tenant.country_of_origin || "—"}
 			</td>
 
-			{/* Unit */}
+			{/* Unit — PR-4: read from canonical profile.unit_* fields. */}
 			<td className="hidden px-4 py-3 text-sm text-[--text-muted] lg:table-cell">
-				{tenant.apartment ? (
+				{tenant.unit_number ? (
 					<span>
 						<span className="font-medium text-[--text-primary]">
-							кв.&nbsp;{tenant.apartment.unit_number}
+							кв.&nbsp;{tenant.unit_number}
 						</span>
-						{tenant.apartment.building && (
+						{tenant.building_name && (
 							<span className="ml-1 text-xs text-[--text-muted]">
-								· {tenant.apartment.building}
+								· {tenant.building_name}
 							</span>
 						)}
 					</span>

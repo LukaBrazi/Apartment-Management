@@ -225,7 +225,14 @@ class IssueCreateAPIView(generics.CreateAPIView):
 
     # Method to create an issue
     def perform_create(self, serializer: IssueCreateSerializer) -> None:
-        """Create an issue. Supports both apartment_id (legacy) and unit_id."""
+        """Create an issue.
+
+        Resolution order (PR-4):
+        1. explicit ``unit_id`` in URL (dispatcher path) — must be own Unit
+           unless staff.
+        2. default — ``request.user.profile.unit`` (tenant self-service).
+        3. legacy ``apartment_id`` in URL — still honored, removed in PR-6.
+        """
 
         apartment_id = self.kwargs.get("apartment_id")
         unit_id = self.kwargs.get("unit_id")
@@ -235,34 +242,40 @@ class IssueCreateAPIView(generics.CreateAPIView):
         apartment = None
 
         if unit_id:
-            # New path: create via Unit — tenant must own this unit
+            # Explicit Unit targeting.
             try:
-                unit = Unit.objects.get(pk=unit_id)
+                unit = Unit.objects.get(id=unit_id)
             except Unit.DoesNotExist:
                 raise PermissionDenied("Unit not found.")
-            # Permission: user must be tenant of the linked apartment
             if not (user.is_staff or user.is_superuser):
-                if not unit.apartment or unit.apartment.tenant != user:
+                profile_unit = getattr(getattr(user, "profile", None), "unit", None)
+                if profile_unit is None or profile_unit.pk != unit.pk:
                     raise PermissionDenied(
                         "You can only report issues for your own unit."
                     )
             apartment = unit.apartment
 
         elif apartment_id:
-            # Legacy path: create via Apartment
-            if not apartment_id:
-                raise ValidationError({"apartment_id": ["Apartment ID is required."]})
+            # Legacy path: create via Apartment. Removed in PR-6.
             try:
                 apartment = Apartment.objects.get(id=apartment_id, tenant=user)
             except Apartment.DoesNotExist:
                 raise PermissionDenied(
                     "You do not have permission to report issues for this apartment."
                 )
-            # Resolve unit from apartment if linked
             unit = getattr(apartment, "unit", None)
 
         else:
-            raise ValidationError({"detail": "Provide apartment_id or unit_id."})
+            # Default: derive Unit from the reporter's profile.
+            unit = getattr(getattr(user, "profile", None), "unit", None)
+            if unit is None:
+                raise ValidationError({
+                    "detail": (
+                        "Your profile has no unit assigned. "
+                        "Contact an administrator."
+                    )
+                })
+            apartment = unit.apartment
 
         issue = serializer.save(
             reported_by=user,
