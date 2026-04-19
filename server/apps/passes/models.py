@@ -81,11 +81,22 @@ class VehiclePass(TimeStampedModel):
         # with no fallback — a pass saved without an ``organization`` is
         # invisible to every non-superuser, including its own tenant.
         #
-        # A ``Unit`` always belongs to exactly one ``Organization`` (see
-        # ``Unit.save`` — org is auto-derived from the building on first
-        # save), so when the caller supplies a unit but forgets the org
-        # we can derive it unambiguously.  Callers that explicitly set
-        # ``organization`` are never overwritten.
+        # The location graph is ``Unit → Entrance → Building → Organization``
+        # and all three location levels carry their own ``organization`` FK
+        # (auto-derived from the building on save). On pristine seeds all
+        # three agree, but on databases seeded BEFORE the FK existed the
+        # backfill only reached Building/Entrance — older Unit rows still
+        # carry NULL. Walk up the chain so we end up with a scoped pass
+        # even in that case. Callers that explicitly set ``organization``
+        # are never overwritten.
         if not self.organization_id and self.unit_id:
-            self.organization_id = self.unit.organization_id
+            org_id = self.unit.organization_id
+            if not org_id and self.unit.entrance_id:
+                entrance = self.unit.entrance
+                org_id = entrance.organization_id or (
+                    entrance.building.organization_id
+                    if entrance.building_id
+                    else None
+                )
+            self.organization_id = org_id
         super().save(*args, **kwargs)

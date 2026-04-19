@@ -250,6 +250,17 @@ def seed(*, organization_result: "OrganizationSeedResult | None" = None) -> Buil
                 if unit.floor != floor:
                     unit.floor = floor
                     unit_dirty.append("floor")
+                # Backfill organization on pre-existing units — matches
+                # the same defensive pattern as Building/Entrance above.
+                # Unit.save() auto-derives from entrance for fresh rows,
+                # but rows that existed BEFORE the FK landed slipped
+                # through with NULL and need to be rehydrated explicitly.
+                if (
+                    organization is not None
+                    and unit.organization_id != organization.pk
+                ):
+                    unit.organization = organization
+                    unit_dirty.append("organization")
                 if unit_dirty:
                     unit.save(update_fields=unit_dirty)
                 result.units_by_key[(entrance_name, number)] = unit
@@ -315,6 +326,12 @@ def seed(*, organization_result: "OrganizationSeedResult | None" = None) -> Buil
     if cottage_unit.floor != 1:
         cottage_unit.floor = 1
         unit_dirty.append("floor")
+    if (
+        organization is not None
+        and cottage_unit.organization_id != organization.pk
+    ):
+        cottage_unit.organization = organization
+        unit_dirty.append("organization")
     if unit_dirty:
         cottage_unit.save(update_fields=unit_dirty)
 

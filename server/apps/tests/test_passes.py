@@ -177,6 +177,35 @@ class TestVehiclePassCreate:
         vp.refresh_from_db()
         assert vp.organization_id == org.pkid
 
+    def test_pass_save_walks_up_to_building_when_unit_org_is_null(self):
+        """Reproduces the prod scenario that the previous fix missed:
+        an older Unit row with ``organization=NULL`` but whose parent
+        Building carries the correct org.  Happens on any database
+        seeded BEFORE the FK existed — ``Unit.save`` only auto-derives
+        on first save, not retrospectively.  ``VehiclePass.save`` must
+        walk up Unit → Entrance → Building rather than trust Unit alone.
+        """
+        from apps.apartments.models import Unit
+
+        org = _make_org()
+        building = BuildingFactory(organization=org)
+        entrance = EntranceFactory(building=building)
+        unit = UnitFactory(entrance=entrance)
+        # Simulate the legacy data state: clear the auto-derived FKs
+        # to emulate rows that predate the organization FK rollout.
+        Unit.objects.filter(pk=unit.pk).update(organization=None)
+        unit.refresh_from_db()
+        assert unit.organization_id is None
+
+        tenant = UserFactory()
+        vp = VehiclePass.objects.create(
+            tenant=tenant, unit=unit, visit_date=datetime.date.today()
+        )
+        vp.refresh_from_db()
+        assert vp.organization_id == org.pkid, (
+            "save() must walk Unit→Entrance→Building to find the org"
+        )
+
 
 @pytest.mark.django_db
 class TestVehiclePassList:

@@ -33,14 +33,23 @@ class VehiclePassCreateSerializer(serializers.ModelSerializer):
         # Strict multi-tenant scoping: the pass MUST carry an organization
         # or the tenant's own ``/passes/my/`` list (filtered on
         # ``organization__in=get_user_organizations(user)``) will never
-        # return it.  A Unit always belongs to exactly one Organization
-        # (see ``Unit.save`` — org is auto-derived from the building), so
-        # ``unit.organization`` is the authoritative source of truth here.
-        # Only fall back to the membership lookup when the tenant has no
-        # unit at all (``new1/new2@demo.com`` — "awaiting assignment").
+        # return it.  Walk the location graph to find one — ``Unit ``,
+        # ``Entrance`` and ``Building`` each carry their own FK (see
+        # ``Unit.save`` / ``Entrance.save``). On pristine seeds all three
+        # agree, but databases seeded BEFORE the FK existed may have the
+        # backfill only on Building/Entrance while older Unit rows still
+        # carry NULL — so we try each level. Only fall back to the
+        # membership lookup when there's no unit at all
+        # (``new1/new2@demo.com`` — "awaiting assignment").
         organization = validated_data.pop("organization", None)
         if organization is None and unit is not None:
             organization = unit.organization
+            if organization is None and unit.entrance_id:
+                organization = unit.entrance.organization or (
+                    unit.entrance.building.organization
+                    if unit.entrance.building_id
+                    else None
+                )
         if organization is None:
             from apps.organizations.utils import get_user_primary_organization
             organization = get_user_primary_organization(user)
