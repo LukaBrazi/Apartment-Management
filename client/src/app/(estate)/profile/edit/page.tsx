@@ -8,11 +8,14 @@ export const metadata: Metadata = {
 };
 
 export default function EditProfilePage() {
+	// Mobile-first: migrated from legacy `bg-lightGrey` / `bg-deepBlueGrey`
+	// Nordic tokens to unified SaaS surface; padding tightened on phones
+	// (p-5) and restored to the original airy desktop layout at sm+.
 	return (
 		<div>
 			<AuthFormHeader title="Update Profile" />
-			<div className="mt-7 sm:mx-auto sm:w-full sm:max-w-[480px]">
-				<div className="bg-lightGrey dark:bg-deepBlueGrey rounded-xl px-6 py-12 shadow sm:rounded-lg sm:px-12 md:rounded-3xl">
+			<div className="mt-6 sm:mx-auto sm:mt-7 sm:w-full sm:max-w-[480px]">
+				<div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm sm:rounded-lg sm:px-12 sm:py-12 md:rounded-3xl dark:border-[#2D3D4F] dark:bg-[#162032]">
 					<EditProfileForm />
 				</div>
 			</div>

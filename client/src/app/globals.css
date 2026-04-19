@@ -233,4 +233,34 @@ body {
 
   /* ── Textarea override ── */
   .textarea-dark { @apply text-[#1C2B3A] dark:text-[#F0EDE6]; }
+
+  /* ── Mobile shell helpers (Phase 1 · mobile-first) ──
+     WCAG 2.5.5 recommends touch targets ≥ 44×44 CSS px. Apply
+     .tap to any interactive element that would otherwise render
+     smaller (icon-only buttons, tab items, list chevrons). */
+  .tap { @apply min-h-[44px] min-w-[44px]; }
+
+  /* iPhone notch / Android gesture bar — keep bottom nav clear
+     of the device's system gesture area. */
+  .safe-area-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .safe-area-pt { padding-top:    env(safe-area-inset-top,    0px); }
+
+  /* Respect OS-level reduced-motion preference for any custom
+     transitions we add (Tailwind's animate-* already respects it
+     via tailwindcss-animate, but hand-rolled transitions need
+     this explicit opt-in). */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-reduce\:transition-none { transition: none !important; }
+  }
+
+  /* Hide scrollbar while keeping overflow scrollable — used on
+     horizontally scrollable tab strips and chip filters on mobile
+     so the bar doesn't eat vertical space or look noisy. */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
