@@ -111,6 +111,72 @@ class TestVehiclePassCreate:
         )
         assert resp.status_code == 401
 
+    def test_pass_created_via_api_is_scoped_to_unit_organization(self):
+        """Regression: a tenant-created pass MUST carry ``organization``.
+
+        ``MyVehiclePassListAPIView`` filters on
+        ``organization__in=get_user_organizations(user)`` with no
+        fallback — a pass written with ``organization=NULL`` is invisible
+        to its own tenant.  Earlier the serializer only tried to resolve
+        org via the membership lookup; if that silently returned None
+        the pass was created orphaned.  The serializer now derives org
+        from the unit (authoritative: Unit → Organization is 1:1), and
+        ``VehiclePass.save`` repeats the derivation as a belt-and-braces
+        safety net.
+        """
+        org = _make_org()
+        # Build the full topology org → building → entrance → unit so
+        # Unit.save() auto-derives unit.organization.
+        building = BuildingFactory(organization=org)
+        entrance = EntranceFactory(building=building)
+        unit = UnitFactory(entrance=entrance)
+        assert unit.organization_id == org.pkid  # sanity: auto-derivation fired
+
+        tenant = UserFactory()
+        _make_profile(tenant, "tenant")
+        ResidencyFactory(user=tenant, unit=unit, is_primary=True)
+        _add_membership(tenant, org, role=OrgRole.RESIDENT)
+
+        resp = _api(tenant).post(
+            LIST_URL,
+            {
+                "car_number": "AA1234BB",
+                "comment": "regression test",
+                "visit_date": str(datetime.date.today()),
+            },
+            format="json",
+        )
+        assert resp.status_code == 201
+        created = VehiclePass.objects.get(tenant=tenant, car_number="AA1234BB")
+        assert created.organization_id == org.pkid, (
+            "pass must be tagged with the tenant's org or /passes/my/ will hide it"
+        )
+
+        # And the tenant must actually see it in their own list — the
+        # end-to-end symptom the earlier bug produced.
+        my_resp = _api(tenant).get(MY_URL)
+        assert my_resp.status_code == 200
+        assert my_resp.data["count"] == 1
+
+    def test_pass_save_backfills_organization_from_unit(self):
+        """Model-level safety net: direct ``VehiclePass.objects.create``
+        with ``unit=`` but without ``organization=`` must still end up
+        with the unit's org on the row.  Protects against future
+        callers (signals, admin actions, ad-hoc scripts) that forget
+        to set the FK explicitly.
+        """
+        org = _make_org()
+        building = BuildingFactory(organization=org)
+        entrance = EntranceFactory(building=building)
+        unit = UnitFactory(entrance=entrance)
+
+        tenant = UserFactory()
+        vp = VehiclePass.objects.create(
+            tenant=tenant, unit=unit, visit_date=datetime.date.today()
+        )
+        vp.refresh_from_db()
+        assert vp.organization_id == org.pkid
+
 
 @pytest.mark.django_db
 class TestVehiclePassList:

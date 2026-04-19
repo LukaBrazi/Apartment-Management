@@ -198,7 +198,32 @@ class TestPassOrgIsolation:
         assert field.many_to_one or field.one_to_one
 
     def test_pass_organization_nullable(self, org, unit):
-        """VehiclePass можна створити без організації"""
+        """VehiclePass.organization залишається nullable на рівні схеми.
+
+        Важливо: якщо передано ``unit``, модель автоматично підтягує
+        ``organization`` з ``unit.organization`` у ``save()`` (запобіжник
+        проти «сирітських» пропусків, які не видно навіть власному
+        орендарю через strict org-scoping у views). Nullability перевіряємо
+        окремо — на рядку без ``unit``.
+        """
+        from apps.passes.models import VehiclePass
+        from datetime import date
+
+        pass_obj = VehiclePass.objects.create(
+            unit=None,
+            car_number="AA1234",
+            visit_date=date.today(),
+            organization=None,
+        )
+        assert pass_obj.organization is None
+
+    def test_pass_organization_auto_derived_from_unit(self, org, unit):
+        """Коли передано ``unit``, ``save()`` тягне org із нього.
+
+        Захист від регресії: попередній баг — серіалізатор інколи
+        залишав ``organization=None``, і пропуск ставав невидимим у
+        ``/passes/my/`` (через ``organization__in=get_user_organizations``).
+        """
         from apps.passes.models import VehiclePass
         from datetime import date
 
@@ -208,7 +233,7 @@ class TestPassOrgIsolation:
             visit_date=date.today(),
             organization=None,
         )
-        assert pass_obj.organization is None
+        assert pass_obj.organization_id == unit.organization_id
 
     def test_pass_create_with_organization(self, org, unit):
         """VehiclePass можна створити з організацією"""

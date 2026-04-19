@@ -30,12 +30,23 @@ class VehiclePassCreateSerializer(serializers.ModelSerializer):
                 .select_related("entrance__building")
                 .first()
             )
-        if not validated_data.get("organization"):
+        # Strict multi-tenant scoping: the pass MUST carry an organization
+        # or the tenant's own ``/passes/my/`` list (filtered on
+        # ``organization__in=get_user_organizations(user)``) will never
+        # return it.  A Unit always belongs to exactly one Organization
+        # (see ``Unit.save`` — org is auto-derived from the building), so
+        # ``unit.organization`` is the authoritative source of truth here.
+        # Only fall back to the membership lookup when the tenant has no
+        # unit at all (``new1/new2@demo.com`` — "awaiting assignment").
+        organization = validated_data.pop("organization", None)
+        if organization is None and unit is not None:
+            organization = unit.organization
+        if organization is None:
             from apps.organizations.utils import get_user_primary_organization
-            org = get_user_primary_organization(user)
-            if org:  # only set if user has an org
-                validated_data["organization"] = org
-        return VehiclePass.objects.create(tenant=user, unit=unit, **validated_data)
+            organization = get_user_primary_organization(user)
+        return VehiclePass.objects.create(
+            tenant=user, unit=unit, organization=organization, **validated_data,
+        )
 
 
 class VehiclePassSerializer(serializers.ModelSerializer):

@@ -72,3 +72,20 @@ class VehiclePass(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Pass for {self.tenant} on {self.visit_date} [{self.status}]"
+
+    def save(self, *args, **kwargs):
+        # Model-level safety net for strict multi-tenant scoping.
+        #
+        # ``VehiclePassListCreateAPIView`` and ``MyVehiclePassListAPIView``
+        # both filter on ``organization__in=get_user_organizations(user)``
+        # with no fallback — a pass saved without an ``organization`` is
+        # invisible to every non-superuser, including its own tenant.
+        #
+        # A ``Unit`` always belongs to exactly one ``Organization`` (see
+        # ``Unit.save`` — org is auto-derived from the building on first
+        # save), so when the caller supplies a unit but forgets the org
+        # we can derive it unambiguously.  Callers that explicitly set
+        # ``organization`` are never overwritten.
+        if not self.organization_id and self.unit_id:
+            self.organization_id = self.unit.organization_id
+        super().save(*args, **kwargs)
