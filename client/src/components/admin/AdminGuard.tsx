@@ -22,10 +22,16 @@ export default function AdminGuard({ children }: AdminGuardProps) {
 
 	useEffect(() => {
 		if (!isInitialized) return;
-		if (!isLoading) {
-			if (!isAuthenticated || (profileData && !isStaff)) {
-				router.push("/welcome");
-			}
+		if (isLoading) return;
+		// Unauthenticated → login form (mirrors the edge middleware; avoids
+		// a /welcome → /login double-hop on stale cookies).
+		if (!isAuthenticated) {
+			router.push("/login");
+			return;
+		}
+		// Authenticated but not staff → bounce to their regular dashboard.
+		if (profileData && !isStaff) {
+			router.push("/welcome");
 		}
 	}, [isAuthenticated, isInitialized, isLoading, isStaff, profileData, router]);
 
