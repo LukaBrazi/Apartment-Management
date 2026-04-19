@@ -191,6 +191,7 @@ class Command(BaseCommand):
 
         users_result = seed_users.seed(
             building_result=building_result,
+            organization_result=organization_result,
             residents_count=opts["residents_count"],
             password=password,
         )
@@ -215,6 +216,7 @@ class Command(BaseCommand):
         issues_result = seed_issues.seed(
             users_result=users_result,
             building_result=building_result,
+            organization_result=organization_result,
             count=opts["issues_count"],
         )
         self.stdout.write(
@@ -228,6 +230,7 @@ class Command(BaseCommand):
         posts_result = seed_posts.seed(
             users_result=users_result,
             building_result=building_result,
+            organization_result=organization_result,
             posts_count=opts["posts_count"],
             announcements_count=opts["announcements_count"],
         )
@@ -240,6 +243,7 @@ class Command(BaseCommand):
 
         passes_result = seed_passes.seed(
             users_result=users_result,
+            organization_result=organization_result,
             count=opts["passes_count"],
         )
         self.stdout.write(

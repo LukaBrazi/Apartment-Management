@@ -66,7 +66,9 @@ from .helpers import (
 
 if TYPE_CHECKING:  # pragma: no cover
     from apps.apartments.models import Unit
+    from apps.organizations.models import Organization
     from .seed_building import BuildingSeedResult
+    from .seed_organization import OrganizationSeedResult
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +141,7 @@ class UsersSeedResult:
 def seed(
     *,
     building_result: "BuildingSeedResult",
+    organization_result: "OrganizationSeedResult | None" = None,
     residents_count: int = 32,
     password: str = DEFAULT_DEMO_PASSWORD,
 ) -> UsersSeedResult:
@@ -149,6 +152,16 @@ def seed(
     building_result:
         Output of :func:`apps.common.seed.seed_building.seed` — provides the
         Building and Unit handles without a DB round-trip.
+    organization_result:
+        Output of :func:`apps.common.seed.seed_organization.seed` — every
+        seeded user gets an active ``OrganizationMembership`` in this org
+        with a role derived from their profile (dispatcher→ADMIN,
+        guard/worker→STAFF, resident/tenant/renter/cottage_owner→RESIDENT).
+        Strict multi-tenant scoping in views (``get_user_organizations``)
+        means users without membership see nothing — the demo would be
+        invisible to its own accounts without this wiring. Kept optional
+        so per-module unit tests can still stand seed_users up on its own,
+        but the orchestrator always threads it through.
     residents_count:
         Total residents to create (including the named ``tenant`` and the
         two unbound ``new*`` accounts).  Defaults to plan §0 (32).
@@ -160,6 +173,10 @@ def seed(
         raise ValueError("residents_count must be ≥ 4 (tenant + 1 resident + 2 new*)")
 
     from apps.profiles.models import Profile
+
+    organization = (
+        organization_result.organization if organization_result else None
+    )
 
     result = UsersSeedResult()
 
@@ -179,6 +196,7 @@ def seed(
                 "служб. На зв'язку у робочий час через портал ApartmentOS."
             ),
         )
+        _ensure_membership(user, organization, role="admin")
         result.dispatchers.append(
             SeededUser(email=email, user=user, role="dispatcher"),
         )
@@ -199,6 +217,7 @@ def seed(
                 "оформлюю перепустки через портал."
             ),
         )
+        _ensure_membership(user, organization, role="staff")
         result.guards.append(SeededUser(email=email, user=user, role="guard"))
 
     # --- 3. Workers (8, occupation per WORKERS pool) ------------------------
@@ -219,6 +238,7 @@ def seed(
                 "Приймаю заявки через портал, виконую планові та аварійні роботи."
             ),
         )
+        _ensure_membership(user, organization, role="staff")
         result.workers.append(SeededUser(email=email, user=user, role=worker.occupation))
 
     # --- 4. Tenant (bound to А-TENANT_UNIT_NUMBER) --------------------------
@@ -241,6 +261,7 @@ def seed(
         ),
         unit=tenant_unit,
     )
+    _ensure_membership(tenant_user, organization, role="resident")
     # PR-11: the tenant's Unit is expressed as a primary ``Residency``
     # row (see ``_patch_profile``); ``Profile.unit`` was dropped.
     result.tenant = SeededUser(
@@ -275,6 +296,7 @@ def seed(
             ),
             unit=unit,
         )
+        _ensure_membership(user, organization, role="resident")
         result.residents.append(
             SeededUser(email=email, user=user, unit=unit, role="resident"),
         )
@@ -297,6 +319,7 @@ def seed(
             ),
             # unit intentionally left NULL — demos admin-binds-apartment flow.
         )
+        _ensure_membership(user, organization, role="resident")
         result.unbound_residents.append(
             SeededUser(email=email, user=user, role="new-resident"),
         )
@@ -310,6 +333,7 @@ def seed(
         building_result=building_result,
         password=password,
         Profile=Profile,
+        organization=organization,
     )
 
     logger.info(
@@ -329,6 +353,7 @@ def _seed_pr13_extras(
     building_result: "BuildingSeedResult",
     password: str,
     Profile,
+    organization: "Organization | None" = None,
 ) -> None:
     """Seed the concept-alignment users introduced in PR-13.
 
@@ -414,6 +439,7 @@ def _seed_pr13_extras(
             residency_is_primary=True,
             residency_start_date=(BASE_TIME - _dt.timedelta(days=120)).date(),
         )
+        _ensure_membership(renter_user, organization, role="resident")
         result.renter = SeededUser(
             email="renter@demo.com",
             user=renter_user,
@@ -442,6 +468,7 @@ def _seed_pr13_extras(
             residency_role=ResidencyRole.OWNER,
             residency_is_primary=True,
         )
+        _ensure_membership(cottage_user, organization, role="resident")
         result.cottage_owner = SeededUser(
             email="cottage@demo.com",
             user=cottage_user,
@@ -475,6 +502,26 @@ def _worker_email(worker, idx: int) -> str:
 def _already_has_occupation(email: str, workers: list) -> bool:
     """Internal heuristic helper — kept for signature symmetry; not hot path."""
     return any(w.email == email for w in workers)
+
+
+def _ensure_membership(user, organization, *, role: str) -> None:
+    """Idempotently grant ``user`` an active membership in ``organization``.
+
+    No-op when ``organization`` is None — keeps per-module unit tests
+    that exercise ``seed_users`` without an Organization fixture working.
+
+    On rerun the role is re-asserted (a hand-edit that demoted a
+    dispatcher to RESIDENT in admin would otherwise survive forever).
+    """
+    if organization is None:
+        return
+    from apps.organizations.models import OrganizationMembership
+
+    OrganizationMembership.objects.update_or_create(
+        user=user,
+        organization=organization,
+        defaults={"role": role, "is_active": True},
+    )
 
 
 def _ensure_user(

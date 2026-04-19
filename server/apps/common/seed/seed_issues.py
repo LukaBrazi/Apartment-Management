@@ -50,6 +50,7 @@ from .helpers import BASE_TIME  # noqa: F401  — re-exported for tests
 if TYPE_CHECKING:  # pragma: no cover
     from apps.issues.models import Category, Issue
     from .seed_building import BuildingSeedResult
+    from .seed_organization import OrganizationSeedResult
     from .seed_users import SeededUser, UsersSeedResult
 
 logger = logging.getLogger(__name__)
@@ -303,6 +304,7 @@ def seed(
     *,
     users_result: "UsersSeedResult",
     building_result: "BuildingSeedResult",
+    organization_result: "OrganizationSeedResult | None" = None,
     count: int = 45,
 ) -> IssuesSeedResult:
     """Create/refresh Categories + Issues per plan §5.
@@ -315,6 +317,12 @@ def seed(
     building_result:
         Output of :func:`seed_building.seed` — used to validate that every
         reporter's apartment still lives under the demo Building.
+    organization_result:
+        Output of :func:`seed_organization.seed` — every Issue is tagged
+        with this organisation so strict multi-tenant scoping in
+        ``IssueListAPIView`` returns the demo rows for the demo users.
+        Optional: per-module unit tests may skip it, but the orchestrator
+        always threads it through.
     count:
         Total issues.  Default 45 (plan); tests may pass a smaller value to
         keep fixture DB lightweight.  ``count`` is clamped to the size of the
@@ -326,6 +334,10 @@ def seed(
         Category + Issue handles plus per-bucket counts (used by safety tests).
     """
     from apps.issues.models import Category, Issue
+
+    organization = (
+        organization_result.organization if organization_result else None
+    )
 
     # ── 0. Pre-flight: seed categories and resolve RNG --------------------
     result = IssuesSeedResult()
@@ -402,6 +414,11 @@ def seed(
                     "due_at": due_at,
                     "resolved_on": resolved_on,
                     "assigned_to": (assignee.user if assignee else None),
+                    # Strict multi-tenant scoping: IssueListAPIView filters
+                    # on ``organization__in=get_user_organizations(user)``.
+                    # Without this the demo rows are invisible to every
+                    # demo user.
+                    "organization": organization,
                 }
 
                 issue, created = Issue.objects.get_or_create(

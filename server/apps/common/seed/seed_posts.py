@@ -41,6 +41,7 @@ from .helpers import BASE_TIME  # noqa: F401 — tests reference it
 if TYPE_CHECKING:  # pragma: no cover
     from apps.posts.models import Announcement, Post, Reply
     from .seed_building import BuildingSeedResult
+    from .seed_organization import OrganizationSeedResult
     from .seed_users import SeededUser, UsersSeedResult
 
 logger = logging.getLogger(__name__)
@@ -219,12 +220,24 @@ def seed(
     *,
     users_result: "UsersSeedResult",
     building_result: "BuildingSeedResult",
+    organization_result: "OrganizationSeedResult | None" = None,
     posts_count: int = 18,
     announcements_count: int = 5,
 ) -> PostsSeedResult:
-    """Create/update demo posts + announcements per plan §6–§7."""
+    """Create/update demo posts + announcements per plan §6–§7.
+
+    ``organization_result`` is required for Posts to be visible under
+    strict multi-tenant scoping (``PostListAPIView`` filters on
+    ``organization__in=get_user_organizations(user)``). Announcements
+    derive their org from ``building.organization`` (already wired by
+    seed_building) so no per-row tagging is needed for them.
+    """
     from apps.posts.models import Announcement, Post, Reply
     from taggit.models import Tag
+
+    organization = (
+        organization_result.organization if organization_result else None
+    )
 
     result = PostsSeedResult()
 
@@ -246,6 +259,7 @@ def seed(
             # ── 3. Posts ────────────────────────────────────────────────
             posts = _seed_posts(
                 Post, POST_SPECS[:posts_count], authors, rng, result,
+                organization=organization,
             )
 
             # ── 4. Replies on every 2nd-3rd post ─────────────────────────
@@ -293,6 +307,8 @@ def _seed_posts(
     authors: list["SeededUser"],
     rng: random.Random,
     result: PostsSeedResult,
+    *,
+    organization=None,
 ) -> list["Post"]:
     """Create posts idempotently; set tags and vote counters."""
     now = timezone.now()
@@ -314,6 +330,9 @@ def _seed_posts(
                 "author": author,
                 "upvotes": upvotes,
                 "downvotes": downvotes,
+                # Strict multi-tenant scoping: PostListAPIView filters
+                # on ``organization__in=get_user_organizations(user)``.
+                "organization": organization,
             },
         )
 
@@ -326,6 +345,12 @@ def _seed_posts(
         else:
             result.posts_skipped += 1
             # Don't overwrite on rerun; plan §10 tells callers to use --reset.
+            # Defensive: if a pre-existing demo Post lacks the org (e.g.
+            # a row created before this fix shipped), backfill it now so
+            # the strict scoping still returns it.
+            if organization is not None and post.organization_id is None:
+                Post.objects.filter(pk=post.pk).update(organization=organization)
+                post.organization = organization
 
         post.refresh_from_db()
         posts.append(post)

@@ -33,6 +33,7 @@ from .helpers import ua_car_plate
 
 if TYPE_CHECKING:  # pragma: no cover
     from apps.passes.models import VehiclePass
+    from .seed_organization import OrganizationSeedResult
     from .seed_users import SeededUser, UsersSeedResult
 
 logger = logging.getLogger(__name__)
@@ -66,10 +67,23 @@ class PassesSeedResult:
 def seed(
     *,
     users_result: "UsersSeedResult",
+    organization_result: "OrganizationSeedResult | None" = None,
     count: int = 22,
 ) -> PassesSeedResult:
-    """Create the 22 demo vehicle passes (plan §8)."""
+    """Create the 22 demo vehicle passes (plan §8).
+
+    ``organization_result`` is required for guard-portal visibility:
+    ``VehiclePassListAPIView`` filters on
+    ``organization__in=get_user_organizations(user)`` and the per-tenant
+    ``/passes/my/`` view does the same. Optional only so per-module
+    tests that don't care about org scoping can stand the seeder up
+    in isolation.
+    """
     from apps.passes.models import VehiclePass
+
+    organization = (
+        organization_result.organization if organization_result else None
+    )
 
     result = PassesSeedResult()
     rng = random.Random(PASSES_RNG_SEED)
@@ -95,6 +109,8 @@ def seed(
                     "unit": tenant.unit,
                     "status": status,
                     "comment": _comment_for(bucket),
+                    # Strict multi-tenant scoping — see seed() docstring.
+                    "organization": organization,
                 }
                 if status == "closed" and closed_offset is not None:
                     defaults["closed_by"] = guard.user
