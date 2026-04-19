@@ -295,28 +295,6 @@ export interface MyAssignedIssuesResponse {
 		results: Issue[];
 	};
 }
-/**
- * @deprecated PR-4: no frontend caller uses these since the
- * ``createApartment`` mutation and ``getMyApartment`` query were
- * removed.  Kept as a type-only stub until PR-6 cleanup drops them.
- */
-export interface ApartmentData {
-	unit_number: string;
-	building: string;
-	floor: number;
-}
-
-/** @deprecated PR-4 — see ``ApartmentData``. */
-export interface ApartmentResponse {
-	apartment: {
-		id: string;
-		created_at: string;
-		unit_number: string;
-		building: string;
-		floor: number;
-	};
-}
-
 export interface LeftNavLink {
 	path: string;
 	label: string;
@@ -392,22 +370,12 @@ export interface Profile {
 	date_joined: string;
 	avatar?: string;
 	average_rating: number;
-	/**
-	 * PR-3/PR-4: ``unit_*`` / ``building_*`` are the canonical fields.
-	 * ``apartment`` is kept as an optional back-compat shim for callers
-	 * still reading from the legacy JSON; it will be dropped in PR-7.
-	 */
+	// Canonical Unit / Building fields — resolved from the user's
+	// primary Residency by ``ProfileSerializer``.
 	unit_id?: string | null;
 	unit_number?: string | null;
 	building_name?: string | null;
 	building_id?: string | null;
-	apartment?: {
-		id: string;
-		created_at: string;
-		unit_number: string;
-		building: string;
-		floor: number;
-	} | null;
 }
 
 export interface ProfilesResponse {

@@ -78,6 +78,21 @@ class Rating(TimeStampedModel):
         _("Comment"),
         blank=True,
     )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="ratings",
+        null=True,
+        blank=True,
+        editable=False,
+        help_text=_(
+            "Organisation the rating belongs to — auto-populated in "
+            "``Rating.save()`` from the rating_user's primary "
+            "OrganizationMembership.  May be null only when the rater "
+            "is a superuser without a membership; such rows are "
+            "invisible to the multi-tenant admin/list views."
+        ),
+    )
 
     # String Representation
     def __str__(self) -> str:
@@ -89,6 +104,14 @@ class Rating(TimeStampedModel):
 
         # Return the rating
         return f"{self.rating_user} rated {self.rated_user} - {self.rating}"
+
+    def save(self, *args, **kwargs) -> None:
+        """Auto-populate ``organization`` from the rater's primary membership."""
+        if self.organization_id is None and self.rating_user_id is not None:
+            from apps.organizations.utils import get_user_primary_organization
+
+            self.organization = get_user_primary_organization(self.rating_user)
+        super().save(*args, **kwargs)
 
     # Meta Class
     class Meta:

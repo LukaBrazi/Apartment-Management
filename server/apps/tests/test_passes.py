@@ -1,9 +1,11 @@
 """Tests for VehiclePass feature (guard portal)."""
 import datetime
+from uuid import uuid4
 
 import pytest
 from rest_framework.test import APIClient
 
+from apps.organizations.models import Organization, OrganizationMembership, OrgRole
 from apps.passes.models import VehiclePass
 from apps.tests.factories import (
     BuildingFactory,
@@ -14,6 +16,19 @@ from apps.tests.factories import (
 )
 
 
+def _make_org():
+    suffix = uuid4().hex[:6]
+    return Organization.objects.create(
+        name=f"Org-{suffix}", slug=f"passes-{suffix}", is_active=True
+    )
+
+
+def _add_membership(user, org, role=OrgRole.RESIDENT):
+    return OrganizationMembership.objects.create(
+        user=user, organization=org, role=role, is_active=True
+    )
+
+
 def _make_profile(user, occupation):
     profile = user.profile
     profile.occupation = occupation
@@ -21,20 +36,29 @@ def _make_profile(user, occupation):
     return profile
 
 
-def _make_tenant_with_unit():
-    """Create a tenant wired to a Unit via a primary ``Residency`` (PR-11 canonical)."""
+def _make_tenant_with_unit(org=None):
+    """Create a tenant wired to a Unit via a primary ``Residency`` (PR-11 canonical).
+
+    When ``org`` is supplied, the tenant is also granted an active
+    ``OrganizationMembership`` in that org — required for the strict
+    multi-tenant list/filter endpoints to return any rows.
+    """
     user = UserFactory()
     _make_profile(user, "tenant")
     building = BuildingFactory()
     entrance = EntranceFactory(building=building)
     unit = UnitFactory(entrance=entrance)
     ResidencyFactory(user=user, unit=unit, is_primary=True)
+    if org is not None:
+        _add_membership(user, org, role=OrgRole.RESIDENT)
     return user, building
 
 
-def _make_guard():
+def _make_guard(org=None):
     user = UserFactory()
     _make_profile(user, "guard")
+    if org is not None:
+        _add_membership(user, org, role=OrgRole.STAFF)
     return user
 
 
@@ -91,9 +115,12 @@ class TestVehiclePassCreate:
 @pytest.mark.django_db
 class TestVehiclePassList:
     def test_guard_can_list_passes(self):
-        tenant, _ = _make_tenant_with_unit()
-        guard = _make_guard()
-        VehiclePass.objects.create(tenant=tenant, visit_date=datetime.date.today())
+        org = _make_org()
+        tenant, _ = _make_tenant_with_unit(org=org)
+        guard = _make_guard(org=org)
+        VehiclePass.objects.create(
+            tenant=tenant, visit_date=datetime.date.today(), organization=org
+        )
         resp = _api(guard).get(LIST_URL)
         assert resp.status_code == 200
         assert resp.data["count"] == 1
@@ -104,12 +131,15 @@ class TestVehiclePassList:
         assert resp.status_code == 403
 
     def test_guard_can_filter_by_date(self):
-        tenant, _ = _make_tenant_with_unit()
-        guard = _make_guard()
+        org = _make_org()
+        tenant, _ = _make_tenant_with_unit(org=org)
+        guard = _make_guard(org=org)
         today = datetime.date.today()
         tomorrow = today + datetime.timedelta(days=1)
-        VehiclePass.objects.create(tenant=tenant, visit_date=today)
-        VehiclePass.objects.create(tenant=tenant, visit_date=tomorrow)
+        VehiclePass.objects.create(tenant=tenant, visit_date=today, organization=org)
+        VehiclePass.objects.create(
+            tenant=tenant, visit_date=tomorrow, organization=org
+        )
         resp = _api(guard).get(LIST_URL, {"visit_date": str(today)})
         assert resp.status_code == 200
         assert resp.data["count"] == 1
@@ -118,10 +148,15 @@ class TestVehiclePassList:
 @pytest.mark.django_db
 class TestMyVehiclePasses:
     def test_tenant_sees_own_passes(self):
-        tenant, _ = _make_tenant_with_unit()
-        other_tenant, _ = _make_tenant_with_unit()
-        VehiclePass.objects.create(tenant=tenant, visit_date=datetime.date.today())
-        VehiclePass.objects.create(tenant=other_tenant, visit_date=datetime.date.today())
+        org = _make_org()
+        tenant, _ = _make_tenant_with_unit(org=org)
+        other_tenant, _ = _make_tenant_with_unit(org=org)
+        VehiclePass.objects.create(
+            tenant=tenant, visit_date=datetime.date.today(), organization=org
+        )
+        VehiclePass.objects.create(
+            tenant=other_tenant, visit_date=datetime.date.today(), organization=org
+        )
         resp = _api(tenant).get(MY_URL)
         assert resp.status_code == 200
         assert resp.data["count"] == 1

@@ -54,8 +54,6 @@ ALLOWED_TRANSITIONS = {
     "in_progress": {"done", "rejected"},
     "done": set(),
     "rejected": set(),
-    # Legacy statuses → map to new ones
-    "resolved": set(),
 }
 
 
@@ -89,15 +87,13 @@ class Issue(TimeStampedModel):
         Priority: The priority of the issue.
     """
 
-    # Constants for the issue status (extended for SLA flow)
+    # Constants for the issue status (SLA flow)
     class IssueStatus(models.TextChoices):
         REPORTED = ("reported", _("Reported"))
         ACCEPTED = ("accepted", _("Accepted"))
         IN_PROGRESS = ("in_progress", _("In Progress"))
         DONE = ("done", _("Done"))
         REJECTED = ("rejected", _("Rejected"))
-        # Legacy kept for backward compat
-        RESOLVED = ("resolved", _("Resolved"))
 
     # Constants for the issue priority
     class Priority(models.TextChoices):
@@ -106,9 +102,6 @@ class Issue(TimeStampedModel):
         HIGH = ("high", _("High"))
 
     # Attributes
-    # PR-7 dropped ``Issue.apartment`` — ``unit`` is the only location
-    # link on Issue now.  The column survives in migration history for
-    # replay but the ORM field is gone.
     unit = models.ForeignKey(
         Unit,
         on_delete=models.SET_NULL,
@@ -185,10 +178,10 @@ class Issue(TimeStampedModel):
 
     @property
     def is_overdue(self) -> bool:
-        """True if due_at is set and has passed without being done/resolved."""
+        """True if due_at is set and has passed without being done."""
         if not self.due_at:
             return False
-        if self.status in (self.IssueStatus.DONE, self.IssueStatus.RESOLVED):
+        if self.status == self.IssueStatus.DONE:
             return False
         return timezone.now() > self.due_at
 
@@ -201,7 +194,7 @@ class Issue(TimeStampedModel):
                 f"Allowed: {allowed or 'none (terminal state)'}."
             )
         self.status = new_status
-        if new_status in (self.IssueStatus.DONE, self.IssueStatus.RESOLVED):
+        if new_status == self.IssueStatus.DONE:
             self.resolved_on = timezone.now().date()
         self.save(update_fields=["status", "resolved_on"])
 
@@ -209,10 +202,9 @@ class Issue(TimeStampedModel):
     def save(self, *args: Dict, **kwargs: Dict) -> None:
         """Save the issue and notify the assigned user.
 
-        PR-7 dropped the ``apartment`` FK and the dual-read shim that
-        backfilled ``unit`` from the legacy column — ``unit`` is now the
-        only location link and callers must set it explicitly (or rely
-        on ``IssueCreateAPIView`` to default to ``profile.unit``).
+        ``unit`` is the sole location link — callers must set it
+        explicitly (or rely on ``IssueCreateAPIView`` to default to
+        the reporter's primary ``Residency.unit``).
 
         Args:
             *args (dict): The arguments.

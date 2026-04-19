@@ -18,7 +18,7 @@ class IssueFilter(django_filters.FilterSet):
 
     def filter_is_overdue(self, queryset, name, value):
         now = timezone.now()
-        terminal = (Issue.IssueStatus.DONE, Issue.IssueStatus.RESOLVED, Issue.IssueStatus.REJECTED)
+        terminal = (Issue.IssueStatus.DONE, Issue.IssueStatus.REJECTED)
         overdue_q = Q(due_at__lt=now) & ~Q(status__in=terminal)
         if value:
             return queryset.filter(overdue_q)

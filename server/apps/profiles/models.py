@@ -162,12 +162,8 @@ class Profile(TimeStampedModel):
         user = getattr(self, "user", None)
         if user is None or not getattr(user, "pk", None):
             return None
-        try:
-            from apps.apartments.models import Residency
-        except Exception:
-            # Historical migration state: the Residency table may
-            # not exist yet — degrade silently.
-            return None
+
+        from apps.apartments.models import Residency
 
         residency = (
             Residency.objects.filter(user_id=user.pk, is_primary=True)

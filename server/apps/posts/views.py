@@ -35,26 +35,16 @@ logger = logging.getLogger(__name__)
 def _scope_posts_to_user_orgs(qs: "QuerySet", user) -> "QuerySet":
     """Filter a ``Post`` queryset to the caller's organisations.
 
-    Security boundary for cross-tenant isolation.  Branches:
+    Strict multi-tenant isolation.  Branches:
 
     * unauthenticated → empty queryset;
     * superuser → all posts;
-    * authenticated user WITH membership(s) → only posts in those orgs;
-    * authenticated user with NO membership → backward-compat fallback,
-      mirroring ``PostListAPIView``'s fallback at creation-time: the
-      user sees the full queryset.  This avoids breaking the flows that
-      exist today (bootstrapping, legacy unscoped posts) while the
-      broader migration to guaranteed memberships is completed.  New
-      users created via ``AdminCreateUserAPIView`` are granted a
-      membership, so this fallback is a transient edge, not a steady
-      state.
-
-    Cross-tenant leakage risk: a hostile user with no membership can
-    enumerate everything — but that same risk is already present on
-    the main ``PostListAPIView`` feed, so the detail/tag/top endpoints
-    aren't making it worse.  Follow-up work: tighten to only
-    ``organization IS NULL`` on the fallback once seed fixtures are
-    confirmed clean.
+    * authenticated user → only posts in the caller's active
+      ``OrganizationMembership`` rows.  A user with no membership sees
+      nothing: every legitimate user is granted a membership at
+      creation time by ``AdminCreateUserAPIView``.  There is
+      deliberately no fallback for the "no membership" branch — it
+      would be a cross-tenant leak.
     """
     from apps.organizations.utils import get_user_organizations
 
@@ -62,10 +52,7 @@ def _scope_posts_to_user_orgs(qs: "QuerySet", user) -> "QuerySet":
         return qs.none()
     if user.is_superuser:
         return qs
-    user_orgs = get_user_organizations(user)
-    if not user_orgs.exists():
-        return qs
-    return qs.filter(organization__in=user_orgs)
+    return qs.filter(organization__in=get_user_organizations(user))
 
 
 # StandardResultsSetPagination class
@@ -108,32 +95,25 @@ class PostListAPIView(generics.ListAPIView):
     serializer_class = PostSerializer
     filterset_class = PostFilter
     pagination_class = StandardResultsSetPagination
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
     renderer_classes = (GenericJSONRenderer,)
     object_label = "posts"
 
     # Method to get the queryset
     def get_queryset(self) -> QuerySet:
-        """
-        Get the queryset of posts.
+        """Get the queryset of posts, scoped to the caller's organisations.
 
-        Returns:
-            QuerySet: A queryset of Post objects, annotated with reply count and ordered.
+        Strict multi-tenant isolation — same rules as
+        ``_scope_posts_to_user_orgs`` at module top.  Anonymous callers
+        are rejected at the permission layer (see ``permission_classes``);
+        the queryset branch for the "anon reached get_queryset" case is
+        kept as defence-in-depth.
         """
-        # Annotate posts with reply count and view count; prefetch related for N+1 avoidance
         qs = Post.objects.select_related("author__profile").annotate(
             replies_count=Count("replies", distinct=True),
             view_count=Count("content_views", distinct=True),
         ).order_by("-upvotes", "-created_at")
-
-        # Org isolation: authenticated non-superuser sees only their org's posts
-        # Backward compat: if user has no org membership → no filter (return all)
-        if self.request.user.is_authenticated and not self.request.user.is_superuser:
-            from apps.organizations.utils import get_user_organizations
-            user_orgs = get_user_organizations(self.request.user)
-            if user_orgs.exists():
-                return qs.filter(organization__in=user_orgs)
-        return qs
+        return _scope_posts_to_user_orgs(qs, self.request.user)
 
 
 # MyPostListAPIView class

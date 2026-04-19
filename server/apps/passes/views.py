@@ -30,16 +30,17 @@ class VehiclePassListCreateAPIView(generics.ListCreateAPIView):
         return VehiclePassSerializer
 
     def get_queryset(self):
+        """Strict multi-tenant scoping: a non-superuser without any
+        active ``OrganizationMembership`` sees no passes.
+        """
         qs = VehiclePass.objects.select_related(
             "tenant", "unit__entrance__building", "closed_by"
         )
-        if not self.request.user.is_superuser:
-            from apps.organizations.utils import get_user_organizations
-            user_orgs = get_user_organizations(self.request.user)
-            if not user_orgs.exists():
-                return qs  # backward compat: no org membership → no org filter
-            return qs.filter(organization__in=user_orgs)
-        return qs
+        if self.request.user.is_superuser:
+            return qs
+        from apps.organizations.utils import get_user_organizations
+
+        return qs.filter(organization__in=get_user_organizations(self.request.user))
 
 
 class MyVehiclePassListAPIView(generics.ListAPIView):
@@ -49,16 +50,18 @@ class MyVehiclePassListAPIView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """Strict multi-tenant scoping: a non-superuser without any
+        active ``OrganizationMembership`` sees no passes — even their
+        own.
+        """
         qs = VehiclePass.objects.filter(
             tenant=self.request.user
         ).select_related("unit__entrance__building", "closed_by")
-        if not self.request.user.is_superuser:
-            from apps.organizations.utils import get_user_organizations
-            user_orgs = get_user_organizations(self.request.user)
-            if not user_orgs.exists():
-                return qs  # backward compat: no org membership → no org filter
-            return qs.filter(organization__in=user_orgs)
-        return qs
+        if self.request.user.is_superuser:
+            return qs
+        from apps.organizations.utils import get_user_organizations
+
+        return qs.filter(organization__in=get_user_organizations(self.request.user))
 
 
 class CloseVehiclePassAPIView(APIView):

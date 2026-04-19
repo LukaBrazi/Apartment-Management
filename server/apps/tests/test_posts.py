@@ -184,27 +184,18 @@ def superuser_client(superuser):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PostListAPIView — org-scoping + AllowAny
+# PostListAPIView — strict org-scoping (IsAuthenticated)
 # ═════════════════════════════════════════════════════════════════════════════
 
 @pytest.mark.django_db
 class TestPostList:
-    def test_anonymous_sees_all_posts_no_org_filter(self, api_client, tenant, other_tenant):
-        """AllowAny: unauthenticated caller sees every post (no org filter applied)."""
+    def test_anonymous_rejected(self, api_client, tenant):
+        """Anonymous callers are rejected at the permission layer (401)."""
         org_a = make_org("orga")
-        org_b = make_org("orgb")
         make_post(tenant, title="A-post", organization=org_a)
-        make_post(other_tenant, title="B-post", organization=org_b)
-        make_post(tenant, title="No-org-post", organization=None)
 
         resp = api_client.get(LIST_URL)
-        assert resp.status_code == 200, resp.content
-
-        results = resp.json()["posts"]["results"]
-        titles = {r["title"] for r in results}
-        assert titles == {"A-post", "B-post", "No-org-post"}, (
-            f"Anonymous must see all 3 posts regardless of org. Got: {titles}"
-        )
+        assert resp.status_code == 401
 
     def test_authenticated_member_sees_only_own_org(
         self, tenant, other_tenant, tenant_client
@@ -229,22 +220,22 @@ class TestPostList:
         )
         assert results[0]["id"] == str(mine.id)
 
-    def test_authenticated_without_membership_sees_all(self, tenant, other_tenant, tenant_client):
-        """Backward-compat: user with zero memberships is NOT filtered."""
+    def test_authenticated_without_membership_sees_nothing(
+        self, tenant, other_tenant, tenant_client
+    ):
+        """Strict scoping: zero memberships → empty feed, no fallback."""
         org_a = make_org("unused")
         make_post(tenant, title="p1", organization=org_a)
         make_post(other_tenant, title="p2", organization=None)
 
-        # tenant has NO OrganizationMembership rows
         assert tenant.organization_memberships.count() == 0
 
         resp = tenant_client.get(LIST_URL)
         assert resp.status_code == 200
 
         results = resp.json()["posts"]["results"]
-        titles = sorted(r["title"] for r in results)
-        assert titles == ["p1", "p2"], (
-            f"User with no memberships should see all posts. Got: {titles}"
+        assert results == [], (
+            f"User with no memberships must see nothing. Got: {results}"
         )
 
     def test_superuser_bypasses_org_filter(
@@ -333,7 +324,11 @@ class TestPostCreate:
         )
 
     def test_created_post_has_null_org_when_caller_has_none(self, tenant_client, tenant):
-        """No memberships → organization=None (backward compat, not a crash)."""
+        """No memberships → ``organization`` left null (row is then
+        invisible to every scoped list view).  Does not crash — the
+        POST still returns 201 so data-integrity errors surface in the
+        admin rather than in the tenant UX.
+        """
         assert tenant.organization_memberships.count() == 0
         resp = tenant_client.post(CREATE_URL, self.PAYLOAD, format="json")
         assert resp.status_code == 201, resp.data
@@ -661,7 +656,11 @@ class TestPostDetail:
 
         from apps.common.models import ContentView
 
-        post = make_post(tenant, title="View-tracked")
+        # Strict scoping: tenant needs a membership + post in the same
+        # organisation to be allowed through.
+        org = make_org("detail")
+        add_membership(tenant, org)
+        post = make_post(tenant, title="View-tracked", organization=org)
         ct = ContentType.objects.get_for_model(Post)
 
         before = ContentView.objects.filter(
@@ -686,7 +685,9 @@ class TestPostDetail:
 
         from apps.common.models import ContentView
 
-        post = make_post(tenant, title="once")
+        org = make_org("idemp")
+        add_membership(tenant, org)
+        post = make_post(tenant, title="once", organization=org)
         ct = ContentType.objects.get_for_model(Post)
 
         tenant_client.get(_detail_url(post.slug))

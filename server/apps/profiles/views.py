@@ -31,16 +31,18 @@ User = get_user_model()
 def _scope_profiles_to_user_orgs(qs: QuerySet, user) -> QuerySet:
     """Scope a ``Profile`` queryset to the caller's organisations.
 
-    Multi-tenant isolation for the staff-only profile endpoints.  Three
-    branches:
+    Strict multi-tenant isolation for the staff-only profile endpoints.
+    Branches:
 
     * unauthenticated → empty queryset (defence-in-depth; callers also
       enforce ``IsAdminUser`` / ``IsAuthenticated``);
     * superuser → all profiles;
     * regular staff user → profiles whose ``user`` is an active member
-      of at least one of the caller's active organisations.
+      of at least one of the caller's active organisations.  A staff
+      user without any active membership sees no profiles — there is
+      no fallback.
 
-    Using ``distinct()`` because a single profile may match multiple
+    ``distinct()`` because a single profile may match multiple
     memberships when the staff user and target user co-belong to more
     than one organisation.
     """

@@ -616,8 +616,8 @@ def _timeline_for(
     if status == "done":
         resolved_on = (created_at + timedelta(days=1 + (idx % 7))).date()
     elif status == "rejected":
-        # Rejected issues often get a "resolved_on" too — it's when the admin
-        # closed them out.  Keep it to exercise the UI "resolved" section.
+        # Rejected issues also carry ``resolved_on`` — it marks when the
+        # admin closed them out.  Exercises the UI "closed" section.
         resolved_on = (created_at + timedelta(days=1 + (idx % 3))).date()
 
     return created_at, due_at, resolved_on

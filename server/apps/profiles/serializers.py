@@ -26,7 +26,6 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     Methods:
         get_avatar(obj: Profile) -> str | None: Get the avatar of the user.
-        get_apartment(obj: Profile) -> list | None: Get the apartment the user belongs to.
         get_average_rating(obj: Profile) -> float: Get the average rating
 
     Meta Class:
@@ -43,10 +42,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     country_of_origin = CountryField(name_only=True)
     avatar = serializers.SerializerMethodField()
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True)
-    apartment = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
-    # PR-11: unit/building fields resolve via ``Profile.primary_unit``
-    # (the tenant's primary ``Residency``).
+    # Unit / building fields resolve via ``Profile.primary_unit`` (the
+    # tenant's primary ``Residency``) — canonical after PR-11.
     unit_number = serializers.SerializerMethodField()
     unit_id = serializers.SerializerMethodField()
     building_name = serializers.SerializerMethodField()
@@ -80,7 +78,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             "reputation",
             "date_joined",
             "avatar",
-            "apartment",
             "unit_id",
             "unit_number",
             "building_name",
@@ -132,40 +129,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         if unit is not None and unit.entrance_id:
             return str(unit.entrance.building.id)
         return None
-
-    # Method to get the apartment
-    def get_apartment(self, obj: Profile) -> dict | None:
-        """Render the tenant's primary unit in the legacy Apartment JSON shape.
-
-        PR-11: resolves via ``Profile.primary_unit`` — which now looks
-        the Unit up via the canonical ``Residency`` through-model.
-        The field is kept in the Profile payload until the frontend
-        drops it entirely — ``About.tsx`` already reads
-        ``profile.unit_number`` / ``profile.building_name`` as of PR-4.
-
-        Args:
-            obj (Profile): The profile.
-
-        Returns:
-            dict | None: The apartment-shaped payload, or None when
-            the profile has no linked Unit.
-        """
-
-        unit = obj.primary_unit
-        if unit is None:
-            return None
-
-        building_name = ""
-        if unit.entrance_id:
-            building_name = unit.entrance.building.name
-
-        return {
-            "id": str(unit.id),
-            "created_at": unit.created_at.isoformat() if unit.created_at else None,
-            "unit_number": unit.number,
-            "building": building_name,
-            "floor": unit.floor,
-        }
 
     def get_managed_buildings(self, obj: Profile) -> list:
         return list(obj.buildings.values("id", "name", "address"))

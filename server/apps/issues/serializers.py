@@ -187,10 +187,10 @@ class IssueStatusUpdateSerializer(serializers.ModelSerializer):
             Exception: If the email sending fails.
         """
 
-        # Check if the status was resolved
+        # Check if the status transitioned to DONE
         status_was_resolved = (
-            validated_data.get("status") == Issue.IssueStatus.RESOLVED
-            and instance.status != Issue.IssueStatus.RESOLVED
+            validated_data.get("status") == Issue.IssueStatus.DONE
+            and instance.status != Issue.IssueStatus.DONE
         )
 
         # Update the issue

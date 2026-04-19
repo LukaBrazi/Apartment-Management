@@ -26,27 +26,24 @@ class AnnouncementListAPIView(generics.ListAPIView):
         if user.is_staff or user.is_superuser:
             return qs
 
-        # Guards and workers: show all announcements for their org buildings
-        try:
-            occupation = user.profile.occupation
-        except Exception:
-            occupation = None
+        # Every authenticated user has a Profile (signal-created at user
+        # creation).  Guards and workers see all announcements for their
+        # org's buildings; tenants see only their own building via the
+        # primary Residency.
+        occupation = user.profile.occupation
 
-        if occupation and occupation != "tenant":
+        if occupation != "tenant":
             from apps.organizations.utils import get_user_organizations
-            user_orgs = get_user_organizations(user)
-            if user_orgs.exists():
-                return qs.filter(building__organization__in=user_orgs)
-            return qs
 
-        # Tenant: filter to their building via Profile.primary_unit →
-        # Entrance → Building.  PR-11 made ``Residency`` canonical;
-        # ``primary_unit`` resolves via the primary Residency row.
-        profile = getattr(user, "profile", None)
-        unit = getattr(profile, "primary_unit", None) if profile is not None else None
+            user_orgs = get_user_organizations(user)
+            return qs.filter(building__organization__in=user_orgs)
+
+        # Tenant: filter to their building via ``Profile.primary_unit``
+        # → Entrance → Building.  ``Residency`` is the canonical source.
+        unit = user.profile.primary_unit
         if unit is not None and unit.entrance_id:
             return qs.filter(building=unit.entrance.building)
-        # Fallback: no unit linked → no announcements
+        # No residency linked → no announcements.
         return qs.none()
 
 

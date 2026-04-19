@@ -1,9 +1,12 @@
 """Tests for issue filtering, ordering, and permission scoping."""
+from uuid import uuid4
+
 import pytest
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework.test import APIClient
 
+from apps.organizations.models import Organization, OrganizationMembership, OrgRole
 from apps.tests.factories import (
     AdminUserFactory,
     BuildingFactory,
@@ -13,6 +16,24 @@ from apps.tests.factories import (
     UnitFactory,
     UserFactory,
 )
+
+
+def _org(slug: str = "org") -> Organization:
+    suffix = uuid4().hex[:6]
+    return Organization.objects.create(
+        name=f"Org-{suffix}", slug=f"{slug}-{suffix}", is_active=True
+    )
+
+
+def _add_membership(user, org, role: str = OrgRole.RESIDENT) -> OrganizationMembership:
+    return OrganizationMembership.objects.create(
+        user=user, organization=org, role=role, is_active=True
+    )
+
+
+@pytest.fixture
+def org(db):
+    return _org("shared")
 
 
 @pytest.fixture
@@ -28,17 +49,19 @@ def superuser_client():
 
 
 @pytest.fixture
-def staff_client():
+def staff_client(org):
     client = APIClient()
     user = UserFactory(is_staff=True)
+    _add_membership(user, org, role=OrgRole.ADMIN)
     client.force_authenticate(user=user)
     return client, user
 
 
 @pytest.fixture
-def tenant_client():
+def tenant_client(org):
     client = APIClient()
     user = UserFactory()
+    _add_membership(user, org)
     client.force_authenticate(user=user)
     return client, user
 
@@ -76,10 +99,10 @@ class TestIssuePermissions:
         resp = client.get(MY_ISSUES_URL)
         assert resp.status_code == 200
 
-    def test_tenant_sees_only_own_issues(self, tenant_client):
+    def test_tenant_sees_only_own_issues(self, tenant_client, org):
         client, user = tenant_client
-        IssueFactory(reported_by=user)
-        IssueFactory()  # another user's issue
+        IssueFactory(reported_by=user, organization=org)
+        IssueFactory()  # another user's issue — no org, scoped out by strict filter
         resp = client.get(MY_ISSUES_URL)
         assert resp.status_code == 200
         data = resp.json()
@@ -105,16 +128,18 @@ class TestIssuePermissions:
 class TestIssueStaffBuildingScope:
     def test_staff_with_one_building_sees_only_that_building(self):
         """Staff assigned to one building sees only issues from it."""
+        org = _org("scope1")
         building_a = BuildingFactory()
         building_b = BuildingFactory()
 
         unit_a = UnitFactory(entrance=EntranceFactory(building=building_a))
         unit_b = UnitFactory(entrance=EntranceFactory(building=building_b))
 
-        issue_a = IssueFactory(unit=unit_a)
-        IssueFactory(unit=unit_b)  # should NOT appear
+        issue_a = IssueFactory(unit=unit_a, organization=org)
+        IssueFactory(unit=unit_b, organization=org)  # in-org but off-building — hidden
 
         staff_user = UserFactory(is_staff=True)
+        _add_membership(staff_user, org, role=OrgRole.ADMIN)
         staff_user.profile.buildings.add(building_a)
 
         client = APIClient()
@@ -128,6 +153,7 @@ class TestIssueStaffBuildingScope:
 
     def test_staff_with_multiple_buildings_sees_all_assigned(self):
         """Dispatcher assigned to multiple buildings sees all their issues."""
+        org = _org("scope2")
         building_a = BuildingFactory()
         building_b = BuildingFactory()
         building_c = BuildingFactory()
@@ -136,11 +162,12 @@ class TestIssueStaffBuildingScope:
         unit_b = UnitFactory(entrance=EntranceFactory(building=building_b))
         unit_c = UnitFactory(entrance=EntranceFactory(building=building_c))
 
-        issue_a = IssueFactory(unit=unit_a)
-        issue_b = IssueFactory(unit=unit_b)
-        IssueFactory(unit=unit_c)  # building_c — NOT assigned, should not appear
+        issue_a = IssueFactory(unit=unit_a, organization=org)
+        issue_b = IssueFactory(unit=unit_b, organization=org)
+        IssueFactory(unit=unit_c, organization=org)  # off-building — hidden
 
         staff_user = UserFactory(is_staff=True)
+        _add_membership(staff_user, org, role=OrgRole.ADMIN)
         staff_user.profile.buildings.add(building_a, building_b)
 
         client = APIClient()
@@ -154,11 +181,13 @@ class TestIssueStaffBuildingScope:
         assert str(issue_b.id) in ids
         assert len(ids) == 2
 
-    def test_staff_without_buildings_sees_all_issues(self):
-        """Staff with no buildings assigned sees all issues."""
-        IssueFactory.create_batch(3)
+    def test_staff_without_buildings_sees_all_org_issues(self):
+        """Staff with no buildings assigned sees every issue in their org."""
+        org = _org("scope3")
+        IssueFactory.create_batch(3, organization=org)
         staff_user = UserFactory(is_staff=True)
-        # no buildings (M2M empty)
+        _add_membership(staff_user, org, role=OrgRole.ADMIN)
+        # no buildings (M2M empty) — queryset falls through to org-only filter
 
         client = APIClient()
         client.force_authenticate(user=staff_user)

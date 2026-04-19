@@ -83,7 +83,8 @@ class TestIssueOrgIsolation:
         assert field.many_to_one or field.one_to_one
 
     def test_issue_organization_nullable(self, org):
-        """Issue можна створити без організації (backward compat)"""
+        """Issue.organization може бути NULL — такі рядки невидимі
+        для багатотенантних views, але не блокуються на рівні БД."""
         from apps.issues.models import Issue
         # Create issue without org should not raise
         issue = Issue.objects.create(
@@ -345,7 +346,8 @@ class TestPostOrgIsolation:
             assert post1.id in [int(p) for p in post_ids if isinstance(p, (int, str))]
 
     def test_post_organization_nullable(self, org):
-        """Post можна створити без організації (backward compat)"""
+        """Post.organization може бути NULL — такі рядки невидимі
+        для багатотенантних views, але не блокуються на рівні БД."""
         from apps.posts.models import Post
         user = User.objects.create_user(
             email="poster@test.com",

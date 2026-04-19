@@ -107,7 +107,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         from django.http import HttpResponseRedirect
         from django.urls import reverse
 
-        obj = SiteSettings.get()
+        obj = SiteSettings.get_default()
         return HttpResponseRedirect(
             reverse("admin:site_settings_sitesettings_change", args=[obj.pk])
         )

@@ -108,21 +108,16 @@ class IssueListAPIView(generics.ListAPIView):
         if user.is_superuser:
             return base_qs
 
-        # First apply building scope filter if staff has buildings assigned
-        try:
-            managed = user.profile.buildings.all()
-            if managed.exists():
-                base_qs = base_qs.filter(unit__entrance__building__in=managed).distinct()
-        except AttributeError:
-            pass
+        # Narrow by buildings the staff profile manages, then by the
+        # caller's active OrganizationMemberships.  A staff user without
+        # any active membership sees nothing — there is no fallback.
+        managed = user.profile.buildings.all()
+        if managed.exists():
+            base_qs = base_qs.filter(unit__entrance__building__in=managed).distinct()
 
-        # Then apply organization filter (if org memberships exist)
         from apps.organizations.utils import get_user_organizations
-        user_orgs = get_user_organizations(user)
-        if user_orgs.exists():
-            base_qs = base_qs.filter(organization__in=user_orgs)
 
-        return base_qs
+        return base_qs.filter(organization__in=get_user_organizations(user))
 
 
 # AssignedIssuesListAPIView Class
@@ -155,17 +150,17 @@ class AssignedIssuesListAPIView(generics.ListAPIView):
 
         Returns:
             QuerySet: The queryset of issues assigned to the user.
+
+        Strict multi-tenant scoping: a non-superuser without any active
+        ``OrganizationMembership`` sees no issues — there is no fallback.
         """
 
-        # Filter by organization scope
         from apps.organizations.utils import get_user_organizations
+
         qs = _issue_base_qs().filter(assigned_to=self.request.user)
-        if not self.request.user.is_superuser:
-            user_orgs = get_user_organizations(self.request.user)
-            if not user_orgs.exists():
-                return qs  # backward compat: no org membership → no org filter
-            return qs.filter(organization__in=user_orgs)
-        return qs
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(organization__in=get_user_organizations(self.request.user))
 
 
 # MyIssuesListAPIView Class
@@ -183,14 +178,15 @@ class MyIssuesListAPIView(generics.ListAPIView):
     ordering = ("-created_at",)
 
     def get_queryset(self):
+        """Strict multi-tenant scoping: a non-superuser without any
+        active ``OrganizationMembership`` sees no issues.
+        """
         from apps.organizations.utils import get_user_organizations
+
         qs = _issue_base_qs().filter(reported_by=self.request.user)
-        if not self.request.user.is_superuser:
-            user_orgs = get_user_organizations(self.request.user)
-            if not user_orgs.exists():
-                return qs  # backward compat: no org membership → no org filter
-            return qs.filter(organization__in=user_orgs)
-        return qs
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(organization__in=get_user_organizations(self.request.user))
 
 
 # IssueCreateAPIView Class

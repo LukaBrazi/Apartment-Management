@@ -204,7 +204,7 @@ export default function AdminResidentsPage() {
 			),
 		},
 		{
-			accessorKey: "apartment",
+			accessorKey: "unit_number",
 			header: "Квартира",
 			cell: ({ row }) => {
 				const p = row.original;
@@ -215,14 +215,7 @@ export default function AdminResidentsPage() {
 						</span>
 					);
 				}
-				const apt = p.apartment;
-				return apt ? (
-					<span>
-						{apt.unit_number}, {apt.building}
-					</span>
-				) : (
-					<span className="text-[#6B7F8C]">—</span>
-				);
+				return <span className="text-[#6B7F8C]">—</span>;
 			},
 		},
 		{

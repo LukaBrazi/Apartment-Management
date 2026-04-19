@@ -54,6 +54,21 @@ class Report(TimeStampedModel):
         verbose_name=_("Reported user"),
     )
     description = models.TextField(verbose_name=_("Description"))
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="reports",
+        null=True,
+        blank=True,
+        editable=False,
+        help_text=_(
+            "Organisation the report belongs to — auto-populated in "
+            "``Report.save()`` from the reporter's primary "
+            "OrganizationMembership.  May be null only when the "
+            "reporter is a superuser without a membership; such rows "
+            "are invisible to the multi-tenant admin/list views."
+        ),
+    )
 
     # String representation
     def __str__(self) -> str:
@@ -65,6 +80,14 @@ class Report(TimeStampedModel):
 
         # Return the string representation
         return f"Report by {self.reported_by.full_name} against {self.reported_user.full_name}"
+
+    def save(self, *args, **kwargs) -> None:
+        """Auto-populate ``organization`` from the reporter's primary membership."""
+        if self.organization_id is None and self.reported_by_id is not None:
+            from apps.organizations.utils import get_user_primary_organization
+
+            self.organization = get_user_primary_organization(self.reported_by)
+        super().save(*args, **kwargs)
 
     # Meta Class
     class Meta:

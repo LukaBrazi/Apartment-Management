@@ -218,11 +218,6 @@ class SiteSettings(models.Model):
         obj, _ = cls.objects.get_or_create(organization=None)
         return obj
 
-    @classmethod
-    def get(cls) -> "SiteSettings":
-        """Legacy method for backward compatibility. Returns platform default."""
-        return cls.get_default()
-
 
 class SiteLink(models.Model):
     """Navigation / quick-links displayed on the homepage or sidebar."""

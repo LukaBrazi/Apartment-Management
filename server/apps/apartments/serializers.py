@@ -3,12 +3,6 @@ from apps.apartments.models import Building, Entrance, Unit
 from rest_framework import serializers
 
 
-# PR-7 deleted ``ApartmentSerializer`` and ``unit_as_legacy_apartment``.
-# PR-8 deleted ``ResidentialComplexSerializer`` along with the
-# ``ResidentialComplex`` model — buildings now expose
-# ``organization_name`` instead of ``complex_name``.
-
-
 # ── Domain serializers ─────────────────────────────────────────────────────
 
 
