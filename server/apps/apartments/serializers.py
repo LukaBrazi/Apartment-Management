@@ -41,8 +41,11 @@ class EntranceSerializer(serializers.ModelSerializer):
 class UnitSerializer(serializers.ModelSerializer):
     entrance_name = serializers.ReadOnlyField(source="entrance.name")
     building_name = serializers.ReadOnlyField(source="entrance.building.name")
-    # Alias: unit_id == id (stable API name going forward)
-    unit_id = serializers.ReadOnlyField(source="id")
+    # Alias: unit_id == id (stable API name going forward).  Must use
+    # ``UUIDField`` (not ``ReadOnlyField``) to coerce the value to a
+    # string — the custom ``GenericJSONRenderer`` calls ``json.dumps``
+    # directly and would otherwise choke on a raw ``UUID`` object.
+    unit_id = serializers.UUIDField(source="id", read_only=True)
 
     class Meta:
         model = Unit

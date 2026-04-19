@@ -32,6 +32,42 @@ from rest_framework.views import APIView
 logger = logging.getLogger(__name__)
 
 
+def _scope_posts_to_user_orgs(qs: "QuerySet", user) -> "QuerySet":
+    """Filter a ``Post`` queryset to the caller's organisations.
+
+    Security boundary for cross-tenant isolation.  Branches:
+
+    * unauthenticated → empty queryset;
+    * superuser → all posts;
+    * authenticated user WITH membership(s) → only posts in those orgs;
+    * authenticated user with NO membership → backward-compat fallback,
+      mirroring ``PostListAPIView``'s fallback at creation-time: the
+      user sees the full queryset.  This avoids breaking the flows that
+      exist today (bootstrapping, legacy unscoped posts) while the
+      broader migration to guaranteed memberships is completed.  New
+      users created via ``AdminCreateUserAPIView`` are granted a
+      membership, so this fallback is a transient edge, not a steady
+      state.
+
+    Cross-tenant leakage risk: a hostile user with no membership can
+    enumerate everything — but that same risk is already present on
+    the main ``PostListAPIView`` feed, so the detail/tag/top endpoints
+    aren't making it worse.  Follow-up work: tighten to only
+    ``organization IS NULL`` on the fallback once seed fixtures are
+    confirmed clean.
+    """
+    from apps.organizations.utils import get_user_organizations
+
+    if not user.is_authenticated:
+        return qs.none()
+    if user.is_superuser:
+        return qs
+    user_orgs = get_user_organizations(user)
+    if not user_orgs.exists():
+        return qs
+    return qs.filter(organization__in=user_orgs)
+
+
 # StandardResultsSetPagination class
 class StandardResultsSetPagination(PageNumberPagination):
     """StandardResultsSetPagination class for paginating results.
@@ -170,15 +206,20 @@ class PostDetailAPIView(generics.RetrieveAPIView):
     def get_queryset(self) -> QuerySet:
         """Get the queryset of posts, annotated with reply count.
 
+        SECURITY: scope to the caller's organizations — previously this
+        returned ``.all()`` and exposed every org's posts via slug lookup.
+        Mirrors ``PostListAPIView.get_queryset``.
+
         Returns:
             QuerySet: A queryset of Post objects, annotated with reply count.
         """
 
         # Return the queryset of posts, annotated with reply count and view count
-        return Post.objects.select_related("author__profile").annotate(
+        qs = Post.objects.select_related("author__profile").annotate(
             replies_count=Count("replies", distinct=True),
             view_count=Count("content_views", distinct=True),
         )
+        return _scope_posts_to_user_orgs(qs, self.request.user)
 
     # Method to get the object
     def get_object(self):
@@ -697,20 +738,34 @@ class PopularTagsListAPIView(generics.ListAPIView):
     # Attributes
     serializer_class = PopularTagSerializer
     renderer_classes = (GenericJSONRenderer,)
-    permission_classes = (permissions.AllowAny,)
+    # SECURITY: previously AllowAny — popular tags leaked across orgs.
+    permission_classes = (permissions.IsAuthenticated,)
     object_label = "popular_tags"
 
     # Method to get the queryset
     def get_queryset(self) -> QuerySet:
-        """
-        Get the queryset of popular tags.
+        """Get the queryset of popular tags, scoped to caller's orgs.
 
-        Returns:
-            QuerySet: A queryset of popular tags.
+        Counts are computed over the scoped Post set rather than the
+        global Post table — so "popular" means popular *within your ЖК*.
         """
+        from django.db.models import Count as _Count
+        from taggit.models import Tag
 
-        # Return the popular tags
-        return Post.get_popular_tags()
+        scoped_posts = _scope_posts_to_user_orgs(
+            Post.objects.all(), self.request.user,
+        )
+        post_ids = list(scoped_posts.values_list("pk", flat=True))
+        if not post_ids:
+            return Tag.objects.none()
+        post_ct_filter = {
+            "taggit_taggeditem_items__object_id__in": post_ids,
+        }
+        return (
+            Tag.objects.filter(**post_ct_filter)
+            .annotate(post_count=_Count("taggit_taggeditem_items"))
+            .order_by("-post_count")[:5]
+        )
 
 
 # TopPostsListAPIView class
@@ -729,25 +784,19 @@ class TopPostsListAPIView(generics.ListAPIView):
     # Attributes
     serializer_class = TopPostSerialzier
     renderer_classes = (GenericJSONRenderer,)
-    permission_classes = (permissions.AllowAny,)
+    # SECURITY: previously AllowAny — top posts leaked across orgs.
+    permission_classes = (permissions.IsAuthenticated,)
     object_label = "top_posts"
 
     # Method to get the queryset
     def get_queryset(self) -> QuerySet:
-        """Get the queryset of top posts.
-
-        Returns:
-            QuerySet: A queryset of top Post objects.
-        """
-
-        # Annotate and order the posts
-        queryset = Post.objects.annotate(
+        """Top posts, scoped to caller's organisations."""
+        qs = Post.objects.annotate(
             replies_count=Count("replies", distinct=True),
             view_count=Count("content_views", distinct=True),
-        ).order_by("-upvotes", "-view_count", "-replies_count")[:6]
-
-        # Return the queryset
-        return queryset
+        ).order_by("-upvotes", "-view_count", "-replies_count")
+        # Scope BEFORE slicing so the top-N is drawn from the org, not globally.
+        return _scope_posts_to_user_orgs(qs, self.request.user)[:6]
 
 
 # PostsByTagListAPIView class
@@ -766,21 +815,15 @@ class PostsByTagListAPIView(generics.ListAPIView):
     # Attributes
     serializer_class = PostByTagSerializer
     renderer_classes = (GenericJSONRenderer,)
-    permission_classes = (permissions.AllowAny,)
+    # SECURITY: previously AllowAny — tag pages leaked posts from other orgs.
+    permission_classes = (permissions.IsAuthenticated,)
     object_label = "posts_by_tag"
 
     # Method to get the queryset
     def get_queryset(self) -> QuerySet:
-        """Get the queryset of posts for a specific tag.
-
-        Returns:
-            QuerySet: A queryset of Post objects associated with the given tag.
-        """
-
-        # Get the tag slug from the URL
+        """Posts for a given tag, scoped to caller's organisations."""
         tag_slug = self.kwargs.get("tag_slug")
-
-        # Return the queryset of posts for the given tag
-        return Post.objects.filter(tags__slug=tag_slug).annotate(
+        qs = Post.objects.filter(tags__slug=tag_slug).annotate(
             replies_count=Count("replies")
         )
+        return _scope_posts_to_user_orgs(qs, self.request.user)

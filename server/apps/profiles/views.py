@@ -28,6 +28,35 @@ from rest_framework.views import APIView
 User = get_user_model()
 
 
+def _scope_profiles_to_user_orgs(qs: QuerySet, user) -> QuerySet:
+    """Scope a ``Profile`` queryset to the caller's organisations.
+
+    Multi-tenant isolation for the staff-only profile endpoints.  Three
+    branches:
+
+    * unauthenticated → empty queryset (defence-in-depth; callers also
+      enforce ``IsAdminUser`` / ``IsAuthenticated``);
+    * superuser → all profiles;
+    * regular staff user → profiles whose ``user`` is an active member
+      of at least one of the caller's active organisations.
+
+    Using ``distinct()`` because a single profile may match multiple
+    memberships when the staff user and target user co-belong to more
+    than one organisation.
+    """
+    from apps.organizations.utils import get_user_organizations
+
+    if not user.is_authenticated:
+        return qs.none()
+    if user.is_superuser:
+        return qs
+    user_orgs = get_user_organizations(user)
+    return qs.filter(
+        user__organization_memberships__organization__in=user_orgs,
+        user__organization_memberships__is_active=True,
+    ).distinct()
+
+
 # StandardResultSetPagination
 class StandardResultSetPagination(PageNumberPagination):
     """StandardResultSetPagination
@@ -91,16 +120,17 @@ class ProfileListAPIView(generics.ListAPIView):
         """Get the queryset.
 
         Returns:
-            List[Profile]: The queryset.
+            List[Profile]: The queryset scoped to the caller's organisations.
         """
 
-        # Return the queryset
-        return (
+        # Tenant profiles scoped to the staff caller's organisations.
+        base = (
             Profile.objects.select_related("user")
             .exclude(user__is_staff=True)
             .exclude(user__is_superuser=True)
             .filter(occupation=Profile.Occupation.TENANT)
         )
+        return _scope_profiles_to_user_orgs(base, self.request.user)
 
 
 # ProfileDetailAPIView Class
@@ -129,17 +159,23 @@ class ProfileDetailAPIView(generics.RetrieveAPIView):
     serializer_class = ProfileSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "profile"
+    permission_classes = [permissions.IsAuthenticated]
 
     # Method to get the queryset
     def get_queryset(self) -> QuerySet:
         """Get the queryset.
 
         Returns:
-            QuerySet: The queryset.
+            QuerySet: The queryset scoped to the caller's own user row.
         """
 
-        # Return the profile queryset
-        return Profile.objects.select_related("user").all()
+        # ``get_object`` pins to ``user=self.request.user``, so this
+        # queryset is mostly decorative — but keeping it scoped to the
+        # current user is defence-in-depth against any future subclass
+        # that might change the lookup.
+        return Profile.objects.select_related("user").filter(
+            user=self.request.user,
+        )
 
     # Method to get the object
     def get_object(self) -> Profile:
@@ -378,16 +414,18 @@ class NonTenantProfileListAPIView(generics.ListAPIView):
         """Get the queryset.
 
         Returns:
-            List[Profile]: The queryset.
+            List[Profile]: The queryset scoped to the caller's organisations.
         """
 
-        # Return the queryset
-        return (
+        # Non-tenant (staff/personnel) profiles scoped to the caller's
+        # organisations — staff from another organisation remain hidden.
+        base = (
             Profile.objects.select_related("user")
             .exclude(user__is_staff=True)
             .exclude(user__is_superuser=True)
             .exclude(occupation=Profile.Occupation.TENANT)
         )
+        return _scope_profiles_to_user_orgs(base, self.request.user)
 
 
 # ProfileAdminListAPIView Class
@@ -434,11 +472,15 @@ class ProfileAdminListAPIView(generics.ListAPIView):
         """Get the queryset.
 
         Returns:
-            List[Profile]: The queryset of all profiles including staff.
+            List[Profile]: All profiles (including staff) scoped to the
+            caller's organisations.
         """
 
-        # Return all profiles without exclusions
-        return Profile.objects.select_related("user").all()
+        # All profiles — staff, tenants, the lot — but scoped to the
+        # caller's organisations.  Cross-tenant profile enumeration is
+        # the exact leak this view was exposing before.
+        base = Profile.objects.select_related("user").all()
+        return _scope_profiles_to_user_orgs(base, self.request.user)
 
 
 # ProfileAdminUpdateAPIView Class
@@ -461,13 +503,20 @@ class ProfileAdminUpdateAPIView(generics.RetrieveUpdateAPIView):
     """
 
     # Attributes
-    queryset = Profile.objects.select_related("user").all()
     serializer_class = AdminUpdateProfileSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "profile"
     permission_classes = [permissions.IsAdminUser]
     lookup_field = "slug"
     http_method_names = ["get", "patch"]
+
+    def get_queryset(self):
+        """Return profiles scoped to the caller's organisations.
+
+        Prevents cross-tenant profile update via slug enumeration.
+        """
+        base = Profile.objects.select_related("user").all()
+        return _scope_profiles_to_user_orgs(base, self.request.user)
 
 
 class AdminCreateUserAPIView(generics.CreateAPIView):
