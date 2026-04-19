@@ -52,13 +52,18 @@ def test_seed_demo_creates_plan_aggregates(run_seed):
 
     run_seed()
 
-    # § 3 — one building, three entrances, 48 units.
+    # § 3 — PR-13 alignment: 1 apartment block + 1 cottage,
+    # 4 entrances total (А, Б, В, Котедж), 49 units (48 apartments + 1 cottage).
     assert Building.objects.filter(name="Зелений Квартал — Демо").count() == 1
-    assert Entrance.objects.count() == 3
-    assert Unit.objects.count() == 48
+    assert Building.objects.filter(
+        name="Зелений Квартал — Демо · Котедж"
+    ).count() == 1
+    assert Entrance.objects.count() == 4
+    assert Unit.objects.count() == 49
 
-    # § 4 — 45 demo users total (2 + 3 + 8 + 32).
-    assert User.objects.filter(email__iendswith="@demo.com").count() == 45
+    # § 4 — PR-13 alignment: 47 demo users total
+    # (2 + 3 + 8 + 32 = 45 base, +1 renter, +1 cottage_owner).
+    assert User.objects.filter(email__iendswith="@demo.com").count() == 47
 
     # § 5 — 45 issues with the planned status mix.
     assert Issue.objects.count() == 45
@@ -230,3 +235,130 @@ def test_seed_demo_preserves_superusers(run_seed):
     admin.refresh_from_db()
     assert admin.is_superuser
     assert admin.is_active
+
+
+# ───────────────────────── PR-13: concept alignment ──────────────────────────
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_organization_linked_to_building(run_seed):
+    """PR-13: the demo ОСББ exists, is ``SINGLE_BUILDING``, owns the buildings."""
+    from apps.apartments.models import Building
+    from apps.organizations.models import Organization, OrganizationType
+
+    run_seed()
+
+    org = Organization.objects.get(name="ОСББ «Зелений Квартал — Демо»")
+    assert org.type == OrganizationType.SINGLE_BUILDING
+    assert org.is_demo is True
+    assert org.is_active is True
+
+    # Both buildings link to the org.
+    apartment = Building.objects.get(name="Зелений Квартал — Демо")
+    cottage = Building.objects.get(name="Зелений Квартал — Демо · Котедж")
+    assert apartment.organization_id == org.pk
+    assert cottage.organization_id == org.pk
+
+
+@pytest.mark.django_db
+def test_seed_demo_cottage_is_a_cottage(run_seed):
+    """PR-13: the second Building is ``type=COTTAGE`` with exactly one Unit."""
+    from apps.apartments.models import Building, BuildingType, Entrance, Unit
+
+    run_seed()
+
+    cottage = Building.objects.get(name="Зелений Квартал — Демо · Котедж")
+    assert cottage.type == BuildingType.COTTAGE
+    assert cottage.total_area is not None
+    assert cottage.total_area > 0
+
+    entrances = Entrance.objects.filter(building=cottage)
+    assert entrances.count() == 1
+    units = Unit.objects.filter(entrance__building=cottage)
+    assert units.count() == 1
+    assert units.first().area == cottage.total_area
+
+
+@pytest.mark.django_db
+def test_seed_demo_apartment_units_have_area(run_seed):
+    """Every apartment Unit carries a realistic m² area."""
+    from apps.apartments.models import Building, Unit
+
+    run_seed()
+
+    apartment = Building.objects.get(name="Зелений Квартал — Демо")
+    units = Unit.objects.filter(entrance__building=apartment)
+    assert units.count() == 48
+    # Every unit has area set.
+    assert units.filter(area__isnull=True).count() == 0
+    # Areas sit in a realistic range for Kyiv apartments (>40 m², <130 m²).
+    assert units.filter(area__lt=40).count() == 0
+    assert units.filter(area__gt=130).count() == 0
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_multi_unit_owner(run_seed):
+    """One resident holds two Residencies — exactly one primary."""
+    from apps.apartments.models import Residency
+
+    run_seed()
+
+    # resident3 is the designated multi-unit owner in seed_users.
+    resident3 = User.objects.get(email="resident3@demo.com")
+    residencies = Residency.objects.filter(user=resident3)
+    assert residencies.count() == 2
+    assert residencies.filter(is_primary=True).count() == 1
+    assert residencies.filter(is_primary=False).count() == 1
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_tenant_role_residency(run_seed):
+    """A dedicated renter user holds a Residency with role=TENANT."""
+    from apps.apartments.models import Residency, ResidencyRole
+
+    run_seed()
+
+    renter = User.objects.get(email="renter@demo.com")
+    residency = Residency.objects.get(user=renter, is_primary=True)
+    assert residency.role == ResidencyRole.TENANT
+    assert residency.start_date is not None
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_turnover_residency_with_end_date(run_seed):
+    """At least one Residency carries ``end_date`` — the turnover demo row."""
+    from apps.apartments.models import Residency
+
+    run_seed()
+
+    closed = Residency.objects.filter(end_date__isnull=False)
+    assert closed.exists(), "No Residency with end_date — turnover demo missing"
+    row = closed.first()
+    # Sanity: end_date is after start_date (model.clean() asserts this too).
+    assert row.end_date >= row.start_date
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_cottage_owner_bound_to_cottage(run_seed):
+    """The cottage@demo.com user has a primary Residency on the cottage unit."""
+    from apps.apartments.models import BuildingType, Residency
+
+    run_seed()
+
+    cottage_owner = User.objects.get(email="cottage@demo.com")
+    residency = Residency.objects.get(user=cottage_owner, is_primary=True)
+    assert residency.unit.entrance.building.type == BuildingType.COTTAGE
+
+
+@pytest.mark.django_db
+def test_seed_demo_primary_residencies_have_start_date(run_seed):
+    """Every primary Residency carries a ``start_date`` (no NULLs allowed)."""
+    from apps.apartments.models import Residency
+
+    run_seed()
+
+    missing = Residency.objects.filter(is_primary=True, start_date__isnull=True)
+    assert missing.count() == 0, (
+        "Primary Residencies without start_date: "
+        f"{list(missing.values_list('user__email', flat=True))}"
+    )

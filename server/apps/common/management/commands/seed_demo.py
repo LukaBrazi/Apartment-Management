@@ -52,6 +52,7 @@ from apps.common.seed import (
     reset_scope,
     seed_building,
     seed_issues,
+    seed_organization,
     seed_passes,
     seed_posts,
     seed_ratings,
@@ -162,12 +163,30 @@ class Command(BaseCommand):
         # ── Seed phase ─────────────────────────────────────────────────
         self.stdout.write(self.style.NOTICE("🌱 seed_demo: starting seed phase"))
 
-        building_result = seed_building.seed()
+        # PR-13: organisation is the root of the demo tenant scope — seed
+        # it first so buildings can link to it on first-run as well as
+        # re-runs.
+        organization_result = seed_organization.seed()
+        self.stdout.write(
+            f"  • organization={organization_result.organization.name!r} "
+            f"type={organization_result.organization.type} "
+            f"created={organization_result.created}"
+        )
+
+        building_result = seed_building.seed(
+            organization_result=organization_result,
+        )
+        cottage_name = (
+            building_result.cottage_building.name
+            if building_result.cottage_building
+            else "—"
+        )
         self.stdout.write(
             f"  • building={building_result.building.name!r} "
             f"entrances={len(building_result.entrances)} "
             f"units={len(building_result.units_by_key)} "
-            f"(+{building_result.created_units} new)"
+            f"(+{building_result.created_units} new); "
+            f"cottage={cottage_name!r}"
         )
 
         users_result = seed_users.seed(
@@ -187,7 +206,10 @@ class Command(BaseCommand):
             f"guards={len(users_result.guards)}, "
             f"workers={len(users_result.workers)}, "
             f"residents={len(users_result.residents)}, "
-            f"unbound={len(users_result.unbound_residents)})"
+            f"unbound={len(users_result.unbound_residents)}); "
+            f"cottage_owner={bool(users_result.cottage_owner)} "
+            f"renter={bool(users_result.renter)} "
+            f"multi_unit_owner={bool(users_result.multi_unit_owner)}"
         )
 
         issues_result = seed_issues.seed(

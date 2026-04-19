@@ -19,9 +19,27 @@ Profile auto-creation: a ``post_save`` signal on ``User`` creates a default
 ``QuerySet.update()`` intentionally bypass ``Profile.save()`` (which would
 recompute ``reputation``), because for deterministic seeding we want the
 exact values we set.
+
+PR-13 extensions
+----------------
+
+* Every primary Residency row carries a ``start_date`` so the UI can
+  show "mешканець з квітня 2024".
+* A multi-unit owner — ``resident3`` — owns a second (otherwise-vacant)
+  unit as a non-primary Residency.  This exercises the product's
+  "one user → many units" relationship.
+* A TENANT Residency — ``renter@demo.com`` — rents one of the demo
+  units from the primary owner.  Rounds out the ResidencyRole choices
+  beyond OWNER.
+* A historical (turnover) Residency carries ``end_date`` in the past
+  so the portal's history view has a row to render.
+* A cottage owner — ``cottage@demo.com`` — is bound to the PR-13
+  cottage Unit.  Keeps the cottage story end-to-end.
 """
 from __future__ import annotations
 
+import datetime as _dt
+import hashlib
 import logging
 import random
 from dataclasses import dataclass, field
@@ -31,6 +49,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from .helpers import (
+    BASE_TIME,
     DEFAULT_DEMO_PASSWORD,
     DEMO_EMAIL_DOMAIN,
     DISPATCHERS,
@@ -79,6 +98,12 @@ class UsersSeedResult:
     tenant: SeededUser | None = None
     residents: list[SeededUser] = field(default_factory=list)
     unbound_residents: list[SeededUser] = field(default_factory=list)
+    # PR-13 additions — kept optional so callers that only care about
+    # the four original pools (seed_issues, seed_posts) continue to
+    # work without branching on presence.
+    cottage_owner: SeededUser | None = None
+    renter: SeededUser | None = None
+    multi_unit_owner: SeededUser | None = None
 
     def all(self) -> list[SeededUser]:
         out: list[SeededUser] = []
@@ -89,6 +114,10 @@ class UsersSeedResult:
             out.append(self.tenant)
         out.extend(self.residents)
         out.extend(self.unbound_residents)
+        if self.cottage_owner is not None:
+            out.append(self.cottage_owner)
+        if self.renter is not None:
+            out.append(self.renter)
         return out
 
     def workers_by_occupation(self) -> dict[str, list[SeededUser]]:
@@ -272,12 +301,153 @@ def seed(
             SeededUser(email=email, user=user, role="new-resident"),
         )
 
+    # --- 7. PR-13 concept extras ------------------------------------------
+    # Multi-unit owner, TENANT Residency, turnover (end_date) demo, cottage
+    # owner. Kept in a separate helper so the main loop stays readable and
+    # the extras can be unit-tested in isolation.
+    _seed_pr13_extras(
+        result=result,
+        building_result=building_result,
+        password=password,
+        Profile=Profile,
+    )
+
     logger.info(
-        "seed_users: dispatchers=%d guards=%d workers=%d residents=%d unbound=%d",
+        "seed_users: dispatchers=%d guards=%d workers=%d residents=%d "
+        "unbound=%d cottage_owner=%s renter=%s multi_unit_owner=%s",
         len(result.dispatchers), len(result.guards), len(result.workers),
         len(result.residents), len(result.unbound_residents),
+        bool(result.cottage_owner), bool(result.renter),
+        bool(result.multi_unit_owner),
     )
     return result
+
+
+def _seed_pr13_extras(
+    *,
+    result: UsersSeedResult,
+    building_result: "BuildingSeedResult",
+    password: str,
+    Profile,
+) -> None:
+    """Seed the concept-alignment users introduced in PR-13.
+
+    Writes four new Residency rows on top of the rank-and-file ones:
+
+    1. ``resident3`` (already seeded) gains a secondary Residency on the
+       second vacant apartment — shows "one user → many units".
+    2. ``resident5`` (already seeded) gains a historical Residency with
+       ``end_date`` in the past on a vacant apartment — shows turnover
+       so the portal's history view isn't empty.
+    3. ``renter@demo.com`` gets a TENANT-role Residency on the first
+       vacant apartment — exercises the ResidencyRole.TENANT branch.
+    4. ``cottage@demo.com`` is bound to the cottage Unit as an OWNER
+       so the cottage building has at least one resident.
+    """
+    from apps.apartments.models import Residency, ResidencyRole
+
+    from .helpers import VACANT_UNIT_DESIGNATIONS
+
+    vacant_a = building_result.units_by_key.get(VACANT_UNIT_DESIGNATIONS[0])
+    vacant_b = building_result.units_by_key.get(VACANT_UNIT_DESIGNATIONS[1])
+    cottage_unit = building_result.cottage_unit
+
+    # ── (1) multi-unit owner: pick the 3rd resident if present ─────────
+    multi_source: SeededUser | None = None
+    if len(result.residents) >= 3 and vacant_a is not None:
+        multi_source = result.residents[2]  # resident3 by construction
+        Residency.objects.update_or_create(
+            user=multi_source.user,
+            unit=vacant_a,
+            defaults={
+                "role": ResidencyRole.OWNER,
+                # Non-primary — multi_source's primary stays on their
+                # own apartment. Without this we'd violate the partial
+                # unique constraint.
+                "is_primary": False,
+                "start_date": _residency_start_date(
+                    f"{multi_source.email}:secondary"
+                ),
+            },
+        )
+        result.multi_unit_owner = multi_source
+
+    # ── (2) turnover demo: resident5 gets a past Residency on vacant_b ──
+    if len(result.residents) >= 5 and vacant_b is not None:
+        turnover_user = result.residents[4].user
+        # End date ~2 years ago; start date ~4 years ago. Values are
+        # deterministic via BASE_TIME so reruns converge.
+        turnover_end = (BASE_TIME - _dt.timedelta(days=730)).date()
+        turnover_start = (BASE_TIME - _dt.timedelta(days=1460)).date()
+        Residency.objects.update_or_create(
+            user=turnover_user,
+            unit=vacant_b,
+            defaults={
+                "role": ResidencyRole.OWNER,
+                "is_primary": False,
+                "start_date": turnover_start,
+                "end_date": turnover_end,
+            },
+        )
+
+    # ── (3) TENANT Residency: renter@demo.com on vacant_a ──────────────
+    # renter@demo.com can share vacant_a with the multi-unit owner
+    # above because Residency is keyed on (user, unit) — two different
+    # users co-residing the same unit is legal (roommate scenario).
+    if vacant_a is not None:
+        renter_user, _ = _ensure_user(
+            "renter@demo.com", "Орися", "Наймачка", password, is_staff=False,
+        )
+        _patch_profile(
+            Profile,
+            renter_user,
+            occupation=Profile.Occupation.TENANT,
+            gender=Profile.Gender.FEMALE,
+            phone="+380507777001",
+            city="Київ",
+            bio=(
+                "Орендую квартиру у демо-ЖК. Активно користуюся порталом "
+                "для заявок на ремонт та замовлення перепусток для гостей."
+            ),
+            unit=vacant_a,
+            residency_role=ResidencyRole.TENANT,
+            residency_is_primary=True,
+            residency_start_date=(BASE_TIME - _dt.timedelta(days=120)).date(),
+        )
+        result.renter = SeededUser(
+            email="renter@demo.com",
+            user=renter_user,
+            unit=vacant_a,
+            role="renter",
+        )
+
+    # ── (4) cottage owner ──────────────────────────────────────────────
+    if cottage_unit is not None:
+        cottage_user, _ = _ensure_user(
+            "cottage@demo.com", "Ярослав", "Котеджний", password, is_staff=False,
+        )
+        _patch_profile(
+            Profile,
+            cottage_user,
+            occupation=Profile.Occupation.TENANT,
+            gender=Profile.Gender.MALE,
+            phone="+380508888001",
+            city="Київ",
+            bio=(
+                "Мешканець котеджу у демо-ЖК. Показую, що ApartmentOS "
+                "однаково підходить для багатоквартирних будинків і для "
+                "приватних котеджів."
+            ),
+            unit=cottage_unit,
+            residency_role=ResidencyRole.OWNER,
+            residency_is_primary=True,
+        )
+        result.cottage_owner = SeededUser(
+            email="cottage@demo.com",
+            user=cottage_user,
+            unit=cottage_unit,
+            role="cottage-owner",
+        )
 
 
 # ───────────────────────────── internal helpers ──────────────────────────────
@@ -363,6 +533,20 @@ def _ensure_user(
     return user, created
 
 
+def _residency_start_date(email: str) -> _dt.date:
+    """Deterministic, human-looking ``start_date`` for a seeded Residency.
+
+    SHA-1 based so the date is stable across Python processes (unlike
+    ``hash()``, which depends on ``PYTHONHASHSEED``).  The [30, 1500]
+    day window produces a spread between "moved in last month" and
+    "has lived here ~4 years", which matches the tenure mix of a real
+    ЖК rather than everyone having started on the same day.
+    """
+    digest = hashlib.sha1(email.encode("utf-8")).digest()
+    days = int.from_bytes(digest[:2], "big") % 1470 + 30
+    return (BASE_TIME - _dt.timedelta(days=days)).date()
+
+
 def _patch_profile(
     Profile,
     user,
@@ -373,6 +557,10 @@ def _patch_profile(
     city: str,
     bio: str,
     unit: "Unit | None" = None,
+    residency_role: str | None = None,
+    residency_is_primary: bool = True,
+    residency_start_date: _dt.date | None = None,
+    residency_end_date: _dt.date | None = None,
 ) -> None:
     """Update the auto-created Profile in place.
 
@@ -384,6 +572,17 @@ def _patch_profile(
     primary ``Residency`` instead.  The seed keeps the same call-site
     ergonomics — pass a ``Unit`` and the resident gets it as their
     primary home.
+
+    PR-13 adds explicit Residency knobs:
+
+    * ``residency_role`` defaults to ``OWNER`` — pass ``TENANT`` / ``FAMILY``
+      to exercise the other choices.
+    * ``residency_is_primary`` defaults to ``True`` — pass ``False`` to
+      seed a secondary / historical Residency.
+    * ``residency_start_date`` defaults to a deterministic hash-derived
+      date (see ``_residency_start_date``).
+    * ``residency_end_date`` populates the turnover field (e.g. a past
+      Residency that no longer counts for billing).
     """
     updates: dict[str, object] = {
         "occupation": occupation,
@@ -399,20 +598,26 @@ def _patch_profile(
     if unit is not None:
         from apps.apartments.models import Residency, ResidencyRole
 
+        role = residency_role or ResidencyRole.OWNER
+        start_date = residency_start_date or _residency_start_date(user.email)
+
         Residency.objects.update_or_create(
             user=user,
             unit=unit,
             defaults={
-                "role": ResidencyRole.OWNER,
-                "is_primary": True,
+                "role": role,
+                "is_primary": residency_is_primary,
+                "start_date": start_date,
+                "end_date": residency_end_date,
             },
         )
-        # Demote any other primaries for this user — honour the
-        # partial unique invariant explicitly here because
-        # ``update_or_create`` does not run model.save().
-        Residency.objects.filter(user=user, is_primary=True).exclude(
-            unit=unit
-        ).update(is_primary=False)
+        if residency_is_primary:
+            # Demote any other primaries for this user — honour the
+            # partial unique invariant explicitly here because
+            # ``update_or_create`` does not run model.save().
+            Residency.objects.filter(user=user, is_primary=True).exclude(
+                unit=unit
+            ).update(is_primary=False)
     # After bulk update, touch slug regen if it was never populated (first run).
     # AutoSlugField updates via save(), not update(), so force a refresh if
     # slug is still empty on the freshly-created profile.

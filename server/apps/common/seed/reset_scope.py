@@ -3,15 +3,21 @@
 Per ``docs/DEMO_SEED_PLAN.md`` §11: the reset MUST be paranoid.  An error
 here equals silently wiping a production customer's data.  Defense in depth:
 
-1. **Hard-coded markers.** ``DEMO_EMAIL_DOMAIN`` / ``DEMO_BUILDING_NAME``
-   come from :mod:`apps.common.seed.helpers` — never from env, never from
+1. **Hard-coded markers.** ``DEMO_EMAIL_DOMAIN`` /
+   ``DEMO_BUILDING_NAME_PREFIX`` come from
+   :mod:`apps.common.seed.helpers` — never from env, never from
    settings.  An attacker with ``env`` access cannot broaden the scope.
+   PR-13 switched the building filter from exact-name to
+   ``name__startswith`` to accommodate the cottage showcase; the
+   prefix is still a code constant.
 
-2. **Explicit ``is_demo`` flag (PR-12).** Users and Buildings carry a
-   dedicated ``is_demo`` BooleanField that the reset filter ANDs with the
-   hard-coded markers above.  A real user with a coincidental ``@demo.com``
-   email is safe as long as nobody flipped ``is_demo`` on them — and the
-   seed is the only code path that sets it.
+2. **Explicit ``is_demo`` flag (PR-12 + PR-13).** Users, Buildings and
+   Organizations carry a dedicated ``is_demo`` BooleanField that the
+   reset filter ANDs with the hard-coded markers above.  A real user
+   with a coincidental ``@demo.com`` email is safe as long as nobody
+   flipped ``is_demo`` on them — and the seed is the only code path
+   that sets it.  Organizations rely solely on the flag (no name
+   prefix) because "demo" org names are too varied to key off.
 
 3. **Superuser exclusion.** ``is_superuser=False`` is applied to the
    queryset.  Even a user who *does* happen to have a ``@demo.com`` email
@@ -43,7 +49,11 @@ from typing import TYPE_CHECKING
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-from .helpers import DEMO_BUILDING_NAME, DEMO_EMAIL_DOMAIN
+from .helpers import (
+    DEMO_BUILDING_NAME,  # re-exported for historical tests
+    DEMO_BUILDING_NAME_PREFIX,
+    DEMO_EMAIL_DOMAIN,
+)
 
 # ── Sanity thresholds ──────────────────────────────────────────────────────
 # Code constants, not env — see module docstring §4. Tuned for the current
@@ -88,6 +98,11 @@ class ResetReport:
     demo_posts_matched: int = 0
     demo_passes_matched: int = 0
     demo_ratings_matched: int = 0
+    # PR-13: the seed now creates an Organization — tracked separately
+    # so the dry-run report lets operators see it alongside user/building
+    # counts before flipping ALLOW_DEMO_RESET on.
+    demo_organizations_matched: int = 0
+    non_demo_organizations_preserved: int = 0
     orphan_tags_removed: int = 0
 
     def as_dict(self) -> "Mapping[str, object]":
@@ -123,6 +138,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
     # command loader.
     from apps.apartments.models import Building
     from apps.issues.models import Issue
+    from apps.organizations.models import Organization
     from apps.passes.models import VehiclePass
     from apps.posts.models import Post
     from apps.ratings.models import Rating
@@ -132,13 +148,19 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
     # ── Pre-flight snapshot ──────────────────────────────────────────────────
     # These two numbers are the invariant we assert after the delete.  If they
     # move, we rolled into real data somewhere — abort and rollback.
+    # PR-13: building scope is "name starts with the demo prefix" to cover
+    # the cottage + apartment block the seed now creates. A stray
+    # customer building named "Зелений Квартал — Демо" would have been
+    # matched before anyway; the prefix match simply extends that to
+    # "Зелений Квартал — Демо · Котедж".
     pre_superusers = User.objects.filter(is_superuser=True).count()
     pre_non_demo_users = User.objects.exclude(
         email__iendswith=DEMO_EMAIL_DOMAIN,
     ).count()
     pre_non_demo_buildings = Building.objects.exclude(
-        name=DEMO_BUILDING_NAME,
+        name__startswith=DEMO_BUILDING_NAME_PREFIX,
     ).count()
+    pre_non_demo_orgs = Organization.objects.filter(is_demo=False).count()
 
     # ── Sanity thresholds (PR-12) ────────────────────────────────────────────
     # Refuse to proceed if the DB doesn't look like a demo env: the goal is
@@ -174,13 +196,23 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         is_demo=True,
         is_superuser=False,  # ← HARD GUARD — never delete a superuser
     )
+    # PR-13: prefix match covers the apartment block AND the cottage
+    # that PR-13 adds. ``is_demo=True`` stays as the second factor so a
+    # hand-created building that happens to share the prefix survives
+    # unless someone also flipped the flag on it.
     demo_buildings_qs = Building.objects.filter(
-        name=DEMO_BUILDING_NAME,
+        name__startswith=DEMO_BUILDING_NAME_PREFIX,
         is_demo=True,
     )
+    # PR-13: matching organisations is done purely by the ``is_demo``
+    # flag — there is no stable name prefix to lean on because demo
+    # orgs are unusual enough that we want a single, explicit opt-in
+    # marker. The seed module is the only writer of this flag.
+    demo_orgs_qs = Organization.objects.filter(is_demo=True)
 
     matched_users = demo_users_qs.count()
     matched_buildings = demo_buildings_qs.count()
+    matched_orgs = demo_orgs_qs.count()
 
     # Content scope — Issues / Posts / Passes / Ratings carry SET_NULL FKs to
     # User (not CASCADE as plan §11.1 prose suggested), so we can't rely on
@@ -209,12 +241,13 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
 
     logger.info(
         "reset_demo_scope: dry_run=%s  demo_users=%d  demo_buildings=%d  "
-        "demo_issues=%d  demo_posts=%d  demo_passes=%d  demo_ratings=%d  "
-        "pre_superusers=%d  pre_non_demo_users=%d  "
-        "pre_non_demo_buildings=%d",
-        dry_run, matched_users, matched_buildings,
+        "demo_orgs=%d  demo_issues=%d  demo_posts=%d  demo_passes=%d  "
+        "demo_ratings=%d  pre_superusers=%d  pre_non_demo_users=%d  "
+        "pre_non_demo_buildings=%d  pre_non_demo_orgs=%d",
+        dry_run, matched_users, matched_buildings, matched_orgs,
         matched_issues, matched_posts, matched_passes, matched_ratings,
         pre_superusers, pre_non_demo_users, pre_non_demo_buildings,
+        pre_non_demo_orgs,
     )
 
     if dry_run:
@@ -222,6 +255,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
             dry_run=True,
             demo_users_matched=matched_users,
             demo_buildings_matched=matched_buildings,
+            demo_organizations_matched=matched_orgs,
             demo_issues_matched=matched_issues,
             demo_posts_matched=matched_posts,
             demo_passes_matched=matched_passes,
@@ -229,6 +263,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
             superusers_preserved=pre_superusers,
             non_demo_users_preserved=pre_non_demo_users,
             non_demo_buildings_preserved=pre_non_demo_buildings,
+            non_demo_organizations_preserved=pre_non_demo_orgs,
         )
 
     orphan_tags_removed = 0
@@ -249,7 +284,17 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         demo_users_qs.delete()
 
         # Buildings → Entrances → Units cascade, plus Announcements → CASCADE.
+        # Delete the buildings explicitly (before the Organization) so we
+        # exercise the ``is_demo`` filter instead of relying on cascade
+        # from the organization. This keeps the matched/deleted counts
+        # honest in the returned ResetReport.
         demo_buildings_qs.delete()
+
+        # PR-13: delete demo organizations last. Any building that
+        # happened to stay linked to a demo org would have cascaded
+        # above anyway, but matching on ``is_demo=True`` gives us a
+        # direct handle for the count + post-invariant.
+        demo_orgs_qs.delete()
 
         # Orphan tag cleanup — see plan §11.4.  django-taggit exposes the Tag
         # model via ``TaggableManager.through.tag_model()``.  Import lazily;
@@ -262,8 +307,9 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
             email__iendswith=DEMO_EMAIL_DOMAIN,
         ).count()
         post_non_demo_buildings = Building.objects.exclude(
-            name=DEMO_BUILDING_NAME,
+            name__startswith=DEMO_BUILDING_NAME_PREFIX,
         ).count()
+        post_non_demo_orgs = Organization.objects.filter(is_demo=False).count()
 
         if post_superusers != pre_superusers:
             raise DemoResetSafetyError(
@@ -283,11 +329,18 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
                 f"({pre_non_demo_buildings} → {post_non_demo_buildings}). "
                 "Rolling back transaction — DB untouched.",
             )
+        if post_non_demo_orgs != pre_non_demo_orgs:
+            raise DemoResetSafetyError(
+                f"Non-demo Organization count changed during reset "
+                f"({pre_non_demo_orgs} → {post_non_demo_orgs}). "
+                "Rolling back transaction — DB untouched.",
+            )
 
     return ResetReport(
         dry_run=False,
         demo_users_matched=matched_users,
         demo_buildings_matched=matched_buildings,
+        demo_organizations_matched=matched_orgs,
         demo_issues_matched=matched_issues,
         demo_posts_matched=matched_posts,
         demo_passes_matched=matched_passes,
@@ -295,6 +348,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         superusers_preserved=pre_superusers,
         non_demo_users_preserved=pre_non_demo_users,
         non_demo_buildings_preserved=pre_non_demo_buildings,
+        non_demo_organizations_preserved=pre_non_demo_orgs,
         orphan_tags_removed=orphan_tags_removed,
     )
 
