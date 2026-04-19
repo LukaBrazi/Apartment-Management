@@ -6,16 +6,26 @@ const nextConfig = {
 		if (!apiUrl) return [];
 		return [
 			{
+				// Next.js normalises the incoming URL before matching rewrites
+				// and strips a trailing slash regardless of `skipTrailingSlashRedirect`.
+				// That meant `/api/v1/auth/login/` was proxied to Django as
+				// `/api/v1/auth/login` (no slash); Django APPEND_SLASH=True then
+				// 301'd back to `/api/v1/auth/login/`, the browser followed as
+				// GET (POST body dropped), Next stripped the slash again — infinite
+				// loop, "ERR_TOO_MANY_REDIRECTS" on login.
+				//
+				// Explicitly re-append the slash in the destination so Django
+				// always receives the canonical `/api/.../` form and never has
+				// to redirect. Safe because every Django REST endpoint lives at
+				// a path with a trailing slash (APPEND_SLASH=True is the project
+				// convention).
 				source: "/api/:path*",
-				destination: `${apiUrl}/api/:path*`,
+				destination: `${apiUrl}/api/:path*/`,
 			},
 		];
 	},
-	// Prevent Next.js from issuing a 308 redirect when the URL has a trailing
-	// slash (default Next behaviour strips it). Django REST endpoints live at
-	// `/api/v1/.../` *with* a trailing slash (APPEND_SLASH=True), and we need
-	// the browser to POST straight to the rewrite destination instead of
-	// bouncing through a 308 that drops the body and breaks login on prod.
+	// Kept for belt-and-braces: if any non-/api route ends with a slash we
+	// don't want Next.js issuing its own 308 either.
 	skipTrailingSlashRedirect: true,
 };
 
