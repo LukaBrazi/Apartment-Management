@@ -39,11 +39,12 @@ class AnnouncementListAPIView(generics.ListAPIView):
                 return qs.filter(building__organization__in=user_orgs)
             return qs
 
-        # Tenant: filter to their building via Profile.unit → Entrance → Building.
-        # PR-7 dropped the legacy ``Unit.apartment.tenant`` path; ownership
-        # lives on ``Profile.unit`` exclusively now.
+        # Tenant: filter to their building via Profile.primary_unit →
+        # Entrance → Building.  PR-10 moved tenant resolution to the
+        # Residency through-model; ``primary_unit`` falls back to the
+        # legacy ``Profile.unit`` FK during the migration window.
         profile = getattr(user, "profile", None)
-        unit = getattr(profile, "unit", None) if profile is not None else None
+        unit = getattr(profile, "primary_unit", None) if profile is not None else None
         if unit is not None and unit.entrance_id:
             return qs.filter(building=unit.entrance.building)
         # Fallback: no unit linked → no announcements

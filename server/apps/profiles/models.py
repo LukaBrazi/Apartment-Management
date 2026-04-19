@@ -152,6 +152,44 @@ class Profile(TimeStampedModel):
         always_update=True,
     )
 
+    # PR-10: primary Unit accessor that prefers the new Residency
+    # through-model and falls back to ``self.unit`` during the migration
+    # window.  PR-11 will remove the FK entirely — callers must move to
+    # this accessor rather than reading ``profile.unit`` directly.
+    @property
+    def primary_unit(self):
+        """Return this profile's canonical Unit.
+
+        Lookup order:
+        1. The ``Residency`` row marked ``is_primary=True`` for the
+           underlying user — this is the single source of truth once
+           PR-11 drops ``Profile.unit``.
+        2. Fallback to the legacy ``Profile.unit`` FK, so PR-10 stays
+           backward-compatible while the data backfill rolls out.
+
+        The accessor is resilient to a missing ``user`` (unsaved
+        profile) and to the ``residencies`` relation being absent on
+        older historical states during migrations.
+        """
+
+        user = getattr(self, "user", None)
+        if user is not None and getattr(user, "pk", None):
+            try:
+                from apps.apartments.models import Residency
+
+                residency = (
+                    Residency.objects.filter(user_id=user.pk, is_primary=True)
+                    .select_related("unit__entrance__building")
+                    .first()
+                )
+                if residency is not None:
+                    return residency.unit
+            except Exception:
+                # Historical migration state: the Residency table may
+                # not exist yet — fall back silently.
+                pass
+        return self.unit
+
     # Property to check if the user is banned
     @property
     def is_banned(self) -> bool:
@@ -173,13 +211,53 @@ class Profile(TimeStampedModel):
 
     # Method to save the profile
     def save(self, *args: Dict, **kwargs: Dict) -> None:
-        """Override the save method to update the reputation before saving."""
+        """Override the save method to update the reputation before saving.
+
+        PR-10 also mirrors writes of ``Profile.unit`` into the new
+        ``Residency`` through-model so the two sources stay aligned
+        while readers are being cut over.  The mirror is best-effort:
+        if the ``apartments`` app isn't fully migrated (e.g. during
+        tests that tinker with migrations), the save still succeeds.
+        """
 
         # Update the reputation
         self.update_reputation()
 
         # Return the super save method
         super().save(*args, **kwargs)
+
+        # PR-10: mirror the authoritative FK into Residency so the new
+        # readers (Profile.primary_unit, announcements/issues/passes)
+        # stay consistent with the admin flow.  Explicit opt-out via
+        # ``_skip_residency_mirror`` (used by the PR-10 data migration
+        # and tests that want to assert fallback behavior).
+        if getattr(self, "_skip_residency_mirror", False):
+            return
+        if self.user_id and self.unit_id:
+            try:
+                from apps.apartments.models import Residency
+
+                existing = Residency.objects.filter(
+                    user_id=self.user_id, unit_id=self.unit_id
+                ).first()
+                if existing is None:
+                    Residency.objects.create(
+                        user_id=self.user_id,
+                        unit_id=self.unit_id,
+                        role="owner",
+                        is_primary=not Residency.objects.filter(
+                            user_id=self.user_id, is_primary=True
+                        ).exists(),
+                    )
+                elif not existing.is_primary and not Residency.objects.filter(
+                    user_id=self.user_id, is_primary=True
+                ).exists():
+                    existing.is_primary = True
+                    existing.save(update_fields=["is_primary"])
+            except Exception:
+                # Apartment app not migrated yet (historical migration
+                # context) — leave the mirror best-effort.
+                pass
 
     # Method to get the average rating received by the user
     def get_average_rating(self):

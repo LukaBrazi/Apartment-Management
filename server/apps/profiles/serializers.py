@@ -45,10 +45,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True)
     apartment = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
-    unit_number = serializers.ReadOnlyField(source="unit.number")
-    unit_id = serializers.ReadOnlyField(source="unit.id")
-    building_name = serializers.ReadOnlyField(source="unit.entrance.building.name")
-    building_id = serializers.ReadOnlyField(source="unit.entrance.building.id")
+    # PR-10: unit/building fields now resolve via ``Profile.primary_unit``
+    # (primary Residency, fallback to legacy ``Profile.unit``).
+    unit_number = serializers.SerializerMethodField()
+    unit_id = serializers.SerializerMethodField()
+    building_name = serializers.SerializerMethodField()
+    building_id = serializers.SerializerMethodField()
     managed_buildings = serializers.SerializerMethodField()
 
     # Meta Class
@@ -108,28 +110,52 @@ class ProfileSerializer(serializers.ModelSerializer):
             # Return None
             return None
 
+    # PR-10 accessor helpers — resolve the tenant's unit via
+    # ``primary_unit`` so multi-unit residents see their primary home
+    # consistently across the Profile payload.
+    def get_unit_number(self, obj: Profile):
+        unit = obj.primary_unit
+        return unit.number if unit is not None else None
+
+    def get_unit_id(self, obj: Profile):
+        unit = obj.primary_unit
+        return str(unit.id) if unit is not None else None
+
+    def get_building_name(self, obj: Profile):
+        unit = obj.primary_unit
+        if unit is not None and unit.entrance_id:
+            return unit.entrance.building.name
+        return None
+
+    def get_building_id(self, obj: Profile):
+        unit = obj.primary_unit
+        if unit is not None and unit.entrance_id:
+            return str(unit.entrance.building.id)
+        return None
+
     # Method to get the apartment
     def get_apartment(self, obj: Profile) -> dict | None:
-        """Render ``profile.unit`` in the legacy Apartment JSON shape.
+        """Render the tenant's primary unit in the legacy Apartment JSON shape.
 
-        PR-7 deleted the ``unit_as_legacy_apartment`` helper and the
-        ``Apartment.tenant`` fallback; this method now builds the
-        payload inline.  The field is kept in the Profile payload until
-        the frontend drops it entirely — ``About.tsx`` already reads
-        ``profile.unit_number`` / ``profile.building_name`` as of PR-4.
+        PR-10: resolves via ``Profile.primary_unit`` so multi-unit
+        residents see their primary residency (with graceful fallback
+        to the legacy ``Profile.unit`` FK).  The field is kept in the
+        Profile payload until the frontend drops it entirely —
+        ``About.tsx`` already reads ``profile.unit_number`` /
+        ``profile.building_name`` as of PR-4.
 
         Args:
             obj (Profile): The profile.
 
         Returns:
-            dict | None: The apartment-shaped payload, or None when the
-            profile has no linked Unit.
+            dict | None: The apartment-shaped payload, or None when
+            the profile has no linked Unit.
         """
 
-        if not obj.unit_id:
+        unit = obj.primary_unit
+        if unit is None:
             return None
 
-        unit = obj.unit
         building_name = ""
         if unit.entrance_id:
             building_name = unit.entrance.building.name

@@ -235,6 +235,8 @@ class IssueCreateAPIView(generics.CreateAPIView):
         unit_id = self.kwargs.get("unit_id")
         user = self.request.user
 
+        profile = getattr(user, "profile", None)
+
         if unit_id:
             # Explicit Unit targeting.
             try:
@@ -242,14 +244,31 @@ class IssueCreateAPIView(generics.CreateAPIView):
             except Unit.DoesNotExist:
                 raise PermissionDenied("Unit not found.")
             if not (user.is_staff or user.is_superuser):
-                profile_unit = getattr(getattr(user, "profile", None), "unit", None)
-                if profile_unit is None or profile_unit.pk != unit.pk:
+                # PR-10: authorize against any Residency (multi-unit
+                # owners can now open an issue for any of their units),
+                # with graceful fallback to the legacy Profile.unit FK.
+                from apps.apartments.models import Residency
+
+                owns_unit = Residency.objects.filter(
+                    user_id=user.pk, unit_id=unit.pk
+                ).exists()
+                if not owns_unit:
+                    legacy_unit = getattr(profile, "unit", None)
+                    owns_unit = (
+                        legacy_unit is not None and legacy_unit.pk == unit.pk
+                    )
+                if not owns_unit:
                     raise PermissionDenied(
                         "You can only report issues for your own unit."
                     )
         else:
-            # Default: derive Unit from the reporter's profile.
-            unit = getattr(getattr(user, "profile", None), "unit", None)
+            # Default: derive Unit from the reporter's primary Residency
+            # (falls back to ``Profile.unit`` during the PR-10 window).
+            unit = (
+                getattr(profile, "primary_unit", None)
+                if profile is not None
+                else None
+            )
             if unit is None:
                 raise ValidationError({
                     "detail": (

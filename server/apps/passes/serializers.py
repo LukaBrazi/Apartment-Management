@@ -19,13 +19,15 @@ class VehiclePassCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
-        # PR-7: ``Profile.unit`` is the only ownership source now that the
-        # legacy ``Apartment.tenant`` path is gone.
+        # PR-10: resolve the resident's unit via the primary ``Residency``
+        # (falls back to the legacy ``Profile.unit`` during the migration
+        # window via ``Profile.primary_unit``).
         unit = None
         profile = getattr(user, "profile", None)
-        if profile is not None and profile.unit_id:
+        primary = getattr(profile, "primary_unit", None) if profile is not None else None
+        if primary is not None:
             unit = (
-                Unit.objects.filter(pkid=profile.unit_id)
+                Unit.objects.filter(pkid=primary.pk)
                 .select_related("entrance__building")
                 .first()
             )
