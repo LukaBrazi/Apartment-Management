@@ -3,7 +3,7 @@ import factory
 from django.contrib.auth import get_user_model
 from factory.django import DjangoModelFactory
 
-from apps.apartments.models import Building, Entrance, Unit
+from apps.apartments.models import Building, Entrance, Residency, Unit
 
 User = get_user_model()
 
@@ -51,6 +51,16 @@ class UnitFactory(DjangoModelFactory):
     entrance = factory.SubFactory(EntranceFactory)
     number = factory.Sequence(lambda n: str(n + 1))
     floor = factory.Sequence(lambda n: (n % 9) + 1)
+
+
+class ResidencyFactory(DjangoModelFactory):
+    class Meta:
+        model = Residency
+
+    user = factory.SubFactory(UserFactory)
+    unit = factory.SubFactory(UnitFactory)
+    role = "owner"
+    is_primary = False
 
 
 class AnnouncementFactory(DjangoModelFactory):

@@ -14,10 +14,15 @@ User = get_user_model()
 # ── Organization Type Choices ──────────────────────────────────────────────────
 
 class OrganizationType(models.TextChoices):
-    """Типи організацій для управління нерухомістю"""
+    """Типи організацій для управління нерухомістю.
+
+    Інформативне поле — для UI/класифікації.  Логіка прав доступу і
+    скоуп квартир працюють через ``Organization`` незалежно від типу.
+    """
 
     HOUSING_COMPLEX = "housing_complex", _("Житловий комплекс")
     COTTAGE_VILLAGE = "cottage_village", _("Котеджне село")
+    SINGLE_BUILDING = "single_building", _("Одна будівля")
     MANAGEMENT_COMPANY = "management_company", _("Управляюча компанія")
 
 
