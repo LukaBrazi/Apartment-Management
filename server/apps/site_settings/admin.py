@@ -16,14 +16,9 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     inlines = [SiteLinkInline]
     fieldsets = [
-        (
-            _("Residential Complex (ЖК)"),
-            {
-                "fields": ["current_complex"],
-                "description": _("The active ЖК for this installation. "
-                "Buildings are scoped to this complex."),
-            },
-        ),
+        # PR-8: "Residential Complex (ЖК)" fieldset removed along with the
+        # ``current_complex`` FK; whitelabel ЖК copy lives in the
+        # "Complex Information" fieldset below.
         (
             _("Hero Section"),
             {
@@ -59,7 +54,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             _("Complex Information"),
             {
                 "fields": ["complex_name", "complex_address", "complex_description"],
-                "description": _("Override current_complex info or provide additional context."),
+                "description": _("Whitelabel ЖК display copy (name, address, description)."),
             },
         ),
         (

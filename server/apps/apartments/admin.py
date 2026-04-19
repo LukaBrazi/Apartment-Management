@@ -1,20 +1,16 @@
 # Imports
-from apps.apartments.models import Building, Entrance, ResidentialComplex, Unit
+from apps.apartments.models import Building, Entrance, Unit
 from django.contrib import admin
-
-
-@admin.register(ResidentialComplex)
-class ResidentialComplexAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "address", "city", "created_at"]
-    search_fields = ["name", "address"]
 
 
 @admin.register(Building)
 class BuildingAdmin(admin.ModelAdmin):
-    list_display = ["id", "name", "address", "city", "complex", "is_active", "created_at"]
-    list_filter = ["is_active", "city", "complex"]
+    # PR-8: ``complex`` column removed along with the ``ResidentialComplex``
+    # model.  Buildings are now scoped to ``organization`` exclusively.
+    list_display = ["id", "name", "address", "city", "organization", "is_active", "created_at"]
+    list_filter = ["is_active", "city", "organization"]
     search_fields = ["name", "address"]
-    autocomplete_fields = ["complex"]
+    autocomplete_fields = ["organization"]
 
 
 @admin.register(Entrance)

@@ -7,9 +7,12 @@ class SiteSettings(models.Model):
     A "default" instance with organization=NULL serves as platform fallback.
 
     Admin can update hero image, title, subtitle and the CTA button.
-    Holds the active ResidentialComplex (ЖК) for this installation.
 
-    Includes white-label branding, platform identity, and contact information.
+    Includes white-label branding, platform identity, and contact
+    information.  PR-8 removed the ``current_complex`` FK — ЖК display
+    copy lives on the ``complex_name`` / ``complex_address`` /
+    ``complex_description`` fields below; building scope is owned by
+    ``organization`` exclusively.
     """
 
     # ─── Organization Scope ──────────────────────────────────────────────────
@@ -20,16 +23,6 @@ class SiteSettings(models.Model):
         null=True,
         blank=True,
         help_text=_("NULL = platform default settings"),
-    )
-
-    # ─── Active Complex ──────────────────────────────────────────────────────
-    current_complex = models.ForeignKey(
-        "apartments.ResidentialComplex",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name=_("Active Residential Complex"),
-        help_text=_("The ЖК this installation serves. Buildings are scoped to it."),
     )
 
     # ─── Hero Section ────────────────────────────────────────────────────────
@@ -110,7 +103,7 @@ class SiteSettings(models.Model):
         max_length=200,
         blank=True,
         default="",
-        help_text=_("Name of the residential complex (ЖК/містечка). Overrides current_complex name."),
+        help_text=_("Name of the residential complex (ЖК/містечка) — whitelabel display copy."),
     )
     complex_address = models.CharField(
         _("complex address"),

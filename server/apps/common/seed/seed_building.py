@@ -2,18 +2,18 @@
 
 Per plan §3:
 
-* 1 ``Building(name=DEMO_BUILDING_NAME)`` in a dedicated ``ResidentialComplex``.
+* 1 ``Building(name=DEMO_BUILDING_NAME)``.
 * 3 Entrances named "А", "Б", "В" — last one intentionally empty (showcase
   for the data model; some real buildings do have unused entrance shells).
 * 4 × 6 = 24 Units in А, same in Б (48 units total).
 
-Historical note (PR-5 of the legacy-Apartment removal):
-Prior to PR-5 the seed mirrored every Unit into a legacy ``Apartment`` row
-and stitched them via ``Unit.apartment``.  After PR-3 the backend reads
-Unit directly, so the mirror is dead weight — we stopped producing it
-here so PR-7 can drop the model without a cleanup dance.  Residual
-Apartment rows left over from pre-PR-5 runs are swept by
-``reset_scope.reset_demo_scope`` on the next ``--reset``.
+Historical notes:
+* **PR-5** stopped mirroring every Unit into a legacy ``Apartment`` row;
+  Unit is the single source of truth post PR-3.
+* **PR-7** deleted the ``Apartment`` model entirely.
+* **PR-8** deleted the ``ResidentialComplex`` (ЖК) model — buildings are
+  scoped to ``Organization`` exclusively now.  The seed no longer creates
+  a complex; ЖК display copy lives on ``SiteSettings.complex_name``.
 
 Idempotency: built on ``get_or_create`` with natural keys
 (``Building.name``; ``Entrance (building, name)``; ``Unit (entrance, number)``).
@@ -40,14 +40,12 @@ if TYPE_CHECKING:  # pragma: no cover
     from apps.apartments.models import (
         Building,
         Entrance,
-        ResidentialComplex,
         Unit,
     )
 
 logger = logging.getLogger(__name__)
 
 # Fixed textual metadata — plan §3.1.
-DEMO_COMPLEX_NAME = "ЖК Зелений Квартал"
 DEMO_BUILDING_ADDRESS = "вул. Академіка Заболотного, 15"
 DEMO_BUILDING_CITY = "Київ"
 
@@ -56,7 +54,6 @@ DEMO_BUILDING_CITY = "Київ"
 class BuildingSeedResult:
     """Handles + counts returned to the orchestrator."""
 
-    complex: "ResidentialComplex" = field(repr=False)
     building: "Building" = field(repr=False)
     entrances: dict[str, "Entrance"] = field(default_factory=dict, repr=False)
     units_by_key: dict[tuple[str, str], "Unit"] = field(
@@ -80,20 +77,7 @@ def seed() -> BuildingSeedResult:
     from apps.apartments.models import (
         Building,
         Entrance,
-        ResidentialComplex,
         Unit,
-    )
-
-    complex_obj, _ = ResidentialComplex.objects.get_or_create(
-        name=DEMO_COMPLEX_NAME,
-        defaults={
-            "address": DEMO_BUILDING_ADDRESS,
-            "city": DEMO_BUILDING_CITY,
-            "description": (
-                "Демо-ЖК ApartmentOS — набір синтетичних даних для демонстрації "
-                "функціоналу клієнтам. Скидається щодня о 23:00 Europe/Kyiv."
-            ),
-        },
     )
 
     building, _ = Building.objects.get_or_create(
@@ -102,17 +86,16 @@ def seed() -> BuildingSeedResult:
             "address": DEMO_BUILDING_ADDRESS,
             "city": DEMO_BUILDING_CITY,
             "is_active": True,
-            "complex": complex_obj,
         },
     )
-    # Defensive update: if the building existed but was detached or renamed,
-    # re-attach to our complex.  Guard so we don't write on a no-op.
-    if building.complex_id != complex_obj.pk or not building.is_active:
-        building.complex = complex_obj
+    # Defensive update: if the building existed but was deactivated or
+    # moved, re-assert the demo metadata.  Guard so we don't write on a
+    # no-op.
+    if not building.is_active:
         building.is_active = True
-        building.save(update_fields=["complex", "is_active"])
+        building.save(update_fields=["is_active"])
 
-    result = BuildingSeedResult(complex=complex_obj, building=building)
+    result = BuildingSeedResult(building=building)
 
     # Entrances ────────────────────────────────────────────────────────────────
     for name in ENTRANCE_NAMES:
@@ -123,10 +106,6 @@ def seed() -> BuildingSeedResult:
         result.entrances[name] = entrance
 
     # Units ───────────────────────────────────────────────────────────────────
-    # PR-5: legacy Apartment mirroring was removed.  Unit is the single
-    # source of truth post PR-3; any residual ``Unit.apartment`` FKs
-    # pointing at pre-PR-5 Apartment rows stay SET_NULL after the next
-    # reset sweeps those rows.
     for entrance_name in POPULATED_ENTRANCES:
         entrance = result.entrances[entrance_name]
         for floor in range(1, FLOORS_PER_ENTRANCE + 1):
@@ -142,9 +121,7 @@ def seed() -> BuildingSeedResult:
                 result.units_by_key[(entrance_name, number)] = unit
 
     logger.info(
-        "seed_building: complex=%s building=%s entrances=%d "
-        "units_created=%d",
-        complex_obj.name, building.name, len(result.entrances),
-        result.created_units,
+        "seed_building: building=%s entrances=%d units_created=%d",
+        building.name, len(result.entrances), result.created_units,
     )
     return result

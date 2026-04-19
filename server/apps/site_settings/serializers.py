@@ -47,9 +47,12 @@ class SiteSettingsSerializer(serializers.ModelSerializer):
 
     links = serializers.SerializerMethodField()
     hero_image_url = serializers.SerializerMethodField()
-    # Fallback to model fields if complex_name/address not set
-    display_complex_name = serializers.SerializerMethodField()
-    display_complex_address = serializers.SerializerMethodField()
+    # PR-8 removed the ``current_complex`` FK — these are now straight
+    # aliases for the text fields on the model (kept as method fields so
+    # the wire shape stays stable for clients that already read the
+    # ``display_*`` keys).
+    display_complex_name = serializers.ReadOnlyField(source="complex_name")
+    display_complex_address = serializers.ReadOnlyField(source="complex_address")
 
     class Meta:
         model = SiteSettings
@@ -100,15 +103,3 @@ class SiteSettingsSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(url)
             return url
         return None
-
-    def get_display_complex_name(self, obj):
-        """Return complex_name if set, otherwise fallback to current_complex.name."""
-        if obj.complex_name:
-            return obj.complex_name
-        return obj.current_complex.name if obj.current_complex else ""
-
-    def get_display_complex_address(self, obj):
-        """Return complex_address if set, otherwise fallback to current_complex.address."""
-        if obj.complex_address:
-            return obj.complex_address
-        return obj.current_complex.address if obj.current_complex else ""

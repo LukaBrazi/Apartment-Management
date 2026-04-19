@@ -1,29 +1,33 @@
 # Imports
-from apps.apartments.models import Building, Entrance, ResidentialComplex, Unit
+from apps.apartments.models import Building, Entrance, Unit
 from rest_framework import serializers
 
 
 # PR-7 deleted ``ApartmentSerializer`` and ``unit_as_legacy_apartment``.
-# The last internal reader was ``ProfileSerializer.apartment`` which now
-# builds its Unit-shaped payload inline.  The frontend migrated off the
-# legacy Apartment wire format in PR-4.
+# PR-8 deleted ``ResidentialComplexSerializer`` along with the
+# ``ResidentialComplex`` model — buildings now expose
+# ``organization_name`` instead of ``complex_name``.
 
 
 # ── Domain serializers ─────────────────────────────────────────────────────
 
-class ResidentialComplexSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ResidentialComplex
-        fields = ["pkid", "id", "name", "address", "city", "description"]
-
 
 class BuildingSerializer(serializers.ModelSerializer):
     pkid = serializers.IntegerField(read_only=True)
-    complex_name = serializers.ReadOnlyField(source="complex.name")
+    organization_name = serializers.ReadOnlyField(source="organization.name")
 
     class Meta:
         model = Building
-        fields = ["pkid", "id", "name", "address", "city", "is_active", "complex_name", "created_at"]
+        fields = [
+            "pkid",
+            "id",
+            "name",
+            "address",
+            "city",
+            "is_active",
+            "organization_name",
+            "created_at",
+        ]
 
 
 class EntranceSerializer(serializers.ModelSerializer):

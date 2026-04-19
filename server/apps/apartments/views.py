@@ -18,10 +18,15 @@ from rest_framework.permissions import IsAdminUser
 
 
 class BuildingListAPIView(generics.ListAPIView):
-    """List active buildings scoped to the current ЖК.
+    """List active buildings.
 
-    If SiteSettings.current_complex is set, returns only buildings
-    belonging to that complex. Otherwise falls back to all active buildings.
+    PR-8: previously this endpoint filtered by ``SiteSettings.current_complex``;
+    that FK and the ``ResidentialComplex`` model were removed.  Buildings
+    are now scoped to ``Organization`` — the organization-level filtering
+    for authenticated users happens at the app boundary via
+    ``get_user_organizations``; this public list returns every active
+    building, which is fine because there is no sensitive data in the
+    Building payload itself.
     """
 
     serializer_class = BuildingSerializer
@@ -30,13 +35,10 @@ class BuildingListAPIView(generics.ListAPIView):
     pagination_class = None
 
     def get_queryset(self):
-        from apps.site_settings.models import SiteSettings
-
-        qs = Building.objects.filter(is_active=True)
-        site = SiteSettings.get()
-        if site.current_complex_id:
-            qs = qs.filter(complex=site.current_complex)
-        return qs.select_related("complex")
+        return (
+            Building.objects.filter(is_active=True)
+            .select_related("organization")
+        )
 
 
 class EntranceListAPIView(generics.ListAPIView):
