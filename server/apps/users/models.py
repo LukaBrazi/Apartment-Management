@@ -80,6 +80,19 @@ class User(AbstractUser):
         unique=True,
         validators=[UsernameValidator],
     )
+    # Demo-scope marker — defense-in-depth for ``seed_demo --reset``.
+    # The reset filter matches on ``is_demo=True`` AND ``@demo.com`` email
+    # AND ``is_superuser=False``. A real user with a freak ``@demo.com``
+    # address is still safe as long as this flag stays False.
+    is_demo = models.BooleanField(
+        verbose_name=_("Demo Account"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "Marks seed-created demo accounts. The nightly reset only "
+            "deletes users with is_demo=True."
+        ),
+    )
 
     # Constants for email and username fields
     EMAIL_FIELD = "email"

@@ -7,6 +7,12 @@ DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 
+# Environment tag — see base.py and apps/common/seed/reset_scope.py.
+# Production is the one tier where seed_demo --reset requires the explicit
+# ALLOW_DEMO_RESET env opt-in; ENVIRONMENT=="production" is what flips the
+# guard on.
+ENVIRONMENT = "production"
+
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
 
 # Database — Railway provides DATABASE_URL automatically

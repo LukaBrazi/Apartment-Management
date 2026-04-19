@@ -17,6 +17,11 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 SITE_NAME = "ApartmentOS"
 
+# Environment tag — see base.py and apps/common/seed/reset_scope.py.
+ENVIRONMENT = "local"
+# Dev databases are disposable, so --reset is always safe here.
+ALLOW_DEMO_RESET = True
+
 
 # Caches
 # ------------------------------------------------------------------------------

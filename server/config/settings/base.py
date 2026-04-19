@@ -50,6 +50,21 @@ SITE_NAME = env("SITE_NAME", default="ApartmentOS")
 PLATFORM_DOMAINS = env.list("PLATFORM_DOMAINS", default=["estateos.com"])
 
 
+# Environment tag — single source of truth for "which tier is this?"
+# ------------------------------------------------------------------------------
+# Overridden in each settings module (local/ci/test/production). The default
+# "unknown" is deliberately conservative: if a new settings module forgets to
+# set ENVIRONMENT, destructive guards (e.g. seed_demo --reset) treat it as
+# unsafe. See apps/common/seed/reset_scope.py for consumers.
+ENVIRONMENT = "unknown"
+
+# Demo reset opt-in flag — ``seed_demo --reset`` refuses to run in
+# ``ENVIRONMENT == "production"`` unless this is explicitly set to True via
+# the ``ALLOW_DEMO_RESET`` env var on the worker. Default False so a fresh
+# prod deploy cannot accidentally wipe real tenants on first beat tick.
+ALLOW_DEMO_RESET = env.bool("ALLOW_DEMO_RESET", default=False)
+
+
 # Databases
 # ------------------------------------------------------------------------------
 DATABASES = {"default": env.db("DATABASE_URL", default="sqlite:///test.db")}
