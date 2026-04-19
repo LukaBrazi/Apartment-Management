@@ -54,13 +54,17 @@ def other_user(db):
 
 @pytest.fixture
 def owner_unit(db, owner):
-    """Unit anchor (PR-5: legacy Apartment removed from the Issue path)."""
+    """Unit anchor (PR-11: ownership expressed via Residency)."""
+    from apps.apartments.models import Residency, ResidencyRole
+
     building = Building.objects.create(
         name="Тест Будинок GDPR4", address="вул. Тест, 2", city="Київ",
     )
     entrance = Entrance.objects.create(building=building, name="1")
     unit = Unit.objects.create(entrance=entrance, number="gdpr4_202", floor=2)
-    Profile.objects.filter(user=owner).update(unit=unit)
+    Residency.objects.create(
+        user=owner, unit=unit, is_primary=True, role=ResidencyRole.OWNER
+    )
     return unit
 
 
@@ -126,7 +130,13 @@ class TestGDPRDataExport:
         other_unit = Unit.objects.create(
             entrance=other_entrance, number="gdpr4_303", floor=3,
         )
-        Profile.objects.filter(user=other_user).update(unit=other_unit)
+        from apps.apartments.models import Residency, ResidencyRole
+        Residency.objects.create(
+            user=other_user,
+            unit=other_unit,
+            is_primary=True,
+            role=ResidencyRole.OWNER,
+        )
         Issue.objects.create(
             unit=other_unit,
             reported_by=other_user,

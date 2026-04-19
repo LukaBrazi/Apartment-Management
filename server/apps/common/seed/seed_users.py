@@ -212,9 +212,8 @@ def seed(
         ),
         unit=tenant_unit,
     )
-    # PR-5: ``Profile.unit`` is canonical (PR-3 cutover).  We used to
-    # also mirror onto ``Apartment.tenant`` via ``_bind_apartment`` —
-    # removed with the rest of the legacy Apartment write path.
+    # PR-11: the tenant's Unit is expressed as a primary ``Residency``
+    # row (see ``_patch_profile``); ``Profile.unit`` was dropped.
     result.tenant = SeededUser(
         email="tenant@demo.com", user=tenant_user, unit=tenant_unit, role="tenant",
     )
@@ -372,6 +371,11 @@ def _patch_profile(
     Using ``QuerySet.update()`` intentionally skips ``Profile.save()``,
     which recomputes ``reputation`` from ``report_count``.  For seeded data
     we trust ``report_count=0`` / ``reputation=100`` defaults.
+
+    PR-11 removed ``Profile.unit``; the ``unit`` argument now produces a
+    primary ``Residency`` instead.  The seed keeps the same call-site
+    ergonomics — pass a ``Unit`` and the resident gets it as their
+    primary home.
     """
     updates: dict[str, object] = {
         "occupation": occupation,
@@ -381,10 +385,26 @@ def _patch_profile(
         "city_of_origin": city,
         "bio": bio,
     }
-    if unit is not None:
-        updates["unit"] = unit
 
     Profile.objects.filter(user=user).update(**updates)
+
+    if unit is not None:
+        from apps.apartments.models import Residency, ResidencyRole
+
+        Residency.objects.update_or_create(
+            user=user,
+            unit=unit,
+            defaults={
+                "role": ResidencyRole.OWNER,
+                "is_primary": True,
+            },
+        )
+        # Demote any other primaries for this user — honour the
+        # partial unique invariant explicitly here because
+        # ``update_or_create`` does not run model.save().
+        Residency.objects.filter(user=user, is_primary=True).exclude(
+            unit=unit
+        ).update(is_primary=False)
     # After bulk update, touch slug regen if it was never populated (first run).
     # AutoSlugField updates via save(), not update(), so force a refresh if
     # slug is still empty on the freshly-created profile.

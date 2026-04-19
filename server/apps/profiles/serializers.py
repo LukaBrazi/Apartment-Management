@@ -45,8 +45,8 @@ class ProfileSerializer(serializers.ModelSerializer):
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True)
     apartment = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
-    # PR-10: unit/building fields now resolve via ``Profile.primary_unit``
-    # (primary Residency, fallback to legacy ``Profile.unit``).
+    # PR-11: unit/building fields resolve via ``Profile.primary_unit``
+    # (the tenant's primary ``Residency``).
     unit_number = serializers.SerializerMethodField()
     unit_id = serializers.SerializerMethodField()
     building_name = serializers.SerializerMethodField()
@@ -137,12 +137,11 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_apartment(self, obj: Profile) -> dict | None:
         """Render the tenant's primary unit in the legacy Apartment JSON shape.
 
-        PR-10: resolves via ``Profile.primary_unit`` so multi-unit
-        residents see their primary residency (with graceful fallback
-        to the legacy ``Profile.unit`` FK).  The field is kept in the
-        Profile payload until the frontend drops it entirely —
-        ``About.tsx`` already reads ``profile.unit_number`` /
-        ``profile.building_name`` as of PR-4.
+        PR-11: resolves via ``Profile.primary_unit`` — which now looks
+        the Unit up via the canonical ``Residency`` through-model.
+        The field is kept in the Profile payload until the frontend
+        drops it entirely — ``About.tsx`` already reads
+        ``profile.unit_number`` / ``profile.building_name`` as of PR-4.
 
         Args:
             obj (Profile): The profile.
@@ -260,13 +259,33 @@ class AdminUpdateProfileSerializer(serializers.ModelSerializer):
         unit_id = validated_data.pop("unit_id", ...)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        if unit_id is not ...:
-            if unit_id is None:
-                instance.unit = None
-            else:
-                from apps.apartments.models import Unit
-                instance.unit = Unit.objects.get(id=unit_id)
         instance.save()
+
+        # PR-11: ``Profile.unit`` FK removed — writes go through the
+        # ``Residency`` through-model.  ``unit_id=None`` clears any
+        # primary residency; a concrete id promotes that Unit to the
+        # user's primary residency (and demotes any prior primary).
+        if unit_id is not ...:
+            from apps.apartments.models import Residency, ResidencyRole, Unit
+
+            user = instance.user
+            if unit_id is None:
+                Residency.objects.filter(user=user, is_primary=True).update(
+                    is_primary=False
+                )
+            else:
+                unit = Unit.objects.get(id=unit_id)
+                Residency.objects.update_or_create(
+                    user=user,
+                    unit=unit,
+                    defaults={
+                        "role": ResidencyRole.OWNER,
+                        "is_primary": True,
+                    },
+                )
+                Residency.objects.filter(user=user, is_primary=True).exclude(
+                    unit=unit
+                ).update(is_primary=False)
         return instance
 
 
@@ -302,11 +321,25 @@ class AdminCreateUserSerializer(serializers.Serializer):
         user = User.objects.create(**validated_data, is_active=True)
         user.set_password(password)
         user.save()
-        update_fields = {"occupation": occupation}
+        Profile.objects.filter(user=user).update(occupation=occupation)
+
+        # PR-11: assign the Unit via the ``Residency`` through-model —
+        # ``Profile.unit`` FK no longer exists.
         if unit_id:
-            from apps.apartments.models import Unit
-            update_fields["unit"] = Unit.objects.get(id=unit_id)
-        Profile.objects.filter(user=user).update(**update_fields)
+            from apps.apartments.models import Residency, ResidencyRole, Unit
+
+            unit = Unit.objects.get(id=unit_id)
+            Residency.objects.update_or_create(
+                user=user,
+                unit=unit,
+                defaults={
+                    "role": ResidencyRole.OWNER,
+                    "is_primary": True,
+                },
+            )
+            Residency.objects.filter(user=user, is_primary=True).exclude(
+                unit=unit
+            ).update(is_primary=False)
         return user
 
 

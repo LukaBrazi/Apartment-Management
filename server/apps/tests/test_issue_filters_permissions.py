@@ -288,19 +288,22 @@ class TestIssueFiltering:
 class TestProfileUnitBuilding:
     def test_profile_unit_field_null_by_default(self):
         user = UserFactory()
-        assert user.profile.unit is None
+        # PR-11: ``Profile.unit`` FK dropped — the canonical accessor is
+        # ``primary_unit`` via Residency.
+        assert user.profile.primary_unit is None
 
     def test_profile_buildings_empty_by_default(self):
         user = UserFactory()
         assert user.profile.buildings.count() == 0
 
     def test_assign_unit_to_profile(self):
+        from apps.tests.factories import ResidencyFactory
+
         user = UserFactory()
         unit = UnitFactory()
-        user.profile.unit = unit
-        user.profile.save()
+        ResidencyFactory(user=user, unit=unit, is_primary=True)
         user.profile.refresh_from_db()
-        assert user.profile.unit == unit
+        assert user.profile.primary_unit == unit
 
     def test_assign_one_building_to_staff_profile(self):
         staff = UserFactory(is_staff=True)

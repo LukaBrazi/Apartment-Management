@@ -40,9 +40,8 @@ class AnnouncementListAPIView(generics.ListAPIView):
             return qs
 
         # Tenant: filter to their building via Profile.primary_unit →
-        # Entrance → Building.  PR-10 moved tenant resolution to the
-        # Residency through-model; ``primary_unit`` falls back to the
-        # legacy ``Profile.unit`` FK during the migration window.
+        # Entrance → Building.  PR-11 made ``Residency`` canonical;
+        # ``primary_unit`` resolves via the primary Residency row.
         profile = getattr(user, "profile", None)
         unit = getattr(profile, "primary_unit", None) if profile is not None else None
         if unit is not None and unit.entrance_id:

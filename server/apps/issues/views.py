@@ -226,10 +226,12 @@ class IssueCreateAPIView(generics.CreateAPIView):
     def perform_create(self, serializer: IssueCreateSerializer) -> None:
         """Create an issue.
 
-        Resolution order (post-PR-6):
-        1. Explicit ``unit_id`` in URL (dispatcher path) — must be the
-           reporter's own Unit unless they are staff.
-        2. Default — ``request.user.profile.unit`` (tenant self-service).
+        Resolution order (post-PR-11):
+        1. Explicit ``unit_id`` in URL (dispatcher path) — the reporter
+           must hold a ``Residency`` on that Unit unless they are
+           staff.
+        2. Default — primary ``Residency`` of ``request.user`` (tenant
+           self-service).
         """
 
         unit_id = self.kwargs.get("unit_id")
@@ -244,26 +246,20 @@ class IssueCreateAPIView(generics.CreateAPIView):
             except Unit.DoesNotExist:
                 raise PermissionDenied("Unit not found.")
             if not (user.is_staff or user.is_superuser):
-                # PR-10: authorize against any Residency (multi-unit
-                # owners can now open an issue for any of their units),
-                # with graceful fallback to the legacy Profile.unit FK.
+                # Multi-unit owners can open issues for any Unit they
+                # hold a Residency on — authorization lives in the
+                # through-model after PR-11.
                 from apps.apartments.models import Residency
 
                 owns_unit = Residency.objects.filter(
                     user_id=user.pk, unit_id=unit.pk
                 ).exists()
                 if not owns_unit:
-                    legacy_unit = getattr(profile, "unit", None)
-                    owns_unit = (
-                        legacy_unit is not None and legacy_unit.pk == unit.pk
-                    )
-                if not owns_unit:
                     raise PermissionDenied(
                         "You can only report issues for your own unit."
                     )
         else:
-            # Default: derive Unit from the reporter's primary Residency
-            # (falls back to ``Profile.unit`` during the PR-10 window).
+            # Default: derive Unit from the reporter's primary Residency.
             unit = (
                 getattr(profile, "primary_unit", None)
                 if profile is not None

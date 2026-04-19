@@ -1,14 +1,14 @@
-"""PR-10 reader-cutover tests.
+"""PR-11 reader tests.
 
-These tests verify that the three tenant-facing readers
-(announcements, issues, passes) and the ``ProfileSerializer`` now
-resolve the tenant's unit via the ``Residency`` through-model, with a
-graceful fallback to the legacy ``Profile.unit`` FK while PR-10 is
-live.
+After PR-11 the ``Residency`` through-model is the single source of
+truth for a tenant's Unit — ``Profile.unit`` has been dropped.  These
+tests verify the three tenant-facing readers (announcements, issues,
+passes) and the ``ProfileSerializer`` all key off
+``Profile.primary_unit`` (the primary ``Residency``).
 
 Scenarios:
-  * Profile.primary_unit resolution order (Residency first, FK
-    fallback).
+  * ``Profile.primary_unit`` returns the Unit of the user's primary
+    Residency, or ``None``.
   * Multi-unit tenant sees announcements for the building of their
     *primary* residency only.
   * Promoting a secondary residency to primary flips the visible
@@ -58,65 +58,26 @@ def _authed(user):
 # ─── Profile.primary_unit ─────────────────────────────────────────────────────
 
 
-def test_primary_unit_resolves_residency_first():
+def test_primary_unit_returns_primary_residency_unit():
     user = UserFactory()
     _make_tenant_profile(user)
     unit_a = UnitFactory()
     unit_b = UnitFactory()
 
-    # FK points at A but primary Residency points at B → B wins.
-    profile = Profile.objects.get(user=user)
-    profile._skip_residency_mirror = True  # don't auto-mirror the FK write
-    profile.unit = unit_a
-    profile.save()
-
+    ResidencyFactory(user=user, unit=unit_a, is_primary=False)
     Residency.objects.create(
         user=user, unit=unit_b, is_primary=True, role=ResidencyRole.OWNER
     )
 
-    profile.refresh_from_db()
+    profile = Profile.objects.get(user=user)
     assert profile.primary_unit.pk == unit_b.pk
 
 
-def test_primary_unit_falls_back_to_profile_unit_when_no_residency():
-    user = UserFactory()
-    _make_tenant_profile(user)
-    unit = UnitFactory()
-
-    profile = Profile.objects.get(user=user)
-    profile._skip_residency_mirror = True
-    profile.unit = unit
-    profile.save()
-
-    # Verify no Residency auto-created (mirror was skipped).
-    assert Residency.objects.filter(user=user).count() == 0
-    assert profile.primary_unit.pk == unit.pk
-
-
-def test_primary_unit_returns_none_when_no_unit():
+def test_primary_unit_returns_none_when_no_residency():
     user = UserFactory()
     _make_tenant_profile(user)
     profile = Profile.objects.get(user=user)
     assert profile.primary_unit is None
-
-
-def test_profile_save_mirrors_fk_into_residency():
-    """Setting ``profile.unit = X`` creates a Residency(is_primary=True)
-    automatically via Profile.save()."""
-    user = UserFactory()
-    _make_tenant_profile(user)
-    unit = UnitFactory()
-    profile = Profile.objects.get(user=user)
-
-    profile.unit = unit
-    profile.save()
-
-    residencies = Residency.objects.filter(user=user)
-    assert residencies.count() == 1
-    residency = residencies.first()
-    assert residency.unit_id == unit.pk
-    assert residency.is_primary is True
-    assert residency.role == ResidencyRole.OWNER
 
 
 # ─── Announcements: building visibility via primary residency ─────────────────
@@ -322,25 +283,17 @@ def test_profile_serializer_renders_primary_unit():
     assert payload["unit_number"] == unit_primary.number
 
 
-def test_profile_serializer_falls_back_when_only_fk():
-    """A profile with only ``unit`` (no Residency row) still produces
-    the expected payload — compatibility during the migration
-    window."""
+def test_profile_serializer_returns_none_without_residency():
+    """A profile with no Residency produces ``unit_id=None``/
+    ``unit_number=None`` in the payload — PR-11 dropped the
+    ``Profile.unit`` fallback."""
     tenant = UserFactory()
     _make_tenant_profile(tenant)
-
-    unit = UnitFactory()
-    profile = Profile.objects.get(user=tenant)
-    profile._skip_residency_mirror = True
-    profile.unit = unit
-    profile.save()
-
-    assert Residency.objects.filter(user=tenant).count() == 0
 
     client = _authed(tenant)
     resp = client.get(reverse("retrieve-my-profile"))
     assert resp.status_code == 200
     body = resp.json()
     payload = body.get("profile", body)
-    assert str(payload["unit_id"]) == str(unit.id)
-    assert payload["unit_number"] == unit.number
+    assert payload["unit_id"] is None
+    assert payload["unit_number"] is None

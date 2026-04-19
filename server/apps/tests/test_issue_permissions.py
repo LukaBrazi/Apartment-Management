@@ -1,37 +1,32 @@
 """Tests for Issue permissions + Unit linkage.
 
-Post-PR-7 the legacy ``Apartment`` model is gone.  The ownership check
-keys on ``Profile.unit`` exclusively; no Apartment/tenant fallback
-path remains.
+Post-PR-11 ownership is expressed as a ``Residency`` through-model
+row; the legacy ``Profile.unit`` FK has been removed.  The Issue
+views authorize the reporter via ``Residency.objects.filter(user,
+unit).exists()``.
 """
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from apps.apartments.models import Residency
 from apps.issues.models import Issue
-from apps.profiles.models import Profile
 from apps.tests.factories import (
     AdminUserFactory,
     BuildingFactory,
     EntranceFactory,
     IssueFactory,
+    ResidencyFactory,
     UnitFactory,
     UserFactory,
 )
 
 
 def make_unit_with_tenant(user):
-    """Create a Unit owned by ``user`` via ``Profile.unit``."""
+    """Create a Unit owned by ``user`` via a primary Residency."""
     entrance = EntranceFactory(building=BuildingFactory())
     unit = UnitFactory(entrance=entrance)
-    # PR-4 canonical ownership: Profile.unit — save via instance so any
-    # cached ``user.profile`` reverse descriptor is kept in sync.
-    profile = Profile.objects.get(user=user)
-    profile.unit = unit
-    profile.save(update_fields=["unit"])
-    # Bust the reverse-accessor cache on ``user`` if it's been populated.
-    if hasattr(user, "_state") and "profile" in getattr(user, "_state").fields_cache:
-        user._state.fields_cache.pop("profile", None)
+    ResidencyFactory(user=user, unit=unit, is_primary=True)
     return unit
 
 
@@ -96,8 +91,8 @@ def test_tenant_can_create_issue_via_default_path():
 def test_default_path_fails_without_profile_unit():
     """Tenant without a Unit gets a 400 instead of silently mis-creating."""
     tenant = UserFactory()
-    # explicitly ensure no unit is bound
-    Profile.objects.filter(user=tenant).update(unit=None)
+    # Explicitly ensure no Residency binds the tenant to any unit.
+    Residency.objects.filter(user=tenant).delete()
 
     client = APIClient()
     client.force_authenticate(user=tenant)

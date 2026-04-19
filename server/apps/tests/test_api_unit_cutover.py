@@ -1,19 +1,19 @@
-"""Tests for the PR-3 → PR-7 backend API cutover to Unit.
+"""Wire-format lock for ``ProfileSerializer.apartment``.
 
-After PR-7 the legacy ``Apartment`` model and the
-``unit_as_legacy_apartment`` shim are gone, so ``TestUnitAsLegacyApartment``
-was dropped.  What's still worth locking in is the wire format of
-``ProfileSerializer.apartment``: the frontend has not yet removed the
-``profile.apartment`` field from its Profile type (the unit_*/building_*
-aliases from PR-4 are preferred), so the payload contract must keep the
-Unit-shaped dict stable.
+The frontend still consumes ``profile.apartment`` as the legacy
+Apartment-shaped dict (the ``unit_*`` / ``building_*`` aliases from
+PR-4 are preferred, but older components remain).  This suite pins the
+JSON contract.
+
+Post-PR-11: the tenant's Unit comes from the canonical ``Residency``
+row; ``Profile.unit`` has been dropped.
 """
 from __future__ import annotations
 
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.apartments.models import Building, Entrance, Unit
+from apps.apartments.models import Building, Entrance, Residency, ResidencyRole, Unit
 from apps.profiles.models import Profile
 from apps.profiles.serializers import ProfileSerializer
 
@@ -45,15 +45,17 @@ def unit(db):
 
 
 class TestProfileApartmentField:
-    """ProfileSerializer.apartment must render profile.unit in the
-    Apartment-shaped JSON the frontend still consumes."""
+    """ProfileSerializer.apartment must render the user's primary
+    Residency's Unit in the Apartment-shaped JSON the frontend still
+    consumes."""
 
     EXPECTED_KEYS = {"id", "created_at", "unit_number", "building", "floor"}
 
     def test_renders_unit_in_apartment_shape(self, db, user, unit):
+        Residency.objects.create(
+            user=user, unit=unit, is_primary=True, role=ResidencyRole.OWNER
+        )
         profile = Profile.objects.get(user=user)
-        profile.unit = unit
-        profile.save()
 
         data = ProfileSerializer(profile).data
 
@@ -66,7 +68,7 @@ class TestProfileApartmentField:
 
     def test_returns_none_when_no_unit(self, db, user):
         profile = Profile.objects.get(user=user)
-        assert profile.unit_id is None
+        assert profile.primary_unit is None
 
         data = ProfileSerializer(profile).data
 

@@ -19,9 +19,8 @@ class VehiclePassCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
-        # PR-10: resolve the resident's unit via the primary ``Residency``
-        # (falls back to the legacy ``Profile.unit`` during the migration
-        # window via ``Profile.primary_unit``).
+        # PR-11: resolve the resident's unit via the primary
+        # ``Residency`` — ``Profile.unit`` has been dropped.
         unit = None
         profile = getattr(user, "profile", None)
         primary = getattr(profile, "primary_unit", None) if profile is not None else None
