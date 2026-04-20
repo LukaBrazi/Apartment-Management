@@ -15,6 +15,31 @@ const baseQuery = fetchBaseQuery({
 	credentials: "include",
 });
 
+/**
+ * Auth bootstrap endpoints — login / refresh / logout / password-reset /
+ * activation. A 401 from these does NOT mean "session expired" — it just
+ * means the credentials were wrong (or the refresh token is dead). If we
+ * naively trigger the refresh cycle for them, we end up:
+ *   1. POST /auth/login/ → 401 (wrong password)
+ *   2. baseQueryWithReauth fires POST /auth/refresh/ → 401 (no token yet)
+ *   3. setLogout() runs and clears the `logged_in` cookie / Redux state
+ *   4. The user is now in a corrupt state; subsequent login attempts may
+ *      look "stuck" because the UI thinks logout is in progress.
+ * Skipping the cycle keeps the original 401 visible to the LoginForm so
+ * it can show the proper toast and let the user retry cleanly.
+ */
+const isAuthBootstrapEndpoint = (args: string | FetchArgs): boolean => {
+	const url = typeof args === "string" ? args : args.url;
+	if (!url) return false;
+	return (
+		url.startsWith("/auth/login") ||
+		url.startsWith("/auth/refresh") ||
+		url.startsWith("/auth/logout") ||
+		url.startsWith("/auth/users/reset_password") ||
+		url.startsWith("/auth/users/activation")
+	);
+};
+
 const baseQueryWithReauth: BaseQueryFn<
 	string | FetchArgs,
 	unknown,
@@ -24,7 +49,11 @@ const baseQueryWithReauth: BaseQueryFn<
 
 	let response = await baseQuery(args, api, extraOptions);
 
-	if (response.error && response.error.status === 401) {
+	if (
+		response.error &&
+		response.error.status === 401 &&
+		!isAuthBootstrapEndpoint(args)
+	) {
 		if (!mutex.isLocked()) {
 			const release = await mutex.acquire();
 			try {
