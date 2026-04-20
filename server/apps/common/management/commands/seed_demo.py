@@ -52,6 +52,7 @@ from apps.common.seed import (
     reset_scope,
     seed_building,
     seed_issues,
+    seed_news,
     seed_organization,
     seed_passes,
     seed_posts,
@@ -120,6 +121,12 @@ class Command(BaseCommand):
             type=int,
             default=22,
             help="Total VehiclePasses to create (plan default 22).",
+        )
+        parser.add_argument(
+            "--news-count",
+            type=int,
+            default=10,
+            help="Total News articles to create (default 10: 3 global + 7 org-scoped).",
         )
 
     # ────────────────────────── main entrypoint ──────────────────────────
@@ -255,6 +262,21 @@ class Command(BaseCommand):
         self.stdout.write(
             f"  • ratings: +{ratings_result.created} "
             f"(by occupation: {ratings_result.by_occupation})"
+        )
+
+        # News feed — mix of platform-wide (organization=NULL) and
+        # org-scoped articles so tenants see both sets after login.
+        # Covers are generated on the fly via Pillow.
+        news_result = seed_news.seed(
+            users_result=users_result,
+            organization_result=organization_result,
+            news_count=opts["news_count"],
+        )
+        self.stdout.write(
+            f"  • news: +{news_result.news_created} "
+            f"(skip={news_result.news_skipped}, "
+            f"categories=+{news_result.categories_created}, "
+            f"covers={news_result.covers_generated})"
         )
 
         self.stdout.write(self.style.SUCCESS("✅ seed_demo: complete"))

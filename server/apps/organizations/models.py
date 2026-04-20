@@ -4,8 +4,8 @@ import uuid
 from apps.common.models import TimeStampedModel
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from slugify import slugify as unicode_slugify
 
 # Get the user model
 User = get_user_model()
@@ -173,10 +173,38 @@ class Organization(TimeStampedModel):
     def save(self, *args, **kwargs) -> None:
         """Save the organization.
 
-        Автоматично генерує слаг з назви, якщо не вказаний.
+        Generates a unique slug from ``name`` when none was supplied.
+
+        Why ``python-slugify`` instead of Django's ``slugify``
+        -----------------------------------------------------
+        The stdlib ``django.utils.text.slugify`` strips every
+        non-ASCII character by default. For Ukrainian names like
+        "ОСББ «Зелений Квартал — Демо»" it returns ``""`` — and
+        since ``slug`` is ``unique=True``, the *second* org ever
+        created with a Cyrillic-only name blows up on the DB
+        constraint with "duplicate key value" on an empty slug.
+
+        ``python-slugify`` (already a project dep for ``posts`` and
+        ``news``) transliterates Cyrillic to Latin, so
+        "ОСББ «Зелений Квартал — Демо»" becomes something like
+        ``osbb-zelenyi-kvartal-demo``.
+
+        UUID fallback
+        -------------
+        If transliteration still somehow yields an empty string
+        (e.g. name composed entirely of punctuation/emoji), we fall
+        back to an ``org-`` prefix plus the first 8 chars of the
+        row's UUID. Guarantees a non-empty, unique value no matter
+        what the user typed into the admin.
         """
         if not self.slug:
-            self.slug = slugify(self.name)
+            candidate = unicode_slugify(self.name) if self.name else ""
+            if not candidate:
+                # UUID-based fallback — self.id is populated because
+                # the model default is uuid.uuid4(), set at instance
+                # construction time (not at save time).
+                candidate = f"org-{str(self.id)[:8]}"
+            self.slug = candidate
         super().save(*args, **kwargs)
 
     # Feature Flag Methods

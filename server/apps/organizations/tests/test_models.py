@@ -77,6 +77,58 @@ class TestOrganizationModel:
         assert org.id is not None
         assert len(str(org.id)) == 36  # UUID length
 
+    # ── Slug generation regression tests (bug: empty slug on Cyrillic) ──
+
+    def test_slug_transliterates_cyrillic_name(self, db):
+        """Cyrillic names must transliterate, not strip to empty string.
+
+        Regression: the original ``save()`` used ``django.utils.text.slugify``
+        which dropped every non-ASCII character. ``"ОСББ «Зелений Квартал»"``
+        became ``""``, and the second org with a Cyrillic-only name hit the
+        ``slug unique=True`` DB constraint. Switched to ``python-slugify``
+        which transliterates — e.g. ``osbb-zelenyi-kvartal``.
+
+        Note: we use a distinct name here so the test doesn't collide with
+        the demo org that data-migration ``0004_backfill_demo_organization``
+        creates.
+        """
+        org = Organization.objects.create(name="ОСББ «Північна Перлина»")
+        assert org.slug, "slug must not be empty after Cyrillic transliteration"
+        # Must be pure ASCII so it's safe in URLs.
+        assert org.slug.isascii()
+        # And non-trivial — 'північна перлина' should leave a transliteration.
+        assert len(org.slug) > len("org-")
+        assert not org.slug.startswith("org-")
+
+    def test_two_cyrillic_orgs_get_distinct_slugs(self, db):
+        """The original bug: both orgs ended up with slug='' → unique violation.
+
+        Both names are chosen to avoid collision with the demo org that
+        data-migration 0004 creates.
+        """
+        first = Organization.objects.create(name="ОСББ «Південне Сяйво»")
+        second = Organization.objects.create(name="ОСББ «Східний Світанок»")
+        assert first.slug != second.slug
+        assert first.slug and second.slug
+
+    def test_slug_falls_back_to_uuid_when_transliteration_is_empty(self, db):
+        """Names made of only punctuation/emoji have no transliterable chars.
+
+        The fallback ``org-<uuid-prefix>`` guarantees a non-empty unique
+        value so the unique constraint never trips, regardless of input.
+        """
+        org = Organization.objects.create(name="!!! ???")
+        assert org.slug.startswith("org-")
+        assert len(org.slug) > len("org-")
+
+    def test_explicit_slug_is_preserved(self, db):
+        """If the caller supplies a slug, save() must not overwrite it."""
+        org = Organization.objects.create(
+            name="Whatever",
+            slug="hand-picked-slug",
+        )
+        assert org.slug == "hand-picked-slug"
+
 
 @pytest.mark.django_db
 class TestOrganizationMembershipModel:

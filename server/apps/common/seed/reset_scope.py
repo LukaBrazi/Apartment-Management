@@ -103,6 +103,11 @@ class ResetReport:
     # counts before flipping ALLOW_DEMO_RESET on.
     demo_organizations_matched: int = 0
     non_demo_organizations_preserved: int = 0
+    # News rows — platform-wide + org-scoped. Tracked separately from
+    # posts because ``News.organization`` uses ``SET_NULL``; we MUST
+    # delete the rows before the org, otherwise org-scoped news would
+    # leak out as pseudo-global entries after reset.
+    demo_news_matched: int = 0
     orphan_tags_removed: int = 0
 
     def as_dict(self) -> "Mapping[str, object]":
@@ -138,6 +143,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
     # command loader.
     from apps.apartments.models import Building
     from apps.issues.models import Issue
+    from apps.news.models import News
     from apps.organizations.models import Organization
     from apps.passes.models import VehiclePass
     from apps.posts.models import Post
@@ -239,13 +245,25 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
     matched_passes = demo_passes_qs.count()
     matched_ratings = demo_ratings_qs.count()
 
+    # News demo-scope: an article is "demo" if it was written by a
+    # demo dispatcher OR scoped to a demo org. The OR catches both
+    # the platform-wide seed articles (org=NULL, author=demo user)
+    # and the org-scoped ones. Deletion order matters — see below.
+    org_ids = list(demo_orgs_qs.values_list("pkid", flat=True))
+    demo_news_qs = News.objects.filter(author_id__in=user_ids) | News.objects.filter(
+        organization_id__in=org_ids,
+    )
+    matched_news = demo_news_qs.count()
+
     logger.info(
         "reset_demo_scope: dry_run=%s  demo_users=%d  demo_buildings=%d  "
         "demo_orgs=%d  demo_issues=%d  demo_posts=%d  demo_passes=%d  "
-        "demo_ratings=%d  pre_superusers=%d  pre_non_demo_users=%d  "
-        "pre_non_demo_buildings=%d  pre_non_demo_orgs=%d",
+        "demo_ratings=%d  demo_news=%d  pre_superusers=%d  "
+        "pre_non_demo_users=%d  pre_non_demo_buildings=%d  "
+        "pre_non_demo_orgs=%d",
         dry_run, matched_users, matched_buildings, matched_orgs,
         matched_issues, matched_posts, matched_passes, matched_ratings,
+        matched_news,
         pre_superusers, pre_non_demo_users, pre_non_demo_buildings,
         pre_non_demo_orgs,
     )
@@ -260,6 +278,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
             demo_posts_matched=matched_posts,
             demo_passes_matched=matched_passes,
             demo_ratings_matched=matched_ratings,
+            demo_news_matched=matched_news,
             superusers_preserved=pre_superusers,
             non_demo_users_preserved=pre_non_demo_users,
             non_demo_buildings_preserved=pre_non_demo_buildings,
@@ -277,6 +296,11 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         demo_passes_qs.delete()
         demo_posts_qs.delete()        # Replies cascade via Post.replies → Post
         demo_issues_qs.delete()       # Issue has its own table; no children
+        # News MUST be deleted before the demo org — the ``organization``
+        # FK is ``SET_NULL``, so if we didn't, org-scoped demo news would
+        # survive with ``organization=NULL`` and silently leak out as
+        # platform-wide news visible to every future tenant.
+        demo_news_qs.delete()
 
         # Django cascades handle User children: Profile (O2O CASCADE),
         # OrganizationMembership (FK CASCADE), TelegramProfile (O2O CASCADE),
@@ -345,6 +369,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         demo_posts_matched=matched_posts,
         demo_passes_matched=matched_passes,
         demo_ratings_matched=matched_ratings,
+        demo_news_matched=matched_news,
         superusers_preserved=pre_superusers,
         non_demo_users_preserved=pre_non_demo_users,
         non_demo_buildings_preserved=pre_non_demo_buildings,
