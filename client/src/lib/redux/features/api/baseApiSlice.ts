@@ -16,6 +16,20 @@ const baseQuery = fetchBaseQuery({
 });
 
 /**
+ * Belt-and-braces local cleanup after a session dies. The backend is
+ * responsible for clearing the three auth cookies (access, refresh,
+ * logged_in) via Set-Cookie, but if for any reason it doesn't, we wipe
+ * the only cookie the client can see — `logged_in` — so that
+ * `ProtectedRoute` stops treating the browser as authenticated.
+ */
+const clearLoggedInCookie = (): void => {
+	if (typeof document === "undefined") return;
+	const expired = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
+	document.cookie = `logged_in=; ${expired}; path=/`;
+	document.cookie = `logged_in=; ${expired}; path=/; domain=${window.location.hostname}`;
+};
+
+/**
  * Auth bootstrap endpoints — login / refresh / logout / password-reset /
  * activation. A 401 from these does NOT mean "session expired" — it just
  * means the credentials were wrong (or the refresh token is dead). If we
@@ -69,8 +83,23 @@ const baseQueryWithReauth: BaseQueryFn<
 				if (refreshResponse?.data) {
 					api.dispatch(setAuth());
 					response = await baseQuery(args, api, extraOptions);
+
+					// Ghost-session guard: the refresh succeeded (signed
+					// refresh token is still valid) but the retried
+					// request STILL returns 401. This happens when the
+					// underlying user was deleted/anonymized (demo reseed,
+					// GDPR erasure) while their refresh token was still
+					// live. Without this guard we'd loop forever —
+					// request 401 → refresh 200 → request 401 → … —
+					// because every `refetchOnMountOrArgChange` kicks
+					// off a new round. Force-logout breaks the loop.
+					if (response.error && response.error.status === 401) {
+						api.dispatch(setLogout());
+						clearLoggedInCookie();
+					}
 				} else {
 					api.dispatch(setLogout());
+					clearLoggedInCookie();
 				}
 			} finally {
 				release();

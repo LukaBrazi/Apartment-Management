@@ -4,17 +4,34 @@ import uuid
 from typing import Dict, Optional
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 # Get the logger
 logger = logging.getLogger(__name__)
+
+# Get the user model
+UserModel = get_user_model()
+
+
+def _clear_auth_cookies(res: Response) -> None:
+    """Clear all three auth cookies (access, refresh, logged_in).
+
+    Used when an auth action fails in a way that should end the session —
+    e.g. refresh-for-deleted-user. Ensures the client's `logged_in=true`
+    marker is wiped so `ProtectedRoute` stops treating the browser as
+    authenticated and lets the user reach /login.
+    """
+    res.delete_cookie("access", path=settings.COOKIE_PATH)
+    res.delete_cookie("refresh", path=settings.COOKIE_PATH)
+    res.delete_cookie("logged_in", path=settings.COOKIE_PATH)
 
 
 # Function to set the authentication cookies
@@ -168,6 +185,51 @@ class CustomTokenRefreshAPIView(TokenRefreshView):
         if refresh_token:
             # Add the refresh token to the request data
             request.data["refresh"] = refresh_token
+
+            # ── Ghost-session guard (runs BEFORE super().post) ──
+            # The signed refresh token may belong to a user who has been
+            # deleted/anonymized (demo reseed, GDPR erasure, manual purge)
+            # while the browser cookie is still live. SimpleJWT's newer
+            # TokenRefreshSerializer raises User.DoesNotExist deep inside
+            # validation → a 500 Internal Server Error, which the SPA's
+            # baseQueryWithReauth treats as a transient failure and keeps
+            # retrying — producing an infinite refresh loop that blocks
+            # CEO's /welcome from ever falling back to /login. We handle
+            # the missing-user case explicitly: return 401 with
+            # code='user_not_found', emit Set-Cookie clearing all three
+            # auth cookies, and blacklist the refresh token so it can't
+            # keep minting access tokens for a ghost identity.
+            try:
+                rt = RefreshToken(refresh_token)
+                user_id = rt.get(settings.SIMPLE_JWT["USER_ID_CLAIM"])
+            except TokenError:
+                # Signature/expiry/blacklist failure — let SimpleJWT below
+                # return its standard 401; no need to intercept here.
+                user_id = None
+
+            if user_id is not None:
+                user_exists = UserModel.objects.filter(
+                    **{settings.SIMPLE_JWT["USER_ID_FIELD"]: user_id},
+                    is_active=True,
+                ).exists()
+
+                if not user_exists:
+                    logger.warning(
+                        "Refresh attempted for non-existent/inactive user (id=%s). "
+                        "Blacklisting token and clearing cookies.",
+                        user_id,
+                    )
+                    try:
+                        rt.blacklist()
+                    except TokenError:
+                        pass
+
+                    res = Response(
+                        {"detail": "User not found.", "code": "user_not_found"},
+                        status=status.HTTP_401_UNAUTHORIZED,
+                    )
+                    _clear_auth_cookies(res)
+                    return res
 
         # Get the response
         res = super().post(request, *args, **kwargs)

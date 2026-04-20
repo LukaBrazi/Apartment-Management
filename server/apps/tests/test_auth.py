@@ -210,6 +210,75 @@ class TestRefresh:
             f"Got {resp.status_code}: {resp.data}"
         )
 
+    def test_refresh_for_deleted_user_returns_401_and_clears_cookies(
+        self, api_client, user, password
+    ):
+        """Ghost-session regression — see CustomTokenRefreshAPIView.
+
+        Scenario: a user is deleted (demo reseed, GDPR erasure) while
+        their refresh-token cookie is still live in the browser. Before
+        this fix, /auth/refresh/ happily issued new access tokens for the
+        non-existent user, the next API call returned 401 'User not
+        found', and the SPA went into an infinite refresh loop that
+        prevented the user from ever reaching /login.
+
+        Required behavior: refresh detects the missing user, blacklists
+        the refresh token, returns 401 with code='user_not_found', and
+        emits Set-Cookie clearing access/refresh/logged_in.
+        """
+        self._login(api_client, user, password)
+        # Simulate deletion: drop the user row that the refresh token
+        # claims as `user_id`. Hard-delete (not anonymize) is the most
+        # adversarial case.
+        user.delete()
+
+        resp = api_client.post(REFRESH_URL, {}, format="json")
+
+        assert resp.status_code == 401, (
+            f"Refresh for deleted user must be 401 (ghost-session guard). "
+            f"Got {resp.status_code}: {resp.data}"
+        )
+        assert resp.data.get("code") == "user_not_found", resp.data
+
+        # All three auth cookies must be cleared so the SPA falls back
+        # to /login on next render.
+        for name in ("access", "refresh", "logged_in"):
+            cookie = resp.cookies.get(name)
+            assert cookie is not None, (
+                f"Refresh-for-deleted-user must emit Set-Cookie clearing {name!r}"
+            )
+            assert _cookie_is_cleared(cookie), (
+                f"Cookie {name!r} must be cleared (empty value or max-age=0). "
+                f"Got value={cookie.value!r} max-age={cookie.get('max-age')!r}"
+            )
+
+    def test_refresh_for_inactive_user_returns_401_and_clears_cookies(
+        self, api_client, user, password
+    ):
+        """Same guard as deleted-user but for is_active=False.
+
+        Anonymize / soft-deactivate flows set is_active=False rather than
+        deleting the row. The refresh endpoint must treat both cases the
+        same: end the session, clear cookies, force re-login.
+        """
+        self._login(api_client, user, password)
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        resp = api_client.post(REFRESH_URL, {}, format="json")
+
+        assert resp.status_code == 401, (
+            f"Refresh for inactive user must be 401. "
+            f"Got {resp.status_code}: {resp.data}"
+        )
+        assert resp.data.get("code") == "user_not_found", resp.data
+
+        for name in ("access", "refresh", "logged_in"):
+            cookie = resp.cookies.get(name)
+            assert cookie is not None and _cookie_is_cleared(cookie), (
+                f"Cookie {name!r} must be cleared after refresh-for-inactive."
+            )
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Logout — LogoutAPIView
