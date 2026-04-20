@@ -105,3 +105,14 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {}
 # Celery
 # ------------------------------------------------------------------------------
 CELERY_TASK_EAGER_PROPAGATES = True
+
+
+# Telegram — dev Fernet key with env override for anyone who wants to test
+# against a real bot locally. Generate your own with:
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# ------------------------------------------------------------------------------
+TELEGRAM_BOT_ENCRYPTION_KEY = env(
+    "TELEGRAM_BOT_ENCRYPTION_KEY",
+    default="DxcpeackQHQYgMpYryJJ-pZ4hQPQs278MjbovLLRuKE=",
+)
+PLATFORM_PUBLIC_URL = env("PLATFORM_PUBLIC_URL", default="http://localhost:8080")

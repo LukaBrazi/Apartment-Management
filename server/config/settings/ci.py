@@ -55,6 +55,16 @@ CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
 
+# Telegram — deterministic test key (same as test.py). CI containers are
+# ephemeral; no real bot tokens are ever stored here.
+# ------------------------------------------------------------------------------
+TELEGRAM_BOT_ENCRYPTION_KEY = env(
+    "TELEGRAM_BOT_ENCRYPTION_KEY",
+    default="DxcpeackQHQYgMpYryJJ-pZ4hQPQs278MjbovLLRuKE=",
+)
+PLATFORM_PUBLIC_URL = env("PLATFORM_PUBLIC_URL", default="http://localhost:8080")
+
+
 # DRF Throttling — disabled in CI to avoid hitting rate limits during tests
 # (mirrors the same override in local.py)
 # ------------------------------------------------------------------------------

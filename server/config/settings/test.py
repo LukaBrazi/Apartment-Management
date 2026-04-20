@@ -36,6 +36,13 @@ DEFAULT_FROM_EMAIL = "test@alpaapartments.test"
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
+# Telegram — use a deterministic Fernet key so encrypt/decrypt round-trips
+# work in tests without env setup. Never use this key outside of tests —
+# it is intentionally committed and therefore public.
+TELEGRAM_BOT_ENCRYPTION_KEY = "DxcpeackQHQYgMpYryJJ-pZ4hQPQs278MjbovLLRuKE="
+# Test-only placeholder origin used by webhook URL builders.
+PLATFORM_PUBLIC_URL = "https://test.apartmentos.local"
+
 # No MinIO/S3 — use local filesystem
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

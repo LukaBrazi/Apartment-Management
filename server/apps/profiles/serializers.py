@@ -39,6 +39,11 @@ class ProfileSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source="user.username")
     full_name = serializers.ReadOnlyField(source="user.full_name")
     is_staff = serializers.ReadOnlyField(source="user.is_staff")
+    # PR-14: the frontend uses this to gate the ``/admin/telegram-bot``
+    # super_admin-only UI.  Exposing ``is_superuser`` is fine — it's a
+    # boolean, it's already part of Django's auth contract, and the
+    # sensitive tokens remain write-only on the server.
+    is_superuser = serializers.ReadOnlyField(source="user.is_superuser")
     country_of_origin = CountryField(name_only=True)
     avatar = serializers.SerializerMethodField()
     date_joined = serializers.DateTimeField(source="user.date_joined", read_only=True)
@@ -74,6 +79,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "city_of_origin",
             "bio",
             "is_staff",
+            "is_superuser",
             "occupation",
             "reputation",
             "date_joined",

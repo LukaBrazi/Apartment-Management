@@ -363,6 +363,10 @@ export interface Profile {
 	city_of_origin: string;
 	bio?: string;
 	is_staff: boolean;
+	// PR-14: gates the super_admin-only ``/admin/telegram-bot`` page.
+	// Exposed from ``User.is_superuser``; do not confuse with ``is_staff``
+	// which admits directors / admins / staff generally.
+	is_superuser: boolean;
 	occupation:
 		| "mason"
 		| "carpenter"
@@ -618,4 +622,70 @@ export interface NewsCreateData {
 	category?: string | null;
 	external_url?: string;
 	published_at?: string | null;
+}
+
+// ── PR-14: multi-tenant Telegram bots (super_admin UI) ───────────────────
+
+export interface OrganizationBot {
+	id: string;
+	organization: number;
+	organization_slug: string;
+	organization_name: string;
+	bot_username: string;
+	// Raw token is write-only.  Read responses only ever include the
+	// masked preview (``bot_id:••••••••XYZ``).
+	bot_token_masked: string;
+	is_configured: boolean;
+	is_active: boolean;
+	is_primary: boolean;
+	webhook_url: string;
+	webhook_secret: string;
+	last_tested_at: string | null;
+	last_test_ok: boolean | null;
+	last_test_error: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface OrganizationBotListResponse {
+	count: number;
+	next: string | null;
+	previous: string | null;
+	results: OrganizationBot[];
+}
+
+export interface OrganizationBotCreateData {
+	organization: number;
+	bot_username: string;
+	bot_token?: string;
+	is_active?: boolean;
+	is_primary?: boolean;
+}
+
+export interface OrganizationBotUpdateData {
+	bot_username?: string;
+	// Leave blank to preserve existing token.
+	bot_token?: string;
+	is_active?: boolean;
+	is_primary?: boolean;
+}
+
+export interface OrganizationBotTestResult {
+	ok: boolean;
+	error: string;
+	username: string;
+}
+
+/**
+ * Minimal org shape returned by the ``/notifications/telegram-bots/organizations/``
+ * super_admin helper action — used to populate the "Organization" dropdown
+ * when creating a new bot.  ``pkid`` is the autoincrement PK the bot API
+ * expects as the FK value; ``id`` is the UUID used everywhere else.
+ */
+export interface OrganizationSummary {
+	pkid: number;
+	id: string;
+	name: string;
+	slug: string;
+	is_active: boolean;
 }

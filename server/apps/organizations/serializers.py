@@ -33,6 +33,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
         model = Organization
         fields = [
             "id",
+            "pkid",
             "name",
             "slug",
             "type",
