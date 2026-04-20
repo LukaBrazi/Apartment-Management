@@ -50,6 +50,13 @@ SECURE_HSTS_PRELOAD = True
 # ------------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
 
+# Telegram — PR-14 multi-tenant bots
+# ------------------------------------------------------------------------------
+# Both of these are REQUIRED on prod. No defaults — a missing key fails the
+# worker boot loud instead of silently breaking encryption / webhook setup.
+TELEGRAM_BOT_ENCRYPTION_KEY = env("TELEGRAM_BOT_ENCRYPTION_KEY")
+PLATFORM_PUBLIC_URL = env("PLATFORM_PUBLIC_URL", default="https://apartmentos.org")
+
 # Storage — Cloudflare R2 (S3-compatible)
 # ------------------------------------------------------------------------------
 R2_BUCKET_NAME = env("R2_BUCKET_NAME")

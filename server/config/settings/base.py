@@ -350,6 +350,27 @@ SIMPLE_JWT = {
 # server-side marker that could desync.
 REMEMBER_ME_REFRESH_LIFETIME = timedelta(days=14)
 
+# Telegram — PR-14 multi-tenant bots
+# -------------------------------------------------------------------------------
+# Bot tokens are Fernet-encrypted at rest (see apps/notifications/encryption.py
+# and docs/ADR-014-multi-tenant-telegram-bots.md).  Generate a key once per
+# environment:
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# and set TELEGRAM_BOT_ENCRYPTION_KEY in the env store.  Losing the key means
+# every stored token goes unreadable and has to be re-entered by super_admin.
+#
+# For key rotation, set TELEGRAM_BOT_ENCRYPTION_KEYS (comma-separated, newest
+# first).  Reads try each in turn; writes always use the first.  Runbook:
+# docs/TELEGRAM_BOT_SETUP.md.
+TELEGRAM_BOT_ENCRYPTION_KEY = env("TELEGRAM_BOT_ENCRYPTION_KEY", default="")
+TELEGRAM_BOT_ENCRYPTION_KEYS = env.list("TELEGRAM_BOT_ENCRYPTION_KEYS", default=[])
+
+# Public origin used by the setup_telegram_webhooks management command when it
+# calls Telegram's setWebhook(url=...).  Leave empty in dev — polling path
+# (manage.py run_bot --org-slug=...) doesn't need it.
+PLATFORM_PUBLIC_URL = env("PLATFORM_PUBLIC_URL", default="")
+
+
 # Djoser Config
 # -------------------------------------------------------------------------------
 DJOSER = {

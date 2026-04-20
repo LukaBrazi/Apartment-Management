@@ -12,7 +12,11 @@ import {
 	Newspaper,
 	Building2,
 	ExternalLink,
+	Bot,
 } from "lucide-react";
+
+import { useAppSelector } from "@/lib/redux/hooks/typedHooks";
+import { useGetUserProfileQuery } from "@/lib/redux/features/users/usersApiSlice";
 
 const adminNavLinks = [
 	{ path: "/admin", label: "Дашборд", icon: LayoutDashboard },
@@ -25,12 +29,23 @@ const adminNavLinks = [
 	{ path: "/admin/news", label: "Новини (портал)", icon: Newspaper },
 ];
 
+// Super_admin-only entries — kept separate so we can render them as a
+// visually distinct group (platform-wide controls, not org-scoped).
+const superAdminNavLinks = [
+	{ path: "/admin/telegram-bot", label: "Telegram боти", icon: Bot },
+];
+
 export default function AdminLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
 	const pathname = usePathname();
+	const { isAuthenticated } = useAppSelector((state) => state.auth);
+	const { data: profileData } = useGetUserProfileQuery(undefined, {
+		skip: !isAuthenticated,
+	});
+	const isSuperuser = profileData?.profile?.is_superuser ?? false;
 
 	return (
 		<AdminGuard>
@@ -68,6 +83,31 @@ export default function AdminLayout({
 								</Link>
 							);
 						})}
+
+						{isSuperuser && (
+							<>
+								<div className="pt-4 pb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-[#5BA3B5]">
+									Платформа
+								</div>
+								{superAdminNavLinks.map(({ path, label, icon: Icon }) => {
+									const isActive = pathname.startsWith(path);
+									return (
+										<Link
+											key={path}
+											href={path}
+											className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+												isActive
+													? "bg-[#EBF3F5] text-[#3D7A8A]"
+													: "text-[#A8BFCC] hover:bg-[#243548] hover:text-white"
+											}`}
+										>
+											<Icon className="h-4 w-4 flex-shrink-0" />
+											{label}
+										</Link>
+									);
+								})}
+							</>
+						)}
 					</nav>
 
 					{/* Back to site */}

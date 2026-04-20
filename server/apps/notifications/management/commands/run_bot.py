@@ -1,100 +1,176 @@
-"""
-Management command to run the Telegram bot in polling mode.
-Usage: python manage.py run_bot
+"""Polling mode for development — one process, all active org bots.
 
-For production, prefer webhook mode via the /telegram/webhook/ endpoint.
+PR-14 phase 5 rewires this command away from the old platform-wide
+``TELEGRAM_BOT_TOKEN`` setting. Instead we:
+
+* Enumerate every ``OrganizationBot`` with ``is_active=True`` and a
+  non-empty token.
+* Build a python-telegram-bot ``Application`` per bot (each needs its
+  own token, its own updater, its own polling loop).
+* Register shared command handlers that close over ``bot`` so the
+  incoming ``chat_id`` is resolved against the right org.
+
+Local-only: production uses the webhook endpoint (see
+``TelegramWebhookView``) so we don't pay for N persistent polling
+connections in the same pod.
+
+Usage:
+    python manage.py run_bot             # poll every active bot
+    python manage.py run_bot --bot=id    # poll a single bot (debug)
 """
+from __future__ import annotations
+
 import asyncio
 import logging
+from typing import Iterable
 
-from django.conf import settings
+from asgiref.sync import sync_to_async
 from django.core.management.base import BaseCommand
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Start Telegram bot in polling mode"
+    help = "Run Telegram bots in polling mode (dev only — prod uses webhook)."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--bot",
+            dest="bot_id",
+            default=None,
+            help=(
+                "Optional: run only the bot with this UUID (or bot_username). "
+                "By default every active bot is polled concurrently."
+            ),
+        )
 
     def handle(self, *args, **options):
-        token = getattr(settings, "TELEGRAM_BOT_TOKEN", "")
-        if not token:
-            self.stderr.write(self.style.ERROR("TELEGRAM_BOT_TOKEN is not set in settings."))
+        # All DB reads go through sync_to_async inside the asyncio
+        # loop; list the targeted bot PKs upfront so we don't hit the
+        # ORM from async context unexpectedly.
+        from apps.notifications.models import OrganizationBot
+
+        qs = OrganizationBot.objects.filter(is_active=True)
+        bot_filter = options.get("bot_id")
+        if bot_filter:
+            qs = qs.filter(
+                models_or(["id", "bot_username"], bot_filter, qs.model),
+            )
+
+        bots = [
+            b for b in qs.iterator()
+            if b.is_configured  # drops rows with empty tokens
+        ]
+        if not bots:
+            self.stderr.write(
+                self.style.WARNING(
+                    "run_bot: no active bots found — nothing to poll.",
+                ),
+            )
             return
 
-        self.stdout.write(self.style.SUCCESS("Starting Telegram bot (polling mode)..."))
-        asyncio.run(self._run())
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"run_bot: polling {len(bots)} bot(s): "
+                + ", ".join(f"@{b.bot_username}" for b in bots),
+            ),
+        )
+        asyncio.run(_run_all(bots))
 
-    async def _run(self):
-        from telegram import Update
-        from telegram.ext import Application, CommandHandler, ContextTypes
 
-        bot_token = settings.TELEGRAM_BOT_TOKEN
-        internal_secret = getattr(settings, "TELEGRAM_INTERNAL_SECRET", "")
+# ── Helpers ────────────────────────────────────────────────────────────────
 
-        async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            """Handle /start command — optionally with a verification token."""
-            args = context.args
-            if args:
-                token_value = args[0]
-                chat_id = update.effective_chat.id
-                # Call our internal API to verify
-                import httpx
-                api_url = getattr(settings, "TELEGRAM_BOT_API_BASE", "http://django:8000")
-                try:
-                    async with httpx.AsyncClient() as client:
-                        resp = await client.post(
-                            f"{api_url}/api/v1/notifications/telegram/verify/",
-                            json={"token": token_value, "chat_id": chat_id},
-                            headers={"X-Telegram-Internal-Secret": internal_secret},
-                            timeout=10,
-                        )
-                    if resp.status_code == 200:
-                        await update.message.reply_text(
-                            "✅ *Telegram підключено!*\n\nТепер ви будете отримувати сповіщення від ApartmentOS.",
-                            parse_mode="Markdown",
-                        )
-                    else:
-                        await update.message.reply_text("❌ Невірний або прострочений токен. Спробуйте ще раз.")
-                except Exception as e:
-                    logger.error(f"Bot verify error: {e}")
-                    await update.message.reply_text("Сталася помилка. Спробуйте пізніше.")
-            else:
-                await update.message.reply_text(
-                    "👋 *Вітаємо у ApartmentOS Bot!*\n\n"
-                    "Щоб підключити сповіщення, перейдіть в особистий кабінет на сайті та натисніть «Підключити Telegram».",
-                    parse_mode="Markdown",
-                )
 
-        async def stop_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            """Handle /stop command — deactivate notifications."""
-            chat_id = update.effective_chat.id
-            from apps.notifications.models import TelegramProfile
-            updated = TelegramProfile.objects.filter(chat_id=chat_id).update(is_active=False)
-            if updated:
-                await update.message.reply_text("🔕 Сповіщення вимкнено. Щоб увімкнути знову — /start.")
-            else:
-                await update.message.reply_text("Профіль не знайдено.")
+def models_or(fields, value, model):
+    """Return a Q() that ORs equality on each field.
 
-        async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            """Handle /status command."""
-            chat_id = update.effective_chat.id
-            from apps.notifications.models import TelegramProfile
-            try:
-                profile = TelegramProfile.objects.select_related("user").get(chat_id=chat_id)
-                status_text = "✅ активні" if profile.is_active else "🔕 вимкнені"
-                await update.message.reply_text(
-                    f"📊 *Статус сповіщень:* {status_text}\n"
-                    f"👤 Акаунт: {profile.user.email}",
-                    parse_mode="Markdown",
-                )
-            except TelegramProfile.DoesNotExist:
-                await update.message.reply_text("Акаунт не підключено. Використайте /start з токеном.")
+    Supports ``--bot=<UUID>`` and ``--bot=<bot_username>`` without making
+    the caller pick. We try each field in turn.
+    """
+    from django.db.models import Q
 
-        app = Application.builder().token(bot_token).build()
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("stop", stop_cmd))
-        app.add_handler(CommandHandler("status", status_cmd))
+    q = Q()
+    for f in fields:
+        try:
+            # Validate field-by-field so a malformed UUID on ``id`` doesn't
+            # explode the whole query. Django still validates on execute,
+            # but ``bot_username`` accepts free strings.
+            model._meta.get_field(f)
+            q |= Q(**{f: value})
+        except Exception:
+            continue
+    return q
 
-        logger.info("Bot started polling...")
+
+async def _run_all(bots: Iterable):
+    """Fan out one polling ``Application`` per bot and await them all.
+
+    Each bot gets its own ``asyncio.Task`` so a crash in one doesn't
+    take the rest down — cancellations are isolated too, so Ctrl-C
+    cleanly stops every bot.
+    """
+    tasks = [asyncio.create_task(_run_one(bot)) for bot in bots]
+    try:
+        await asyncio.gather(*tasks, return_exceptions=True)
+    except asyncio.CancelledError:
+        for t in tasks:
+            t.cancel()
+        raise
+
+
+async def _run_one(bot):
+    """Build and run a python-telegram-bot ``Application`` for one bot."""
+    from telegram import Update
+    from telegram.ext import Application, CommandHandler, ContextTypes
+
+    from apps.notifications.update_handlers import (
+        handle_start,
+        handle_status,
+        handle_stop,
+    )
+
+    async def _as_handler(sync_handler):
+        """Wrap a sync handler (ORM touching) so the PTB handler can
+        ``await`` it without hitting Django's async-safety guard."""
+        async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            chat = update.effective_chat
+            if chat is None:
+                return
+            args = context.args or []
+            result = await sync_to_async(sync_handler, thread_sensitive=True)(
+                bot, chat.id, args,
+            )
+            if result is None:
+                return
+            await update.message.reply_text(
+                result.reply_text, parse_mode=result.parse_mode,
+            )
+        return handler
+
+    # handle_stop / handle_status don't take args — adapt signature.
+    def _start(bot_, chat_id, args):
+        return handle_start(bot_, chat_id, args)
+
+    def _stop(bot_, chat_id, _args):
+        return handle_stop(bot_, chat_id)
+
+    def _status(bot_, chat_id, _args):
+        return handle_status(bot_, chat_id)
+
+    app = Application.builder().token(bot.bot_token).build()
+    app.add_handler(CommandHandler("start", await _as_handler(_start)))
+    app.add_handler(CommandHandler("stop", await _as_handler(_stop)))
+    app.add_handler(CommandHandler("status", await _as_handler(_status)))
+
+    logger.info("run_bot: polling started for @%s", bot.bot_username)
+    try:
+        # run_polling blocks until cancelled — it installs its own signal
+        # handlers, which is fine because we run this only in dev.
         await app.run_polling(allowed_updates=Update.ALL_TYPES)
+    except asyncio.CancelledError:
+        logger.info("run_bot: cancelled for @%s", bot.bot_username)
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.error(
+            "run_bot: polling crashed for @%s: %s", bot.bot_username, exc,
+        )
