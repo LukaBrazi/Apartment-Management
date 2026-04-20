@@ -337,6 +337,19 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "user_id",
 }
 
+# Remember Me
+# -------------------------------------------------------------------------------
+# When a user ticks "Запам'ятати мене" on the login form, the refresh
+# token's `exp` claim and the refresh/logged_in cookie Max-Age are
+# extended to this lifetime. Without remember-me, tokens use the stock
+# SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"] and cookies are session-only
+# (Max-Age omitted → browser drops them on close).
+#
+# The extension is driven by a `remember: true` claim baked into the
+# refresh JWT itself — so it survives rotation without a separate
+# server-side marker that could desync.
+REMEMBER_ME_REFRESH_LIFETIME = timedelta(days=14)
+
 # Djoser Config
 # -------------------------------------------------------------------------------
 DJOSER = {

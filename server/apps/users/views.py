@@ -1,6 +1,7 @@
 # Imports
 import logging
 import uuid
+from datetime import timedelta
 from typing import Dict, Optional
 
 from django.conf import settings
@@ -13,6 +14,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from apps.users.serializers import RememberAwareTokenObtainPairSerializer
 
 # Get the logger
 logger = logging.getLogger(__name__)
@@ -36,136 +39,110 @@ def _clear_auth_cookies(res: Response) -> None:
 
 # Function to set the authentication cookies
 def set_auth_cookies(
-    res: Response, access_token: str, refresh_token: Optional[str] = None
+    res: Response,
+    access_token: str,
+    refresh_token: Optional[str] = None,
+    *,
+    remember: bool = False,
 ) -> None:
-    """Set the authentication cookies.
+    """Write the auth cookies (access / refresh / logged_in) onto a response.
 
     Args:
-        res (Response): The response object.
-        access_token (str): The access token.
-        refresh_token (Optional[str]): The refresh token.
-    """
+        res: The response object.
+        access_token: Signed access JWT (goes into the HttpOnly `access`
+            cookie).
+        refresh_token: Signed refresh JWT (goes into the HttpOnly
+            `refresh` cookie). When None, the refresh cookie is left
+            untouched — used by call sites that only rotate the access
+            token.
+        remember: Controls the lifetime of the `refresh` and `logged_in`
+            cookies:
 
-    # Get the access token lifetime from settings
+              - True  → Max-Age = settings.REMEMBER_ME_REFRESH_LIFETIME
+                        (default 14 days). The session survives browser
+                        restarts until the refresh JWT itself expires.
+              - False → Max-Age omitted → session cookies. Browser drops
+                        them when the last tab closes, so the user must
+                        re-authenticate on next visit.
+
+            The `access` cookie always uses ACCESS_TOKEN_LIFETIME as its
+            Max-Age regardless of `remember`, because the JWT inside is
+            short-lived by design and a stale cookie would just get
+            refreshed via baseQueryWithReauth on the client.
+    """
     access_token_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()
 
-    # Get the cookie settings
-    cookie_settings = {
+    # Persistent Max-Age for refresh + logged_in cookies.
+    #   remember=True  → integer seconds (14 days default)
+    #   remember=False → None → Django emits no Max-Age header → session cookie.
+    persistent_max_age: Optional[float]
+    if remember:
+        persistent_max_age = getattr(
+            settings,
+            "REMEMBER_ME_REFRESH_LIFETIME",
+            timedelta(days=14),
+        ).total_seconds()
+    else:
+        persistent_max_age = None
+
+    base_cookie_kwargs = {
         "path": settings.COOKIE_PATH,
         "secure": settings.COOKIE_SECURE,
         "httponly": settings.COOKIE_HTTPONLY,
         "samesite": settings.COOKIE_SAMESITE,
-        "max_age": access_token_lifetime,
     }
 
-    # Set the access token cookie
-    res.set_cookie("access", access_token, **cookie_settings)
+    # Access cookie — always short-lived; its JWT is ephemeral so a
+    # longer cookie Max-Age would just mask expiry until the next request.
+    res.set_cookie(
+        "access",
+        access_token,
+        max_age=access_token_lifetime,
+        **base_cookie_kwargs,
+    )
 
-    # If the refresh token is provided
+    # Refresh cookie — Max-Age mirrors `remember`.
     if refresh_token:
-        # Get the refresh token lifetime from settings
-        refresh_token_lifetime = settings.SIMPLE_JWT[
-            "REFRESH_TOKEN_LIFETIME"
-        ].total_seconds()
+        res.set_cookie(
+            "refresh",
+            refresh_token,
+            max_age=persistent_max_age,
+            **base_cookie_kwargs,
+        )
 
-        # Make a copy of the cookie settings
-        refresh_cookie_settings = cookie_settings.copy()
-
-        # Update the max age for the refresh token
-        refresh_cookie_settings["max_age"] = refresh_token_lifetime
-
-        # Set the refresh token cookie
-        res.set_cookie("refresh", refresh_token, **refresh_cookie_settings)
-
-    # Make a copy of the cookie settings
-    logged_in_cookie_settings = cookie_settings.copy()
-
-    # Set the httponly to False
-    logged_in_cookie_settings["httponly"] = False
-
-    # Set the logged in cookie
-    res.set_cookie("logged_in", "true", **logged_in_cookie_settings)
+    # `logged_in` is the client-visible marker ProtectedRoute consults.
+    # It must NOT be HttpOnly (JS reads it), and its lifetime must match
+    # the refresh cookie so the gate and the tokens die together.
+    logged_in_cookie_kwargs = {**base_cookie_kwargs, "httponly": False}
+    res.set_cookie(
+        "logged_in",
+        "true",
+        max_age=persistent_max_age,
+        **logged_in_cookie_kwargs,
+    )
 
 
 # Custom Token Obtain Pair API View
 class CustomTokenObtainPairAPIView(TokenObtainPairView):
     """Custom Token Obtain Pair API View
 
-    This class extends the TokenObtainPairView class to set the authentication cookies.
+    Extends SimpleJWT's TokenObtainPairView to:
+
+      1. Use RememberAwareTokenObtainPairSerializer, which accepts a
+         `remember_me` boolean and bakes a `remember: true` claim into
+         the refresh token when set.
+      2. Move access + refresh tokens from the response body into
+         HttpOnly cookies (the SPA never touches raw tokens).
+      3. Adjust cookie Max-Age based on `remember_me` so a ticked
+         checkbox produces a 14-day persistent session while an unticked
+         one yields a session cookie that dies on browser close.
 
     Extends:
         TokenObtainPairView
-
-    Methods:
-        post(request: Request, *args: Dict, **kwargs: Dict) -> Response: Handle the POST request.
-
-    Returns:
-        Response: The response object.
     """
 
-    # Method to handle the POST request
-    def post(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:
-        """Handle the POST request.
+    serializer_class = RememberAwareTokenObtainPairSerializer
 
-        Args:
-            request (Request): The request object.
-            *args (dict): The arguments.
-            **kwargs (dict): The keyword arguments.
-
-        Returns:
-            Response: The response object
-        """
-
-        # Get the response
-        res = super().post(request, *args, **kwargs)
-
-        # If the status code is 200
-        if res.status_code == status.HTTP_200_OK:
-            # Get the access and refresh tokens
-            access_token = res.data.get("access")
-            refresh_token = res.data.get("refresh")
-
-            # If the access and refresh tokens are provided
-            if access_token and refresh_token:
-                # Set the authentication cookies
-                set_auth_cookies(res, access_token, refresh_token)
-
-                # Remove the access and refresh tokens from the response data
-                res.data.pop("access")
-                res.data.pop("refresh")
-
-                # Add the message to the response data
-                res.data["message"] = "Login successful."
-
-            # Else
-            else:
-                # Add the message to the response data
-                res.data["message"] = "Login failed."
-
-                # Log the error
-                logger.error("Access or refresh token not provided in response data.")
-
-        # Return the response
-        return res
-
-
-# Custom Token Refresh API View
-class CustomTokenRefreshAPIView(TokenRefreshView):
-    """Custom Token Refresh API View
-
-    This class extends the TokenRefreshView class to set the authentication cookies.
-
-    Args:
-        TokenRefreshView
-
-    Methods:
-        post(request: Request, *args: Dict, **kwargs: Dict) -> Response: Handle the POST request.
-
-    Returns:
-        Response: The response object.
-    """
-
-    # Method to handle the POST request
     def post(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:
         """Handle the POST request.
 
@@ -177,92 +154,166 @@ class CustomTokenRefreshAPIView(TokenRefreshView):
         Returns:
             Response: The response object.
         """
+        # Read `remember_me` from input BEFORE super() runs — the serializer
+        # will pop it during validation, so we capture it here once to
+        # drive cookie Max-Age post-response. Missing / non-boolean values
+        # default to False (safest: a typo must not silently extend the
+        # session).
+        remember = bool(request.data.get("remember_me", False))
 
-        # Get the refresh token from the cookies
-        refresh_token = request.COOKIES.get("refresh")
-
-        # If the refresh token is provided
-        if refresh_token:
-            # Add the refresh token to the request data
-            request.data["refresh"] = refresh_token
-
-            # ── Ghost-session guard (runs BEFORE super().post) ──
-            # The signed refresh token may belong to a user who has been
-            # deleted/anonymized (demo reseed, GDPR erasure, manual purge)
-            # while the browser cookie is still live. SimpleJWT's newer
-            # TokenRefreshSerializer raises User.DoesNotExist deep inside
-            # validation → a 500 Internal Server Error, which the SPA's
-            # baseQueryWithReauth treats as a transient failure and keeps
-            # retrying — producing an infinite refresh loop that blocks
-            # CEO's /welcome from ever falling back to /login. We handle
-            # the missing-user case explicitly: return 401 with
-            # code='user_not_found', emit Set-Cookie clearing all three
-            # auth cookies, and blacklist the refresh token so it can't
-            # keep minting access tokens for a ghost identity.
-            try:
-                rt = RefreshToken(refresh_token)
-                user_id = rt.get(settings.SIMPLE_JWT["USER_ID_CLAIM"])
-            except TokenError:
-                # Signature/expiry/blacklist failure — let SimpleJWT below
-                # return its standard 401; no need to intercept here.
-                user_id = None
-
-            if user_id is not None:
-                user_exists = UserModel.objects.filter(
-                    **{settings.SIMPLE_JWT["USER_ID_FIELD"]: user_id},
-                    is_active=True,
-                ).exists()
-
-                if not user_exists:
-                    logger.warning(
-                        "Refresh attempted for non-existent/inactive user (id=%s). "
-                        "Blacklisting token and clearing cookies.",
-                        user_id,
-                    )
-                    try:
-                        rt.blacklist()
-                    except TokenError:
-                        pass
-
-                    res = Response(
-                        {"detail": "User not found.", "code": "user_not_found"},
-                        status=status.HTTP_401_UNAUTHORIZED,
-                    )
-                    _clear_auth_cookies(res)
-                    return res
-
-        # Get the response
         res = super().post(request, *args, **kwargs)
 
-        # If the status code is 200
         if res.status_code == status.HTTP_200_OK:
-            # Get the access and refresh tokens
             access_token = res.data.get("access")
             refresh_token = res.data.get("refresh")
 
-            # If the access and refresh tokens are provided
             if access_token and refresh_token:
-                # Set the authentication cookies
-                set_auth_cookies(res, access_token, refresh_token)
-
-                # Remove the access and refresh tokens from the response data
+                set_auth_cookies(
+                    res, access_token, refresh_token, remember=remember
+                )
                 res.data.pop("access")
                 res.data.pop("refresh")
-
-                # Add the message to the response data
-                res.data["message"] = "Access token refreshed successfully."
-
-            # Else
+                res.data["message"] = "Login successful."
             else:
-                # Add the message to the response data
-                res.data["message"] = (
-                    "Access or refresh token not provided in response data."
-                )
-
-                # Log the error
+                res.data["message"] = "Login failed."
                 logger.error("Access or refresh token not provided in response data.")
 
-        # Return the response
+        return res
+
+
+# Custom Token Refresh API View
+class CustomTokenRefreshAPIView(TokenRefreshView):
+    """Custom Token Refresh API View
+
+    Rotates the refresh token *manually* instead of delegating to
+    TokenRefreshSerializer, because we need three things the stock
+    serializer doesn't give us:
+
+      1. **Ghost-session guard.** If the user was deleted / anonymized
+         while the refresh cookie was still live, newer SimpleJWT raises
+         User.DoesNotExist deep inside validation and the SPA sees a 500
+         that it interprets as "retry later" — producing an infinite
+         refresh loop that traps the browser on /welcome. We detect the
+         missing user explicitly, blacklist the token, clear cookies,
+         and return 401 code=user_not_found.
+
+      2. **Remember-me claim preservation.** The refresh token carries a
+         `remember: true` claim when the user ticked the box at login.
+         On rotation, the NEW refresh token must also carry that claim
+         and its `exp` must be extended to the remember-me lifetime;
+         otherwise the persistence would silently degrade to 5 minutes
+         after the first auto-refresh.
+
+      3. **Consistent cookie Max-Age across rotations.** The refresh +
+         logged_in cookies' Max-Age is derived from the claim above, so
+         Remember sessions stay persistent and non-Remember sessions
+         stay session-only even after dozens of rotations.
+
+    Failure modes we fall back to SimpleJWT's default handling:
+      - Missing refresh cookie → super() returns 400 (contract pin).
+      - Invalid / expired / blacklisted token → super() returns 401
+        token_not_valid (contract pin).
+
+    Args:
+        TokenRefreshView
+    """
+
+    def post(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:
+        """Handle the POST request.
+
+        Args:
+            request (Request): The request object.
+            *args (dict): The arguments.
+            **kwargs (dict): The keyword arguments.
+
+        Returns:
+            Response: The response object.
+        """
+        refresh_token = request.COOKIES.get("refresh")
+
+        # No cookie → defer to SimpleJWT's stock serializer, which emits
+        # a 400 validation error. Keeps test_refresh_without_cookie_*
+        # contract stable.
+        if not refresh_token:
+            return super().post(request, *args, **kwargs)
+
+        # Make the cookie token available for SimpleJWT's error path.
+        request.data["refresh"] = refresh_token
+
+        # Validate the token (signature, exp, blacklist) upfront. Any
+        # failure here falls back to super() so tampered / expired
+        # tokens get SimpleJWT's canonical 401 token_not_valid response.
+        try:
+            rt = RefreshToken(refresh_token)
+        except TokenError:
+            return super().post(request, *args, **kwargs)
+
+        user_id = rt.get(settings.SIMPLE_JWT["USER_ID_CLAIM"])
+
+        # ── Ghost-session guard ──
+        # Token signature is valid but the subject was removed /
+        # deactivated. End the session cleanly.
+        try:
+            user = UserModel.objects.get(
+                **{settings.SIMPLE_JWT["USER_ID_FIELD"]: user_id},
+                is_active=True,
+            )
+        except UserModel.DoesNotExist:
+            logger.warning(
+                "Refresh attempted for non-existent/inactive user (id=%s). "
+                "Blacklisting token and clearing cookies.",
+                user_id,
+            )
+            try:
+                rt.blacklist()
+            except (TokenError, AttributeError):
+                # blacklist() can raise if token_blacklist isn't installed
+                # or if the token is already blacklisted.
+                pass
+
+            res = Response(
+                {"detail": "User not found.", "code": "user_not_found"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+            _clear_auth_cookies(res)
+            return res
+
+        # ── Remember-me aware rotation ──
+        # Read the claim from the OLD token — it's the source of truth
+        # for whether the session was marked persistent at login.
+        remember = bool(rt.get("remember", False))
+
+        # Emulate BLACKLIST_AFTER_ROTATION — blacklist the old token
+        # before we hand out a replacement so a stolen copy can't be
+        # reused in parallel with the new one.
+        if settings.SIMPLE_JWT.get("BLACKLIST_AFTER_ROTATION", False):
+            try:
+                rt.blacklist()
+            except (TokenError, AttributeError):
+                pass
+
+        # Mint the replacement pair. for_user() creates a fresh
+        # OutstandingToken row with the correct expires_at derived from
+        # the token's final exp, so blacklist bookkeeping stays clean.
+        new_rt = RefreshToken.for_user(user)
+        new_rt["remember"] = remember
+        if remember:
+            new_rt.set_exp(
+                lifetime=getattr(
+                    settings,
+                    "REMEMBER_ME_REFRESH_LIFETIME",
+                    timedelta(days=14),
+                )
+            )
+        new_access = new_rt.access_token
+
+        res = Response(
+            {"message": "Access token refreshed successfully."},
+            status=status.HTTP_200_OK,
+        )
+        set_auth_cookies(
+            res, str(new_access), str(new_rt), remember=remember
+        )
         return res
 
 

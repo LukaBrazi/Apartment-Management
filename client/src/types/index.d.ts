@@ -329,7 +329,14 @@ export interface UserResponse {
 	avatar: string;
 	date_joined: string;
 }
-export interface LoginUserData extends UserCommonData {}
+export interface LoginUserData extends UserCommonData {
+	/**
+	 * If true, backend extends the refresh cookie lifetime to 14 days
+	 * and the session survives browser restarts. Defaults to false
+	 * (session cookies, die on browser close).
+	 */
+	remember_me?: boolean;
+}
 
 export interface ResetPasswordConfirmData {
 	uid: string;

@@ -1,9 +1,14 @@
 # Imports
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django_countries.serializer_fields import CountryField
 from djoser.serializers import UserSerializer
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 # Get the user model
 User = get_user_model()
@@ -76,3 +81,62 @@ class CustomUserSerializer(UserSerializer):
             "date_joined",
         )
         read_only_fields = ("id", "email", "date_joined")
+
+
+# ── Remember-Me Aware Token Obtain Pair Serializer ───────────────────────────
+class RememberAwareTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Login serializer with optional `remember_me` support.
+
+    Extends SimpleJWT's TokenObtainPairSerializer:
+
+      - Accepts an extra `remember_me: bool` input field (write-only,
+        defaults to False so existing clients are unaffected).
+      - When `remember_me=True`, mutates the already-signed refresh token
+        in-memory to (a) add a `remember: true` custom claim and (b)
+        extend its `exp` to settings.REMEMBER_ME_REFRESH_LIFETIME. The
+        matching access token is re-derived from the updated refresh.
+      - When `remember_me=False` (or absent), returns stock tokens —
+        zero behavioral change versus the pre-feature code path.
+
+    The `remember` claim is the single source of truth for session
+    persistence. Embedding it in the JWT itself means:
+
+      1. It survives refresh-token rotation (the refresh view reads the
+         claim and re-applies the same cookie Max-Age) without needing a
+         parallel server-side marker that could desync.
+      2. It can't be forged by the client without invalidating the
+         signature.
+      3. A forgotten-checkbox bug can't silently degrade a remembered
+         session into a 5-minute one.
+
+    We deliberately mutate the existing refresh token rather than calling
+    RefreshToken.for_user() afresh — the latter would create a second
+    OutstandingToken row per login. Our mutation keeps the same JTI, so
+    blacklist tracking stays consistent; if OutstandingToken.expires_at
+    ends up stale, the blacklist path self-heals via get_or_create.
+    """
+
+    remember_me = serializers.BooleanField(
+        required=False, default=False, write_only=True
+    )
+
+    def validate(self, attrs):
+        # Pop before super() — SimpleJWT's parent validate() wouldn't
+        # know what to do with an unknown field.
+        remember = bool(attrs.pop("remember_me", False))
+        data = super().validate(attrs)
+
+        if remember:
+            rt = RefreshToken(data["refresh"])
+            rt["remember"] = True
+            rt.set_exp(
+                lifetime=getattr(
+                    settings,
+                    "REMEMBER_ME_REFRESH_LIFETIME",
+                    timedelta(days=14),
+                )
+            )
+            data["refresh"] = str(rt)
+            data["access"] = str(rt.access_token)
+
+        return data
