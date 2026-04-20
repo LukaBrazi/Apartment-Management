@@ -1,3 +1,4 @@
+import EstateAuthGate from "@/components/shared/EstateAuthGate";
 import BottomNav from "@/components/shared/navbar/BottomNav";
 import LeftNavbar from "@/components/shared/navbar/LeftNavbar";
 import MobileHeader from "@/components/shared/navbar/MobileHeader";
@@ -48,7 +49,9 @@ export default function layout({ children }: LayoutProps) {
 					<LeftNavbar />
 				</div>
 				<section className="flex min-h-screen flex-1 flex-col px-4 pb-20 pt-16 sm:px-6 md:pb-6 md:pt-24 lg:px-8 lg:pt-32">
-					<div>{children}</div>
+					<div>
+						<EstateAuthGate>{children}</EstateAuthGate>
+					</div>
 				</section>
 				<div className="hidden md:contents">
 					<RightNavbar />
