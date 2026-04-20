@@ -44,6 +44,7 @@ export default function LoginForm() {
 		defaultValues: {
 			email: "",
 			password: "",
+			remember_me: false,
 		},
 	});
 
@@ -157,10 +158,30 @@ export default function LoginForm() {
 				)}
 			</div>
 
+			{/* Remember me — drives the 14-day persistent-session cookie. The
+			    flag is sent to the backend as `remember_me` and baked into
+			    the refresh JWT as a `remember: true` claim so it survives
+			    rotation. Default unchecked is intentional: shared devices
+			    must not opt into 14-day persistence silently. */}
+			<label
+				htmlFor="login-remember-me"
+				className="-mt-1 flex cursor-pointer select-none items-center gap-2.5"
+			>
+				<input
+					id="login-remember-me"
+					type="checkbox"
+					{...register("remember_me")}
+					className="size-4 rounded border-[#E2E5E8] text-[#3D7A8A] focus:ring-2 focus:ring-[#3D7A8A]/30 focus:ring-offset-0 dark:border-[#2D3D4F] dark:bg-[#1E2D3D] dark:text-[#5BA3B5] dark:focus:ring-[#5BA3B5]/40"
+				/>
+				<span className="text-sm text-[#1C2B3A] dark:text-[#F0EDE6]">
+					Запам&apos;ятати мене на 14 днів
+				</span>
+			</label>
+
 			<Button
 				type="submit"
 				disabled={isLoading}
-				className="mt-2 h-12 w-full rounded-xl bg-[#1C2B3A] text-base font-semibold text-white shadow-sm transition-all hover:bg-[#243647] hover:shadow-md disabled:opacity-60 dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0]"
+				className="mt-1 h-12 w-full rounded-xl bg-[#1C2B3A] text-base font-semibold text-white shadow-sm transition-all hover:bg-[#243647] hover:shadow-md disabled:opacity-60 dark:bg-[#5BA3B5] dark:hover:bg-[#4A8FA0]"
 			>
 				{isLoading ? <Spinner size="sm" /> : "Увійти"}
 			</Button>

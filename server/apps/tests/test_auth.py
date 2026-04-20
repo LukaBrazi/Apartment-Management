@@ -281,6 +281,275 @@ class TestRefresh:
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# Remember Me — persistent cookies + rotation-preserved claim
+# ═════════════════════════════════════════════════════════════════════════════
+
+@pytest.mark.django_db
+class TestRememberMe:
+    """Contract for the 'Запам'ятати мене' feature.
+
+    Invariants (each asserted by one or more tests below):
+
+      1. Login with `remember_me=True` sets `refresh` + `logged_in`
+         cookies with Max-Age = REMEMBER_ME_REFRESH_LIFETIME (14 days).
+      2. Login with `remember_me=False` (or omitted) sets `refresh` +
+         `logged_in` as session cookies (no Max-Age header).
+      3. The `access` cookie's Max-Age is ALWAYS ACCESS_TOKEN_LIFETIME,
+         independent of remember — the JWT inside is short anyway.
+      4. The `remember: true` claim lives inside the refresh JWT payload
+         and survives rotation: after a /auth/refresh/ call, the new
+         cookies retain the 14-day Max-Age.
+      5. A non-remember session never accidentally gets elevated to
+         persistent on rotation.
+      6. Logout clears all three cookies even when the session was
+         remember-me (the feature doesn't create a "can't log out" hole).
+      7. The `remember` claim survives N consecutive rotations, not just
+         one — the fix must not be single-hop.
+    """
+
+    REMEMBER_SECONDS = 14 * 24 * 3600  # 1_209_600
+
+    def _login(self, api_client, user, password, *, remember):
+        resp = api_client.post(
+            LOGIN_URL,
+            {
+                "email": user.email,
+                "password": password,
+                "remember_me": remember,
+            },
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        # Copy freshly-issued cookies onto the client for follow-up calls.
+        for name, morsel in resp.cookies.items():
+            api_client.cookies[name] = morsel.value
+        return resp
+
+    @staticmethod
+    def _max_age(morsel):
+        """Morsel → int seconds, or None for a session cookie.
+
+        Django's Response.set_cookie(max_age=None) omits the Max-Age
+        header. The cookies jar then returns "" for that field, which
+        we normalize to None here.
+        """
+        raw = morsel.get("max-age")
+        if raw in (None, ""):
+            return None
+        return int(raw)
+
+    def test_login_with_remember_sets_14_day_cookies(
+        self, api_client, user, password
+    ):
+        resp = self._login(api_client, user, password, remember=True)
+
+        refresh_max_age = self._max_age(resp.cookies["refresh"])
+        logged_in_max_age = self._max_age(resp.cookies["logged_in"])
+
+        assert refresh_max_age == self.REMEMBER_SECONDS, (
+            f"refresh cookie must persist {self.REMEMBER_SECONDS}s "
+            f"(14d) when remember_me=True. Got Max-Age={refresh_max_age}"
+        )
+        assert logged_in_max_age == self.REMEMBER_SECONDS, (
+            f"logged_in cookie must persist 14d when remember_me=True. "
+            f"Got Max-Age={logged_in_max_age}"
+        )
+
+    def test_login_without_remember_sets_session_cookies(
+        self, api_client, user, password
+    ):
+        resp = self._login(api_client, user, password, remember=False)
+
+        refresh_max_age = self._max_age(resp.cookies["refresh"])
+        logged_in_max_age = self._max_age(resp.cookies["logged_in"])
+
+        assert refresh_max_age is None, (
+            "refresh cookie must be a session cookie (no Max-Age) when "
+            f"remember_me=False. Got Max-Age={refresh_max_age}"
+        )
+        assert logged_in_max_age is None, (
+            "logged_in cookie must be a session cookie when "
+            f"remember_me=False. Got Max-Age={logged_in_max_age}"
+        )
+
+    def test_login_default_is_not_remembered(self, api_client, user, password):
+        """Omitting `remember_me` entirely must behave like False.
+
+        This guards against a future refactor that accidentally flips
+        the default to True — every user would then get 14-day sessions
+        whether they asked for it or not.
+        """
+        resp = api_client.post(
+            LOGIN_URL,
+            {"email": user.email, "password": password},  # no remember_me
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+
+        refresh_max_age = self._max_age(resp.cookies["refresh"])
+        assert refresh_max_age is None, (
+            "Omitted remember_me must default to a session cookie, never "
+            f"a persistent one. Got Max-Age={refresh_max_age}"
+        )
+
+    def test_access_cookie_max_age_is_always_short(
+        self, api_client, user, password
+    ):
+        """access cookie Max-Age stays tied to ACCESS_TOKEN_LIFETIME
+        whether remember_me is true or false — the JWT inside is short,
+        and a stale cookie would just get refreshed via
+        baseQueryWithReauth. Keeping this invariant prevents a broken
+        session where the cookie says "still valid" but the token is
+        rejected by DRF.
+        """
+        from django.conf import settings as dj_settings
+        expected = int(
+            dj_settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()
+        )
+
+        for remember in (True, False):
+            api_client.cookies.clear()
+            resp = self._login(api_client, user, password, remember=remember)
+            access_max_age = self._max_age(resp.cookies["access"])
+            assert access_max_age == expected, (
+                "access cookie Max-Age must equal ACCESS_TOKEN_LIFETIME "
+                f"({expected}s) regardless of remember. "
+                f"Got {access_max_age} (remember={remember})"
+            )
+
+    def test_remember_claim_survives_one_rotation(
+        self, api_client, user, password
+    ):
+        """After login remember=True and a /auth/refresh/, the new
+        refresh + logged_in cookies must still have 14-day Max-Age.
+
+        This is the hop-1 check for the remember claim — the single
+        most likely place the feature would silently degrade if the
+        rotation path forgot to read the claim.
+        """
+        self._login(api_client, user, password, remember=True)
+
+        resp = api_client.post(REFRESH_URL, {}, format="json")
+        assert resp.status_code == 200, resp.data
+
+        new_refresh_max_age = self._max_age(resp.cookies["refresh"])
+        new_logged_in_max_age = self._max_age(resp.cookies["logged_in"])
+
+        assert new_refresh_max_age == self.REMEMBER_SECONDS, (
+            "Remember claim must be preserved across rotation — new "
+            f"refresh cookie must have Max-Age=14d. "
+            f"Got {new_refresh_max_age}"
+        )
+        assert new_logged_in_max_age == self.REMEMBER_SECONDS, (
+            "logged_in cookie must also stay 14d after rotation. "
+            f"Got {new_logged_in_max_age}"
+        )
+
+    def test_remember_claim_survives_multiple_rotations(
+        self, api_client, user, password
+    ):
+        """Five consecutive rotations must all preserve remember=true.
+
+        Guards against a regression where the claim is preserved on
+        the first rotation but not the second (e.g. if the view reads
+        the claim from the OLD token but never writes it to the NEW
+        one, the second rotation would see no claim and degrade).
+        """
+        self._login(api_client, user, password, remember=True)
+
+        for i in range(5):
+            resp = api_client.post(REFRESH_URL, {}, format="json")
+            assert resp.status_code == 200, (
+                f"Rotation #{i + 1} failed: {resp.status_code} {resp.data}"
+            )
+            # Promote the new cookies onto the client for the next hop.
+            for name, morsel in resp.cookies.items():
+                api_client.cookies[name] = morsel.value
+
+            assert self._max_age(resp.cookies["refresh"]) == self.REMEMBER_SECONDS, (
+                f"Remember persistence lost at rotation #{i + 1} "
+                "(refresh cookie is no longer 14d)"
+            )
+            assert self._max_age(resp.cookies["logged_in"]) == self.REMEMBER_SECONDS, (
+                f"Remember persistence lost at rotation #{i + 1} "
+                "(logged_in cookie is no longer 14d)"
+            )
+
+    def test_no_remember_refresh_stays_session(
+        self, api_client, user, password
+    ):
+        """Counter-case to the remember-rotation test: a non-remember
+        session must NOT get elevated to 14-day persistence after a
+        refresh. Guards against a bug where refresh defaults to
+        remember=True when the claim is absent (off-by-default check).
+        """
+        self._login(api_client, user, password, remember=False)
+
+        resp = api_client.post(REFRESH_URL, {}, format="json")
+        assert resp.status_code == 200, resp.data
+
+        new_refresh_max_age = self._max_age(resp.cookies["refresh"])
+        new_logged_in_max_age = self._max_age(resp.cookies["logged_in"])
+
+        assert new_refresh_max_age is None, (
+            "Non-remember refresh must stay session-only. "
+            f"Got Max-Age={new_refresh_max_age}"
+        )
+        assert new_logged_in_max_age is None, (
+            "Non-remember refresh: logged_in must stay session. "
+            f"Got Max-Age={new_logged_in_max_age}"
+        )
+
+    def test_logout_clears_cookies_after_remember_login(
+        self, api_client, user, password
+    ):
+        """Logout must end the session even when it was remember-me.
+
+        If this ever fails it means a remembered user can't log out of
+        a shared device — a serious privacy hole.
+        """
+        self._login(api_client, user, password, remember=True)
+
+        resp = api_client.post(LOGOUT_URL)
+        assert resp.status_code == 204, resp.data
+
+        for name in ("access", "refresh", "logged_in"):
+            cookie = resp.cookies.get(name)
+            assert cookie is not None, (
+                f"Logout after remember-login must emit Set-Cookie "
+                f"clearing {name!r}"
+            )
+            assert _cookie_is_cleared(cookie), (
+                f"Cookie {name!r} must be cleared (empty value or "
+                f"max-age=0) even though the session was remembered. "
+                f"Got value={cookie.value!r} max-age={cookie.get('max-age')!r}"
+            )
+
+    def test_ghost_session_check_runs_for_remembered_user(
+        self, api_client, user, password
+    ):
+        """Composition test: a remembered user who is later deleted must
+        still hit the ghost-session guard on refresh — remember=True
+        must NOT bypass the deleted-user check.
+        """
+        self._login(api_client, user, password, remember=True)
+        user.delete()
+
+        resp = api_client.post(REFRESH_URL, {}, format="json")
+        assert resp.status_code == 401, (
+            "Remembered-but-deleted user must be rejected by ghost-session "
+            f"guard. Got {resp.status_code}: {resp.data}"
+        )
+        assert resp.data.get("code") == "user_not_found", resp.data
+        for name in ("access", "refresh", "logged_in"):
+            cookie = resp.cookies.get(name)
+            assert cookie is not None and _cookie_is_cleared(cookie), (
+                f"Cookie {name!r} must be cleared even though the session "
+                "was remember=True."
+            )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # Logout — LogoutAPIView
 # ═════════════════════════════════════════════════════════════════════════════
 
