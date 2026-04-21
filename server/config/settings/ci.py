@@ -55,12 +55,13 @@ CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
 
-# Telegram — deterministic test key (same as test.py). CI containers are
-# ephemeral; no real bot tokens are ever stored here.
+# Telegram — CI must supply TELEGRAM_BOT_ENCRYPTION_KEY via the GitHub Actions
+# secret / env store. No hardcoded default; an empty key disables encryption
+# at rest for Telegram tokens (tests that exercise the bot must set the var).
 # ------------------------------------------------------------------------------
 TELEGRAM_BOT_ENCRYPTION_KEY = env(
     "TELEGRAM_BOT_ENCRYPTION_KEY",
-    default="DxcpeackQHQYgMpYryJJ-pZ4hQPQs278MjbovLLRuKE=",
+    default="",
 )
 PLATFORM_PUBLIC_URL = env("PLATFORM_PUBLIC_URL", default="http://localhost:8080")
 

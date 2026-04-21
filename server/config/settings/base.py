@@ -207,7 +207,7 @@ EMAIL_TIMEOUT = 5
 # Admin
 # ------------------------------------------------------------------------------
 ADMIN_URL = "django-admin/"
-ADMINS = [("Andriienko Dmytro", "d.andriienko@estateos.local")]
+ADMINS = [("Andriienko Dmytro", "dimas130790@gmail.com")]
 MANAGERS = ADMINS
 
 
@@ -302,10 +302,13 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
         "anon": "200/day",
         "user": "500/day",
+        "login": "5/minute",
+        "password_reset": "3/hour",
     },
 }
 

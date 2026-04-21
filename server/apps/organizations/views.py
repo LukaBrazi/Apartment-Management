@@ -2,7 +2,7 @@
 import logging
 
 from django.contrib.auth import get_user_model
-from rest_framework import status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -50,7 +50,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
 
     queryset = Organization.objects.all()
     renderer_classes = (GenericJSONRenderer,)
-    permission_classes = ()
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
         """Отримати QuerySet організацій.
@@ -100,8 +100,8 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         Raises:
             PermissionDenied: Якщо користувач не авторизован.
         """
-        if not request.user.is_authenticated:
-            raise PermissionDenied("You must be authenticated to create an organization.")
+        if not request.user.is_superuser:
+            raise PermissionDenied("Only superusers can create organizations.")
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -279,7 +279,7 @@ class OrganizationMembershipViewSet(viewsets.ModelViewSet):
     queryset = OrganizationMembership.objects.all()
     serializer_class = OrganizationMembershipSerializer
     renderer_classes = (GenericJSONRenderer,)
-    permission_classes = ()
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
         """Отримати QuerySet членства.

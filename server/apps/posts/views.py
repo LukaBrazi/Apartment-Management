@@ -408,6 +408,8 @@ class BookmarkPostAPIView(APIView):
         patch: Handle the PATCH request to bookmark a post.
     """
 
+    permission_classes = [permissions.IsAuthenticated]
+
     # Method to handle the PATCH request
     def patch(self, request: Request, slug: str) -> Response:
         """Handle the PATCH request to bookmark a post.
@@ -420,9 +422,10 @@ class BookmarkPostAPIView(APIView):
             Response: The response indicating success or failure.
         """
 
-        # Get the user and post
+        # Get the user and post — scoped to user's org to prevent IDOR.
         user = request.user
-        post = get_object_or_404(Post.objects, slug=slug)
+        scoped_qs = _scope_posts_to_user_orgs(Post.objects.all(), user)
+        post = get_object_or_404(scoped_qs, slug=slug)
 
         # Check if the post is already bookmarked by the user
         if user in post.bookmarked_by.all():
@@ -451,6 +454,8 @@ class UnbookmarkPostAPIView(APIView):
         patch: Handle the PATCH request to unbookmark a post
     """
 
+    permission_classes = [permissions.IsAuthenticated]
+
     # Method to handle the PATCH request
     def patch(self, request: Request, slug: str) -> Response:
         """Handle the PATCH request to unbookmark a post.
@@ -463,9 +468,10 @@ class UnbookmarkPostAPIView(APIView):
             Response: The response indicating success or failure.
         """
 
-        # Get the user and post
+        # Get the user and post — scoped to user's org to prevent IDOR.
         user = request.user
-        post = get_object_or_404(Post, slug=slug)
+        scoped_qs = _scope_posts_to_user_orgs(Post.objects.all(), user)
+        post = get_object_or_404(scoped_qs, slug=slug)
 
         # Check if the post is bookmarked by the user
         if user not in post.bookmarked_by.all():
@@ -545,6 +551,7 @@ class ReplyCreateAPIView(generics.CreateAPIView):
     serializer_class = ReplySerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "reply"
+    permission_classes = [permissions.IsAuthenticated]
 
     # Method to perform the creation
     def perform_create(self, serializer: ReplySerializer) -> None:
@@ -557,11 +564,12 @@ class ReplyCreateAPIView(generics.CreateAPIView):
         # Get the post ID from the URL
         post_id = self.kwargs.get("post_id")
 
-        # Get the post object
-        post = get_object_or_404(Post, id=post_id)
-
         # Get the current user
         user = self.request.user
+
+        # Get the post — scoped to user's org to prevent IDOR.
+        scoped_qs = _scope_posts_to_user_orgs(Post.objects.all(), user)
+        post = get_object_or_404(scoped_qs, id=post_id)
 
         # Save the reply
         serializer.save(author=user, post=post)
@@ -586,10 +594,14 @@ class ReplyListAPIView(generics.ListAPIView):
     serializer_class = ReplySerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "replies"
+    permission_classes = [permissions.IsAuthenticated]
 
     # Method to get the queryset
     def get_queryset(self) -> QuerySet:
         """Get the queryset of replies for a specific post.
+
+        SECURITY: verify the requested post belongs to the caller's org
+        before returning its replies — prevents leaking cross-tenant replies.
 
         Returns:
             QuerySet: A queryset of Reply objects for the given post.
@@ -597,6 +609,10 @@ class ReplyListAPIView(generics.ListAPIView):
 
         # Get the post ID from the URL
         post_id = self.kwargs.get("post_id")
+
+        # Ensure the post exists within the caller's org scope.
+        scoped_posts = _scope_posts_to_user_orgs(Post.objects.all(), self.request.user)
+        get_object_or_404(scoped_posts, id=post_id)
 
         # Return the queryset of replies for the given post
         return Reply.objects.select_related("author__profile").filter(
@@ -614,6 +630,8 @@ class UpvotePostAPIView(APIView):
         patch: Handle the PATCH request to upvote a post.
     """
 
+    permission_classes = [permissions.IsAuthenticated]
+
     # Method to handle the PATCH request
     def patch(self, request: Request, post_id: str) -> Response:
         """Handle the PATCH request to upvote a post.
@@ -626,8 +644,9 @@ class UpvotePostAPIView(APIView):
             Response: The response indicating success or failure.
         """
 
-        # Get the post object
-        post = get_object_or_404(Post, id=post_id)
+        # Get the post object — scoped to user's org to prevent IDOR.
+        scoped_qs = _scope_posts_to_user_orgs(Post.objects.all(), request.user)
+        post = get_object_or_404(scoped_qs, id=post_id)
 
         # Create the serializer instance
         serializer = UpvotePostSerializer(
@@ -664,6 +683,8 @@ class DownvotePostAPIView(APIView):
         patch: Handle the PATCH request to downvote a post.
     """
 
+    permission_classes = [permissions.IsAuthenticated]
+
     # Method to handle the PATCH request
     def patch(self, request: Request, post_id: str) -> Response:
         """Handle the PATCH request to downvote a post.
@@ -676,8 +697,9 @@ class DownvotePostAPIView(APIView):
             Response: The response indicating success or failure.
         """
 
-        # Get the post object
-        post = get_object_or_404(Post, id=post_id)
+        # Get the post object — scoped to user's org to prevent IDOR.
+        scoped_qs = _scope_posts_to_user_orgs(Post.objects.all(), request.user)
+        post = get_object_or_404(scoped_qs, id=post_id)
 
         # Create the serializer instance
         serializer = DownvotePostSerializer(post, data={}, context={"request": request})
