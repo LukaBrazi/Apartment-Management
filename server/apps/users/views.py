@@ -142,6 +142,7 @@ class CustomTokenObtainPairAPIView(TokenObtainPairView):
     """
 
     serializer_class = RememberAwareTokenObtainPairSerializer
+    throttle_scope = "login"
 
     def post(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:
         """Handle the POST request.
@@ -514,9 +515,9 @@ class GDPREraseAccountAPIView(APIView):
             {"message": "Your account has been anonymized. Goodbye."},
             status=status.HTTP_200_OK,
         )
-        res.delete_cookie("access")
-        res.delete_cookie("refresh")
-        res.delete_cookie("logged_in")
+        res.delete_cookie("access", path=settings.COOKIE_PATH)
+        res.delete_cookie("refresh", path=settings.COOKIE_PATH)
+        res.delete_cookie("logged_in", path=settings.COOKIE_PATH)
         return res
 
 

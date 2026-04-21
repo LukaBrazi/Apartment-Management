@@ -38,7 +38,13 @@ class NewsDetailAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, slug, *args, **kwargs):
-        news = get_object_or_404(News, slug=slug, is_published=True)
+        qs = News.objects.filter(slug=slug, is_published=True)
+        # SECURITY: scope to user's organisations — prevents IDOR across orgs.
+        if request.user.is_authenticated and not request.user.is_superuser:
+            from apps.organizations.utils import get_user_organizations
+            user_orgs = get_user_organizations(request.user)
+            qs = qs.filter(Q(organization__in=user_orgs) | Q(organization__isnull=True))
+        news = get_object_or_404(qs)
         News.objects.filter(pk=news.pk).update(views_count=F("views_count") + 1)
         news.refresh_from_db()
         serializer = NewsDetailSerializer(news, context={"request": request})

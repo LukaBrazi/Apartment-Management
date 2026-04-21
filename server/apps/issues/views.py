@@ -304,11 +304,18 @@ class IssueDetailAPIView(generics.RetrieveAPIView):
     """
 
     # Attributes
-    queryset = _issue_base_qs()
     serializer_class = IssueSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "issue"
     lookup_field = "id"
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return _issue_base_qs()
+        from apps.organizations.utils import get_user_organizations
+        return _issue_base_qs().filter(
+            organization__in=get_user_organizations(self.request.user)
+        )
 
     # Method to get the issue object
     def get_object(self) -> Issue:
@@ -416,11 +423,18 @@ class IssueUpdateAPIView(generics.UpdateAPIView):
     """
 
     # Attributes
-    queryset = _issue_base_qs()
     lookup_field = "id"
     serializer_class = IssueStatusUpdateSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "issue"
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return _issue_base_qs()
+        from apps.organizations.utils import get_user_organizations
+        return _issue_base_qs().filter(
+            organization__in=get_user_organizations(self.request.user)
+        )
 
     # Method to get the issue object
     def get_object(self) -> Issue:
@@ -507,9 +521,16 @@ class IssueDeleteAPIView(generics.DestroyAPIView):
     """
 
     # Attributes
-    queryset = _issue_base_qs()
     lookup_field = "id"
     serializer_class = IssueSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return _issue_base_qs()
+        from apps.organizations.utils import get_user_organizations
+        return _issue_base_qs().filter(
+            organization__in=get_user_organizations(self.request.user)
+        )
 
     # Method to get the issue object
     def get_object(self) -> Issue:
