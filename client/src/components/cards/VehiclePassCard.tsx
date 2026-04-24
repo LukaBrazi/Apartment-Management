@@ -3,9 +3,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/shared/Spinner";
-import { useClosePassMutation } from "@/lib/redux/features/passes/passApiSlice";
+import { useAuthNavigation } from "@/hooks";
+import {
+	useClosePassMutation,
+	useDeletePassMutation,
+} from "@/lib/redux/features/passes/passApiSlice";
 import { VehiclePass } from "@/types";
-import { CarIcon, CheckCircleIcon, ClockIcon, UserIcon } from "lucide-react";
+import { CarIcon, CheckCircleIcon, ClockIcon, Trash2Icon, UserIcon } from "lucide-react";
 import { toast } from "react-toastify";
 
 interface Props {
@@ -13,7 +17,11 @@ interface Props {
 }
 
 export default function VehiclePassCard({ pass }: Props) {
-	const [closePass, { isLoading }] = useClosePassMutation();
+	const { isGuard, isStaff } = useAuthNavigation();
+	const canClose = isGuard || isStaff;
+
+	const [closePass, { isLoading: isClosing }] = useClosePassMutation();
+	const [deletePass, { isLoading: isDeleting }] = useDeletePassMutation();
 
 	const handleClose = async () => {
 		try {
@@ -21,6 +29,15 @@ export default function VehiclePassCard({ pass }: Props) {
 			toast.success("Перепустку позначено як закриту.");
 		} catch {
 			toast.error("Не вдалося закрити перепустку.");
+		}
+	};
+
+	const handleDelete = async () => {
+		try {
+			await deletePass(pass.id).unwrap();
+			toast.success("Перепустку видалено.");
+		} catch {
+			toast.error("Не вдалося видалити перепустку.");
 		}
 	};
 
@@ -94,14 +111,25 @@ export default function VehiclePassCard({ pass }: Props) {
 				</p>
 			)}
 
-			{!isClosed && (
-				// tap ≥ 44px (Button baseline ~40px, add min-h explicit).
+			{!isClosed && canClose && (
 				<Button
 					onClick={handleClose}
-					disabled={isLoading}
+					disabled={isClosing}
 					className="tap mt-1 w-full bg-pumpkin text-white hover:bg-pumpkin/90"
 				>
-					{isLoading ? <Spinner size="sm" /> : "Позначити як проїхав"}
+					{isClosing ? <Spinner size="sm" /> : "Позначити як проїхав"}
+				</Button>
+			)}
+			{!isClosed && !canClose && (
+				<Button
+					onClick={handleDelete}
+					disabled={isDeleting}
+					variant="destructive"
+					className="tap mt-1 w-full"
+				>
+					{isDeleting ? <Spinner size="sm" /> : (
+						<><Trash2Icon className="size-4 mr-1.5" />Видалити заявку</>
+					)}
 				</Button>
 			)}
 		</div>

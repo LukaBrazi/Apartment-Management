@@ -104,7 +104,10 @@ def handle_start(bot, chat_id: int, args: list[str]) -> HandlerResult:
     if not token_obj.is_valid:
         return HandlerResult(MSG_START_INVALID)
 
-    if token_obj.organization_id != bot.organization_id:
+    # Default bots (organization_id=None) serve all orgs — skip the
+    # cross-org check for them. For org-specific bots, token must belong
+    # to the same org that owns the bot.
+    if bot.organization_id is not None and token_obj.organization_id != bot.organization_id:
         # Explicit differential reply is intentional in logs — but
         # we return the same user-facing copy so an attacker probing
         # for cross-org mismatches can't distinguish it from a bad

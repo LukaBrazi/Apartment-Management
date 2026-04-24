@@ -33,6 +33,11 @@ import {
 } from "@/lib/redux/features/admin/adminApiSlice";
 import { Issue } from "@/types";
 import { extractErrorMessage } from "@/utils";
+import { occupationOptions } from "@/constants";
+
+const OCCUPATION_LABELS: Record<string, string> = Object.fromEntries(
+	occupationOptions.map((o) => [o.value, o.label]),
+);
 
 const editSchema = z.object({
 	status: z.string().min(1),
@@ -266,7 +271,7 @@ export default function AdminIssuesPage() {
 										<SelectItem key={w.username} value={w.username}>
 											{w.full_name || w.username}
 											<span className="ml-1 text-xs text-[#6B7F8C]">
-												@{w.username}
+												{OCCUPATION_LABELS[w.occupation] ?? w.occupation}
 											</span>
 										</SelectItem>
 									))}

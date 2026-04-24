@@ -12,8 +12,7 @@ import TelegramSettings from "@/components/profile/TelegramSettings";
 import { useSearchParams } from "next/navigation";
 
 export default function ProfileTabs() {
-	const { isTenant, isStaff, isGuard } = useAuthNavigation();
-	const canReceiveNotifications = !isStaff && !isGuard;
+	const { isTenant, isAuthenticated } = useAuthNavigation();
 	const searchParams = useSearchParams();
 	const tabFromUrl = searchParams.get("tab") ?? "about";
 	const [activeTab, setActiveTab] = useState(tabFromUrl);
@@ -59,7 +58,7 @@ export default function ProfileTabs() {
 						>
 							Мої скарги
 						</TabsTrigger>
-						{canReceiveNotifications && (
+						{isAuthenticated && (
 							<TabsTrigger
 								value="notifications"
 								className="h3-semibold tab whitespace-nowrap"
@@ -82,7 +81,7 @@ export default function ProfileTabs() {
 				<Posts />
 				<Issues />
 				<Reports />
-				{canReceiveNotifications && <TelegramSettings />}
+				{isAuthenticated && <TelegramSettings />}
 				{!isTenant && <AssignedIssues />}
 			</Tabs>
 		</div>
