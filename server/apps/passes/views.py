@@ -94,7 +94,7 @@ class CloseVehiclePassAPIView(APIView):
 
 
 class DeleteVehiclePassAPIView(APIView):
-    """Tenant deletes their own pending pass, or admin/guard deletes any pass."""
+    """Only the pass creator (tenant) can delete their own pass."""
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -106,10 +106,10 @@ class DeleteVehiclePassAPIView(APIView):
                 {"error": "Pass not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        # Only the pass creator (tenant) or staff/admin can delete
+        # Only the pass creator (tenant) can delete their own pass.
+        # Staff and admins cannot delete on behalf of tenants.
         is_owner = vehicle_pass.tenant == request.user
-        is_admin = request.user.is_staff or request.user.is_superuser
-        if not is_owner and not is_admin:
+        if not is_owner:
             return Response(
                 {"error": "You do not have permission to delete this pass."},
                 status=status.HTTP_403_FORBIDDEN,

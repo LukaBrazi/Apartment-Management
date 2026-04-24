@@ -6,6 +6,7 @@ from apps.issues.views import (
     IssueDeleteAPIView,
     IssueDetailAPIView,
     IssueListAPIView,
+    IssueReviewAPIView,
     IssueUpdateAPIView,
     MyIssuesListAPIView,
 )
@@ -31,4 +32,7 @@ urlpatterns = [
     path("update/<uuid:id>/", IssueUpdateAPIView.as_view(), name="update-issue"),
     path("delete/<uuid:id>/", IssueDeleteAPIView.as_view(), name="delete-issue"),
     path("admin/update/<uuid:id>/", IssueAdminUpdateAPIView.as_view(), name="admin-update-issue"),
+    # Issue reviews — mutual rating after issue is closed (done)
+    path("<uuid:id>/review/", IssueReviewAPIView.as_view(), name="issue-review"),
+    path("<uuid:id>/reviews/", IssueReviewAPIView.as_view(), name="issue-reviews"),
 ]

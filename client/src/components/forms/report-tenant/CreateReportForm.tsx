@@ -59,11 +59,11 @@ export default function CreateReportForm() {
 				/>
 
 				<FormFieldComponent
-					label="Ім'я мешканця"
-					name="reported_user_username"
+					label="Ім'я або опис особи"
+					name="reported_person_name"
 					register={register}
 					errors={errors}
-					placeholder="Ім'я користувача мешканця"
+					placeholder="Ім'я, квартира, посада — будь-яка інформація"
 					startIcon={<Contact2Icon className="dark:text-babyPowder size-8" />}
 				/>
 

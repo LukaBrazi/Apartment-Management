@@ -7,17 +7,18 @@ from apps.common.models import ContentView
 from apps.common.renderers import GenericJSONRenderer
 from apps.issues.emails import send_issue_confirmation_email
 from apps.issues.filters import IssueFilter
-from apps.issues.models import Issue
-from apps.issues.serializers import IssueAdminUpdateSerializer, IssueCreateSerializer, IssueSerializer, IssueStatusUpdateSerializer
+from apps.issues.models import Issue, IssueReview
+from apps.issues.serializers import IssueAdminUpdateSerializer, IssueCreateSerializer, IssueReviewSerializer, IssueSerializer, IssueStatusUpdateSerializer
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
 from django.http import Http404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, permissions, status
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 # Get the logger
 logger = logging.getLogger(__name__)
@@ -558,8 +559,8 @@ class IssueDeleteAPIView(generics.DestroyAPIView):
             # Raise the HTTP 404 Not Found status code
             raise Http404("Issue not found")
 
-        # If the user is not staff or the reporter
-        if not (self.request.user.is_staff or self.request.user == issue.reported_by):
+        # Only the reporter can delete their own issue (staff/admin cannot).
+        if self.request.user != issue.reported_by:
             # Log the unauthorized issue deletion attempt
             logger.warning(
                 f"Unauthorized issue deletion attempt by {self.request.user} on issue {issue.title}"
@@ -596,4 +597,90 @@ class IssueDeleteAPIView(generics.DestroyAPIView):
         # Return the response
         return Response(
             status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+class IssueReviewAPIView(APIView):
+    """POST  /issues/<uuid:id>/review/  — submit a review for a closed issue.
+    GET   /issues/<uuid:id>/reviews/ — fetch all reviews for an issue.
+
+    Permission rules:
+    - Only the reporter (author) or the assigned worker may POST a review.
+    - The issue must have status ``done``.
+    - Each party may leave exactly one review (unique_together enforced at DB level).
+    - reviewer  = request.user
+    - reviewee  = the other party (worker reviews author; author reviews worker)
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_issue(self, issue_uuid):
+        try:
+            return Issue.objects.select_related("reported_by", "assigned_to").get(
+                id=issue_uuid
+            )
+        except Issue.DoesNotExist:
+            raise NotFound("Заявку не знайдено.")
+
+    def get(self, request, id, *args, **kwargs):
+        """Return all reviews for the issue (reporter + assignee may see them)."""
+        issue = self._get_issue(id)
+        user = request.user
+        is_participant = (
+            user == issue.reported_by
+            or user == issue.assigned_to
+            or user.is_staff
+        )
+        if not is_participant:
+            raise PermissionDenied("Доступ заборонено.")
+
+        reviews = IssueReview.objects.filter(issue=issue).select_related(
+            "reviewer", "reviewee"
+        )
+        serializer = IssueReviewSerializer(reviews, many=True)
+        return Response({"reviews": serializer.data})
+
+    def post(self, request, id, *args, **kwargs):
+        """Create a review. Automatically sets reviewer and reviewee."""
+        issue = self._get_issue(id)
+        user = request.user
+
+        if issue.status != Issue.IssueStatus.DONE:
+            raise ValidationError("Оцінку можна залишити лише для закритої заявки.")
+
+        is_author = user == issue.reported_by
+        is_worker = issue.assigned_to and user == issue.assigned_to
+
+        if not is_author and not is_worker:
+            raise PermissionDenied(
+                "Тільки автор або виконавець заявки може залишити оцінку."
+            )
+
+        # Reviewee = the other party
+        if is_author:
+            reviewee = issue.assigned_to
+        else:
+            reviewee = issue.reported_by
+
+        if reviewee is None:
+            raise ValidationError(
+                "Неможливо залишити оцінку: протилежна сторона не визначена."
+            )
+
+        serializer = IssueReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        from django.db import IntegrityError
+        try:
+            review = serializer.save(
+                issue=issue,
+                reviewer=user,
+                reviewee=reviewee,
+            )
+        except IntegrityError:
+            raise ValidationError("Ви вже залишили оцінку для цієї заявки.")
+
+        return Response(
+            IssueReviewSerializer(review).data,
+            status=status.HTTP_201_CREATED,
         )

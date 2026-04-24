@@ -1,5 +1,8 @@
 import {
 	IssueResponse,
+	IssueReviewData,
+	IssueReview,
+	IssueReviewsResponse,
 	MyAssignedIssuesResponse,
 	MyIssuesResponse,
 	ReportIssueData,
@@ -52,6 +55,18 @@ export const issueApiSlice = baseApiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Issue"],
 		}),
+		reviewIssue: builder.mutation<IssueReview, IssueReviewData>({
+			query: ({ issueId, ...reviewData }) => ({
+				url: `/issues/${issueId}/review/`,
+				method: "POST",
+				body: reviewData,
+			}),
+			invalidatesTags: ["Issue"],
+		}),
+		getIssueReviews: builder.query<IssueReviewsResponse, string>({
+			query: (issueId) => `/issues/${issueId}/reviews/`,
+			providesTags: ["Issue"],
+		}),
 	}),
 });
 
@@ -63,4 +78,6 @@ export const {
 	useGetSingleIssueQuery,
 	useGetMyAssignedIssuesQuery,
 	useUpdateIssueMutation,
+	useReviewIssueMutation,
+	useGetIssueReviewsQuery,
 } = issueApiSlice;

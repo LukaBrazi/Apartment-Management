@@ -1,3 +1,83 @@
+# Dev Plan: Рейтинг / Скарга / Оцінка заявки
+
+**Branch:** `main` (бандл фіксів)
+**Created:** 2026-04-24
+
+## Задача 1 — Рейтинг видимий тільки персоналу
+- [ ] 1. About.tsx: обгорнути `average_rating` в isWorker-guard
+
+## Задача 2 — Скарга: вільний текст замість username
+- [ ] 2. Backend: Report.reported_person_name CharField + міграція
+- [ ] 3. Backend: ReportSerializer — username опціональний, додати reported_person_name
+- [ ] 4. Frontend: ReportCreateSchema, CreateReportForm, types, apiSlice
+
+## Задача 3 — Взаємна оцінка після закриття заявки
+- [ ] 5. Backend: модель IssueReview + міграція
+- [ ] 6. Backend: серіалайзер + views (POST review, GET reviews) + URL
+- [ ] 7. Backend: TDD тести
+- [ ] 8. Frontend: types + RTK Query
+- [ ] 9. Frontend: IssueDetails — форма оцінки після закриття
+
+## Definition of Done
+- [ ] Всі кроки виконано, pytest зелений
+- [ ] DEV_PLAN.md видалено після merge
+
+---
+
+# Dev Plan: TG notify toggle у формах новин та оголошень
+
+**Branch:** `main` (бандл фіксів)
+**Created:** 2026-04-24
+
+## Задача
+Додати чекбокс «Сповістити підписників у Telegram» до двох адмін-форм:
+1. Оголошення ЖК (AdminPosts.tsx) — поле вже є в моделі, лише фронтенд
+2. Новини порталу (admin/news/page.tsx) — поле потрібне скрізь
+
+## Кроки
+
+- [ ] 1. Backend: `notify_subscribers` у моделі `News` + міграція
+- [ ] 2. Backend: поле у `NewsAdminSerializer`
+- [ ] 3. Backend: `get_news_target_chat_ids` у `notifications/utils.py`
+- [ ] 4. Backend: Celery-задача `notify_subscribers_news`
+- [ ] 5. Backend: виклик задачі у `NewsAdminListCreateAPIView.post()`
+- [ ] 6. Backend: pytest-тести
+- [ ] 7. Frontend: типи `AnnouncementCreateData` + `NewsCreateData`
+- [ ] 8. Frontend: toggle у `AdminPosts.tsx`
+- [ ] 9. Frontend: toggle у `admin/news/page.tsx`
+
+## Definition of Done
+- [ ] Обидва toggle у формах (default=false)
+- [ ] Pytest зелені
+- [ ] DEV_PLAN.md видалено після merge
+
+---
+
+# Dev Plan: Fix — клік по аватару відкриває профіль
+
+**Branch:** `fix/avatar-profile-link`
+**Created:** 2026-04-24
+
+## Задача
+Клік по аватару/юзер-чіпу не відкриває профіль у двох місцях:
+1. `CabinetTopbar.tsx` — юзер-чіп є `<div>`, без `<Link>`
+2. `LeftNavbar.tsx` — аватар у футері є `<div>`, без `<Link>`
+
+`AuthAvatar.tsx` (mobile dropdown) вже має посилання на `/profile` — не чіпаємо.
+
+## Кроки
+
+- [x] 1. `CabinetTopbar.tsx` — обгорнути юзер-чіп у `<Link href="/profile">`
+- [x] 2. `LeftNavbar.tsx` — обгорнути аватар + ім'я у `<Link href="/profile">`
+
+## Definition of Done
+- [ ] Клік по аватару → `/profile` (десктоп + сайдбар)
+- [ ] Hover-стан помітний
+- [ ] PR змерджено в main
+- [ ] DEV_PLAN.md видалено
+
+---
+
 # Dev Plan: Оновлення дизайну згідно Design Bundle (Telegram + Design System)
 
 Джерело: `apartmentos-design-system` — design bundle з claude.ai/design.

@@ -3,11 +3,13 @@
 import {
 	useDeleteIssueMutation,
 	useGetSingleIssueQuery,
+	useGetIssueReviewsQuery,
+	useReviewIssueMutation,
 } from "@/lib/redux/features/issues/issueApiSlice";
 import { useGetUserProfileQuery } from "@/lib/redux/features/users/usersApiSlice";
 import { extractErrorMessage } from "@/utils";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import { toast } from "react-toastify";
 import {
 	Card,
@@ -18,7 +20,7 @@ import {
 	CardTitle,
 } from "../ui/card";
 import { AuthFormHeader } from "../forms/auth";
-import { CheckCheck, CircleDot, EyeIcon, Hotel } from "lucide-react";
+import { CheckCheck, CircleDot, EyeIcon, Hotel, Star } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import StatusBadge from "../admin/StatusBadge";
@@ -29,6 +31,41 @@ interface IssueDetailsProps {
 	};
 }
 
+function StarRating({
+	value,
+	onChange,
+	readonly = false,
+}: {
+	value: number;
+	onChange?: (v: number) => void;
+	readonly?: boolean;
+}) {
+	const [hovered, setHovered] = useState(0);
+	return (
+		<div className="flex gap-1">
+			{[1, 2, 3, 4, 5].map((star) => (
+				<button
+					key={star}
+					type="button"
+					disabled={readonly}
+					onClick={() => !readonly && onChange?.(star)}
+					onMouseEnter={() => !readonly && setHovered(star)}
+					onMouseLeave={() => !readonly && setHovered(0)}
+					className={`transition-colors ${readonly ? "cursor-default" : "cursor-pointer"}`}
+				>
+					<Star
+						className={`size-6 ${
+							star <= (hovered || value)
+								? "fill-yellow-400 text-yellow-400"
+								: "fill-none text-gray-400 dark:text-gray-600"
+						}`}
+					/>
+				</button>
+			))}
+		</div>
+	);
+}
+
 export default function IssueDetails({ params }: IssueDetailsProps) {
 	const id = params.id;
 	const { data } = useGetSingleIssueQuery(id);
@@ -36,12 +73,26 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 	const router = useRouter();
 
 	const { data: currentUser } = useGetUserProfileQuery();
+	const { data: reviewsData, refetch: refetchReviews } = useGetIssueReviewsQuery(id, {
+		skip: issue?.status !== "done",
+	});
 
 	const isStaff = currentUser?.profile.is_staff ?? false;
-
 	const canUpdate = issue?.assigned_to === currentUser?.profile.full_name;
-
 	const canDelete = issue?.reported_by === currentUser?.profile.full_name;
+
+	const isParticipant = canUpdate || canDelete;
+	const isDone = issue?.status === "done";
+
+	// Determine if current user already reviewed this issue
+	const myReview = reviewsData?.reviews.find(
+		(r) =>
+			r.reviewer_name === currentUser?.profile.full_name
+	);
+
+	const [rating, setRating] = useState(0);
+	const [comment, setComment] = useState("");
+	const [reviewIssue, { isLoading: isReviewing }] = useReviewIssueMutation();
 
 	const [deleteIssue] = useDeleteIssueMutation();
 
@@ -57,6 +108,29 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 			}
 		}
 	};
+
+	const handleSubmitReview = async () => {
+		if (!rating) {
+			toast.error("Оберіть оцінку від 1 до 5");
+			return;
+		}
+		try {
+			await reviewIssue({ issueId: id, rating, comment }).unwrap();
+			toast.success("Оцінку збережено!");
+			refetchReviews();
+			setRating(0);
+			setComment("");
+		} catch (e) {
+			const errorMessage = extractErrorMessage(e);
+			toast.error(errorMessage || "Помилка збереження оцінки");
+		}
+	};
+
+	// Label: author rates worker, worker rates author
+	const reviewLabel = canDelete
+		? "Оцінити виконавця"
+		: "Оцінити замовника";
+
 	return (
 		<Card className="rounded-xl border border-dashed dark:border-gray-700">
 			<AuthFormHeader
@@ -167,6 +241,67 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 					</span>
 				</p>
 			</CardFooter>
+
+			{/* ── Mutual review section (visible only when issue is done and user is participant) ── */}
+			{isDone && isParticipant && (
+				<div className="border-t border-[#E5E7EB] px-4 py-5 sm:px-6 dark:border-[#2D3D4F]">
+					{/* Show existing reviews */}
+					{reviewsData?.reviews && reviewsData.reviews.length > 0 && (
+						<div className="mb-5 space-y-3">
+							<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+								Оцінки по заявці
+							</h3>
+							{reviewsData.reviews.map((review) => (
+								<div
+									key={review.id}
+									className="rounded-lg border border-[#E5E7EB] bg-gray-50 p-3 dark:border-[#2D3D4F] dark:bg-gray-800/40"
+								>
+									<div className="flex items-center justify-between">
+										<span className="text-sm font-medium dark:text-babyPowder">
+											{review.reviewer_name} → {review.reviewee_name}
+										</span>
+										<StarRating value={review.rating} readonly />
+									</div>
+									{review.comment && (
+										<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+											{review.comment}
+										</p>
+									)}
+								</div>
+							))}
+						</div>
+					)}
+
+					{/* Review form — only if user hasn't reviewed yet */}
+					{!myReview ? (
+						<div className="space-y-3">
+							<h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+								{reviewLabel}
+							</h3>
+							<StarRating value={rating} onChange={setRating} />
+							<textarea
+								value={comment}
+								onChange={(e) => setComment(e.target.value)}
+								placeholder="Коментар (необов'язково)"
+								rows={3}
+								className="w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-electricIndigo dark:border-[#2D3D4F] dark:bg-gray-800 dark:text-gray-200"
+							/>
+							<Button
+								onClick={handleSubmitReview}
+								disabled={isReviewing || rating === 0}
+								className="tap bg-electricIndigo text-babyPowder dark:bg-electricIndigo dark:text-babyPowder"
+								size="sm"
+							>
+								{isReviewing ? "Збереження..." : "Надіслати оцінку"}
+							</Button>
+						</div>
+					) : (
+						<p className="text-sm text-gray-500 dark:text-gray-400">
+							✓ Ви вже залишили оцінку по цій заявці
+						</p>
+					)}
+				</div>
+			)}
 		</Card>
 	);
 }

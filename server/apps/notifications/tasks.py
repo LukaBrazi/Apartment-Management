@@ -338,6 +338,62 @@ def notify_building_tenants_announcement(self, announcement_id: str) -> None:
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_subscribers_news(self, news_id: str) -> None:
+    """Notify org subscribers when a news article is published with notify_subscribers=True.
+
+    - Skips if news.notify_subscribers is False (safety guard for direct DB edits).
+    - Scoped to news.organization; global news (org=None) is silently skipped
+      because there is no single org bot to use for the broadcast.
+    - Recipients: all active TelegramProfiles in the org with notify_announcements=True.
+    """
+    try:
+        from apps.news.models import News
+        from apps.notifications.bot_resolver import get_bot_for_org
+        from apps.notifications.utils import get_news_target_chat_ids
+
+        news = News.objects.select_related("organization").get(pk=news_id)
+
+        if not news.notify_subscribers:
+            return
+
+        org = news.organization
+        if org is None:
+            logger.info(
+                "notify_subscribers_news: news %s has no org, skipping broadcast",
+                news_id,
+            )
+            return
+
+        bot = get_bot_for_org(org)
+        if bot is None:
+            return
+
+        chat_ids = get_news_target_chat_ids(org)
+        if not chat_ids:
+            return
+
+        platform_url = getattr(settings, "PLATFORM_PUBLIC_URL", "").rstrip("/")
+        link_line = f"\n🔗 {platform_url}/news/{news.slug}" if platform_url else ""
+
+        text = (
+            f"📰 *Нова новина*\n"
+            f"*{news.title}*\n\n"
+            f"{news.excerpt}{link_line}\n\n"
+            f"_{_site_name()}_"
+        )
+        send_telegram_broadcast.delay(str(bot.id), chat_ids, text)
+    except Exception as exc:  # noqa: BLE001
+        if self.request.retries >= self.max_retries:
+            logger.error(
+                "notify_subscribers_news exhausted retries news_id=%s: %s",
+                news_id,
+                exc,
+            )
+            return
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def notify_tenant_pass_status(self, pass_id: str, new_status: str) -> None:
     """Notify tenant when their vehicle pass status changes.
 

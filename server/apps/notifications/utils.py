@@ -77,6 +77,27 @@ def get_announcement_target_chat_ids(announcement, org) -> list[int]:
     return list(qs.values_list("chat_id", flat=True))
 
 
+def get_news_target_chat_ids(org) -> list[int]:
+    """Return chat_ids of all active org subscribers for a news broadcast.
+
+    Scope: all TelegramProfile users in the given org who have opted into
+    ``notify_announcements`` (news uses the same preference as announcements).
+    Returns an empty list if ``org`` is None (global news has no org bot).
+    """
+    if org is None:
+        return []
+
+    from apps.notifications.models import TelegramProfile
+
+    return list(
+        TelegramProfile.objects.filter(
+            organization=org,
+            is_active=True,
+            notify_announcements=True,
+        ).values_list("chat_id", flat=True)
+    )
+
+
 def get_active_guard_chat_ids(organization: "Organization") -> list[int]:
     """Chat IDs of this org's guards who opted into pass alerts.
 

@@ -4,7 +4,7 @@ import { NavIcon } from "@/components/shared/NavIcon";
 import { useAuthNavigation } from "@/hooks";
 import { useGetMyIssuesQuery } from "@/lib/redux/features/issues/issueApiSlice";
 import { useGetMyPassesQuery } from "@/lib/redux/features/passes/passApiSlice";
-import { useGetTenantAnnouncementsQuery } from "@/lib/redux/features/posts/postApiSlice";
+import { useGetNewsQuery } from "@/lib/redux/features/news/newsApiSlice";
 import { useUserProfile } from "@/hooks/useUseProfile";
 import { Building2, LogOut } from "lucide-react";
 import Link from "next/link";
@@ -19,18 +19,19 @@ export default function LeftNavbar() {
 
 	const { data: issuesData } = useGetMyIssuesQuery(undefined, { skip: !authState });
 	const { data: passesData } = useGetMyPassesQuery(undefined, { skip: !authState });
-	const { data: announcementsData } = useGetTenantAnnouncementsQuery(undefined, { skip: !authState });
+	// unread_count: articles the user hasn't opened yet (server tracks via NewsRead model)
+	const { data: newsData } = useGetNewsQuery(undefined, { skip: !authState });
 
 	// Use total `.count` from the paginated API response — filtering paginated
 	// `.results` (max 10 per page) would give wrong counts for users with many items.
 	const openIssuesCount = issuesData?.my_issues?.count ?? 0;
 	const pendingPassesCount = passesData?.count ?? 0;
-	const announcementsCount = announcementsData?.count ?? 0;
+	const newsUnreadCount = newsData?.unread_count ?? 0;
 
 	const getBadgeCount = (path: string): number => {
 		if (path === "/profile?tab=my-issues" || path === "/report-issue") return openIssuesCount;
 		if (path === "/request-pass" || path === "/my-passes") return pendingPassesCount;
-		if (path === "/news") return announcementsCount;
+		if (path === "/news") return newsUnreadCount;
 		return 0;
 	};
 
@@ -155,7 +156,10 @@ export default function LeftNavbar() {
 			>
 				{isAuthenticated ? (
 					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2.5">
+						<Link
+							href="/profile"
+							className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-white/10"
+						>
 							<div
 								className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold"
 								style={{ backgroundColor: "#CADCFC", color: "#1E2761" }}
@@ -173,7 +177,7 @@ export default function LeftNavbar() {
 									{roleLabel}
 								</p>
 							</div>
-						</div>
+						</Link>
 						<button
 							onClick={handleLogout}
 							className="max-lg:hidden flex items-center justify-center rounded-lg p-1.5 transition-colors"

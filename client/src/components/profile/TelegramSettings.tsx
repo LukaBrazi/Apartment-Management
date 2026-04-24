@@ -133,11 +133,18 @@ const PREVIEW_NOTIF = [
   },
 ];
 
+// Keys of all toggle-able fields (used for local optimistic state)
+type NotifKey = typeof NOTIF_TYPES[number]["key"];
+
 export default function TelegramSettings() {
   const [deepLink, setDeepLink] = useState<string | null>(null);
   const [botUsername, setBotUsername] = useState("");
   const [isPolling, setIsPolling] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Optimistic local toggle state — updates immediately on click so the
+  // toggle doesn't "snap back" while the PATCH request is in-flight.
+  const [localSettings, setLocalSettings] = useState<Partial<Record<NotifKey, boolean>>>({});
 
   const { data: status, isLoading } = useGetTelegramStatusQuery(undefined, {
     pollingInterval: isPolling ? 3000 : 0,
@@ -146,6 +153,17 @@ export default function TelegramSettings() {
   const [generateToken, { isLoading: isGenerating }] = useGenerateTelegramTokenMutation();
   const [disconnect, { isLoading: isDisconnecting }] = useDisconnectTelegramMutation();
   const [updateSettings] = useUpdateTelegramSettingsMutation();
+
+  // Sync local state from server whenever fresh data arrives
+  useEffect(() => {
+    if (status?.connected) {
+      const next: Partial<Record<NotifKey, boolean>> = {};
+      NOTIF_TYPES.forEach(({ key }) => {
+        next[key] = status[key] ?? false;
+      });
+      setLocalSettings(next);
+    }
+  }, [status]);
 
   // Stop polling once connected
   useEffect(() => {
@@ -179,18 +197,16 @@ export default function TelegramSettings() {
     }
   };
 
-  const handleToggle = async (
-    field:
-      | "notify_issues"
-      | "notify_passes"
-      | "notify_announcements"
-      | "notify_emergency"
-      | "notify_visits",
-    value: boolean,
-  ) => {
+  const handleToggle = async (field: NotifKey, value: boolean) => {
+    // Optimistic: flip immediately so the toggle feels responsive.
+    setLocalSettings((prev) => ({ ...prev, [field]: value }));
     try {
       await updateSettings({ [field]: value }).unwrap();
+      // Server confirmed — cache invalidation will sync localSettings via the
+      // useEffect above, so no extra work needed here.
     } catch {
+      // Revert on error so the UI stays consistent with actual server state.
+      setLocalSettings((prev) => ({ ...prev, [field]: !value }));
       toast.error("Не вдалося оновити налаштування.");
     }
   };
@@ -313,7 +329,7 @@ export default function TelegramSettings() {
 
     // Connected panel
     if (status?.connected) {
-      const enabledCount = NOTIF_TYPES.filter((t) => status[t.key]).length;
+      const enabledCount = NOTIF_TYPES.filter((t) => localSettings[t.key] ?? status[t.key]).length;
       return (
         <div className="flex flex-col gap-4">
           {/* Header card */}
@@ -401,7 +417,7 @@ export default function TelegramSettings() {
                     </div>
                   </div>
                   <Toggle
-                    checked={status[key] ?? false}
+                    checked={localSettings[key] ?? status[key] ?? false}
                     onChange={(val) => handleToggle(key, val)}
                   />
                 </div>

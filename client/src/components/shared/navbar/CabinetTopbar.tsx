@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUseProfile";
 import NotificationBell from "./NotificationBell";
+import Link from "next/link";
 
 // Route → breadcrumb label map
 const CRUMB_MAP: Record<string, string> = {
@@ -73,7 +74,10 @@ export default function CabinetTopbar() {
 			{/* Right: bell + user */}
 			<div className="flex items-center gap-3">
 				<NotificationBell />
-				<div className="flex items-center gap-2.5">
+				<Link
+					href="/profile"
+					className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-[#F1F5F9]"
+				>
 					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1E2761] text-[13px] font-semibold text-white">
 						{initial}
 					</div>
@@ -81,7 +85,7 @@ export default function CabinetTopbar() {
 						<p className="text-[13px] font-semibold text-[#0F172A]">{fullName}</p>
 						<p className="text-[11px] text-[#64748B]">{role}</p>
 					</div>
-				</div>
+				</Link>
 			</div>
 		</div>
 	);

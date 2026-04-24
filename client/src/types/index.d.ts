@@ -177,7 +177,7 @@ export interface MyReportsResponse {
 export interface ReportTenantData {
 	title: string;
 	description: string;
-	reported_user_username: string;
+	reported_person_name: string;
 }
 
 export interface ReportTenantResponse {
@@ -295,6 +295,29 @@ export interface MyAssignedIssuesResponse {
 		results: Issue[];
 	};
 }
+
+export interface IssueReview {
+	id: string;
+	issue: string;
+	reviewer: number;
+	reviewer_name: string;
+	reviewee: number;
+	reviewee_name: string;
+	rating: number;
+	comment: string;
+	created_at: string;
+}
+
+export interface IssueReviewsResponse {
+	reviews: IssueReview[];
+}
+
+export interface IssueReviewData {
+	issueId: string;
+	rating: number;
+	comment?: string;
+}
+
 export interface LeftNavLink {
 	path: string;
 	label: string;
@@ -526,6 +549,7 @@ export interface AnnouncementCreateData {
 	title: string;
 	body: string;
 	is_active: boolean;
+	notify_subscribers?: boolean;
 }
 
 export interface AdminIssuesResponse {
@@ -606,6 +630,7 @@ export interface NewsItem {
 export interface NewsResponse {
 	status_code: number;
 	news: NewsItem[];
+	unread_count: number;
 }
 
 export interface NewsItemResponse {
@@ -619,6 +644,7 @@ export interface NewsCreateData {
 	body: string;
 	is_published: boolean;
 	pinned: boolean;
+	notify_subscribers?: boolean;
 	category?: string | null;
 	external_url?: string;
 	published_at?: string | null;

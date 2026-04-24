@@ -11,6 +11,16 @@ export const newsApiSlice = baseApiSlice.injectEndpoints({
     getNewsItem: builder.query<NewsItemResponse, string>({
       query: (slug) => `/news/${slug}/`,
       providesTags: ["News"],
+      // Server marks the item as read on this GET request.
+      // Invalidate the list so the sidebar unread_count refreshes.
+      async onQueryStarted(_slug, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(newsApiSlice.util.invalidateTags(["News"]));
+        } catch {
+          // Ignore errors — the list stays stale, badge may be off by 1 until next fetch.
+        }
+      },
     }),
 
     adminGetAllNews: builder.query<NewsResponse, void>({

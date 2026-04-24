@@ -26,6 +26,7 @@ const newsSchema = z.object({
   body: z.string().min(1, "Вкажіть текст новини"),
   is_published: z.boolean(),
   pinned: z.boolean(),
+  notify_subscribers: z.boolean(),
   external_url: z.string().url("Невалідний URL").or(z.literal("")),
 });
 
@@ -37,6 +38,7 @@ const emptyForm: NewsFormData = {
   body: "",
   is_published: false,
   pinned: false,
+  notify_subscribers: false,
   external_url: "",
 };
 
@@ -85,6 +87,7 @@ export default function AdminNewsPage() {
       body: item.body ?? "",
       is_published: item.is_published,
       pinned: item.pinned,
+      notify_subscribers: false, // reset on edit — don't re-send notifications
       external_url: item.external_url,
     });
     setEditingSlug(item.slug);
@@ -232,7 +235,7 @@ export default function AdminNewsPage() {
             placeholder="Посилання на джерело (необов'язково)"
             {...register("external_url")}
           />
-          <div className="flex gap-6">
+          <div className="flex flex-wrap gap-6">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -248,6 +251,16 @@ export default function AdminNewsPage() {
                 className="rounded"
               />
               Закріпити
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                {...register("notify_subscribers")}
+                className="rounded"
+              />
+              <span className="flex items-center gap-1">
+                Сповістити підписників у Telegram
+              </span>
             </label>
           </div>
           <Button type="submit" className="self-start">

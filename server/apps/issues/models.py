@@ -289,3 +289,56 @@ class Issue(TimeStampedModel):
             logger.error(
                 f"Failed to send issue assignment email for issue '{self.title}': {e}"
             )
+
+
+class IssueReview(TimeStampedModel):
+    """Mutual rating left after an issue reaches ``done`` status.
+
+    Both the reporter (author) and the assigned worker can each leave
+    exactly one review per issue:
+      - Author reviews the worker (rates execution quality).
+      - Worker reviews the author (rates cooperation / description quality).
+
+    ``unique_together(issue, reviewer)`` ensures one review per person per issue.
+    """
+
+    class RatingChoices(models.IntegerChoices):
+        ONE = 1, _("1 — Дуже погано")
+        TWO = 2, _("2 — Погано")
+        THREE = 3, _("3 — Задовільно")
+        FOUR = 4, _("4 — Добре")
+        FIVE = 5, _("5 — Відмінно")
+
+    issue = models.ForeignKey(
+        Issue,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+        verbose_name=_("Issue"),
+    )
+    reviewer = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="issue_reviews_given",
+        verbose_name=_("Reviewer"),
+    )
+    reviewee = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="issue_reviews_received",
+        verbose_name=_("Reviewee"),
+    )
+    rating = models.IntegerField(
+        _("Rating"),
+        choices=RatingChoices.choices,
+    )
+    comment = models.TextField(_("Comment"), blank=True)
+
+    class Meta:
+        verbose_name = _("Issue Review")
+        verbose_name_plural = _("Issue Reviews")
+        unique_together = [("issue", "reviewer")]
+
+    def __str__(self) -> str:
+        return f"Review on issue '{self.issue.title}' by {self.reviewer}"

@@ -114,11 +114,13 @@ function AboutContent() {
 						label="Будинок"
 						value={profile?.building_name || "Немає"}
 					/>
-					<ProfileItem
-						icon={<Star className="tab-icon" />}
-						label="Середня оцінка"
-						value={profile?.average_rating?.toString() || ""}
-					/>
+					{isWorker && (
+						<ProfileItem
+							icon={<Star className="tab-icon" />}
+							label="Середня оцінка"
+							value={profile?.average_rating?.toString() || ""}
+						/>
+					)}
 
 					<div className="prose max-w-none">
 						<p>

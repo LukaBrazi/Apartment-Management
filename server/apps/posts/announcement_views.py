@@ -38,9 +38,15 @@ class AnnouncementListAPIView(generics.ListAPIView):
             user_orgs = get_user_organizations(user)
             return qs.filter(building__organization__in=user_orgs)
 
-        # Tenant: filter to their building via ``Profile.primary_unit``
-        # → Entrance → Building.  ``Residency`` is the canonical source.
-        unit = user.profile.primary_unit
+        # Tenant: filter to their building via Residency (canonical source
+        # after PR-11 removed Profile.primary_unit FK).
+        from apps.apartments.models import Residency
+        residency = (
+            Residency.objects.filter(user=user, is_primary=True)
+            .select_related("unit__entrance__building")
+            .first()
+        )
+        unit = residency.unit if residency else None
         if unit is not None and unit.entrance_id:
             return qs.filter(building=unit.entrance.building)
         # No residency linked → no announcements.

@@ -18,6 +18,7 @@ interface AnnouncementFormState {
 	title: string;
 	body: string;
 	is_active: boolean;
+	notify_subscribers: boolean;
 }
 
 const emptyForm: AnnouncementFormState = {
@@ -25,6 +26,7 @@ const emptyForm: AnnouncementFormState = {
 	title: "",
 	body: "",
 	is_active: true,
+	notify_subscribers: false,
 };
 
 export default function AdminPosts() {
@@ -54,6 +56,7 @@ export default function AdminPosts() {
 			title: a.title,
 			body: a.body,
 			is_active: a.is_active,
+			notify_subscribers: false, // reset on edit — don't re-send notifications
 		});
 		setShowForm(true);
 	};
@@ -182,6 +185,28 @@ export default function AdminPosts() {
 							</div>
 							<span className="text-sm text-[#1C2B3A] dark:text-[#D1DCE5]">
 								Опублікувати одразу
+							</span>
+						</label>
+
+						{/* Notify Telegram subscribers toggle */}
+						<label className="flex cursor-pointer items-center gap-3">
+							<div className="relative">
+								<input
+									type="checkbox"
+									checked={form.notify_subscribers}
+									onChange={(e) => setForm({ ...form, notify_subscribers: e.target.checked })}
+									className="sr-only"
+								/>
+								<div
+									className={`h-5 w-9 rounded-full transition-colors ${form.notify_subscribers ? "bg-[#1E2761] dark:bg-[#CADCFC]" : "bg-[#E2E5E8] dark:bg-[#2D3D4F]"}`}
+								>
+									<div
+										className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.notify_subscribers ? "translate-x-4" : "translate-x-0.5"}`}
+									/>
+								</div>
+							</div>
+							<span className="text-sm text-[#1C2B3A] dark:text-[#D1DCE5]">
+								Сповістити підписників у Telegram
 							</span>
 						</label>
 

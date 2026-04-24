@@ -53,6 +53,15 @@ class Report(TimeStampedModel):
         related_name="reports_received",
         verbose_name=_("Reported user"),
     )
+    reported_person_name = models.CharField(
+        _("Reported person name"),
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Free-text name or description of the person being reported. "
+            "Used when the reporter does not know the exact username."
+        ),
+    )
     description = models.TextField(verbose_name=_("Description"))
     organization = models.ForeignKey(
         "organizations.Organization",

@@ -87,7 +87,7 @@ class NewsAdminSerializer(TaggitSerializer, serializers.ModelSerializer):
         fields = [
             "id", "title", "slug", "excerpt", "body", "cover_image",
             "category", "tags", "author_name", "organization",
-            "published_at", "is_published", "pinned",
+            "published_at", "is_published", "pinned", "notify_subscribers",
             "views_count", "external_url", "created_at",
         ]
         read_only_fields = ["id", "slug", "views_count", "created_at", "author_name"]

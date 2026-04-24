@@ -175,6 +175,31 @@ All password: `Demo1234!` (prod rotates via `DEMO_PASSWORD` env + `--passwords-f
 - `/api/v1/passes/my/` — `MyVehiclePassListAPIView`
 - `/api/v1/passes/<uuid:pass_id>/close/` — `CloseVehiclePassAPIView`
 
+## 🏠 Desktop layout — Indigo Cabinet (since 2026-04-24)
+
+The estate layout (`app/(estate)/layout.tsx`) was restructured:
+
+- **Removed**: `<Navbar />` (top bar) and `<RightNavbar />` (popular posts sidebar) from desktop
+- **Added**: `<CabinetTopbar />` — new 64px white topbar inside the content column (desktop only)
+- **Redesigned**: `<LeftNavbar />` → indigo `#1E2761` sidebar with apartment chip, nav badges, user footer
+- Mobile layout unchanged: `MobileHeader` (top) + `BottomNav` (bottom tabs)
+
+`CabinetTopbar` live in `client/src/components/shared/navbar/CabinetTopbar.tsx`.
+
+### Sidebar badges
+`LeftNavbar` uses `.count` from paginated API responses (not `.results.filter(...)`) — results are capped at 10 per page and give wrong counts.
+
+## 🔐 Auth gotchas
+
+- `logged_in` cookie is **not** httpOnly — JavaScript can delete it via `deleteCookie("logged_in")` from `cookies-next`
+- `handleLogout` in `useAuthNavigation` always calls `dispatch(setLogout())` + `deleteCookie("logged_in")` + `router.push("/login")` **before** the API call, so the user is always logged out client-side even if the server is unavailable
+- `LogoutAPIView` has `throttle_classes = []` — logout is never rate-limited
+
+## ⚠️ Known pitfalls
+
+- `Profile.unit` FK **does not exist** (removed PR-11). Never use `profile.primary_unit` or `profile.unit`. Always resolve unit via `Residency.objects.filter(user=user, is_primary=True).first().unit`
+- `on_announcement_created` signal was renamed to `on_announcement_saved` — any code that imports the old name will break
+
 ## 📅 Changelog of infra decisions
 
 - **2026-04-18**: `make e2e-full` failed at `ci-up` with
@@ -219,3 +244,12 @@ All password: `Demo1234!` (prod rotates via `DEMO_PASSWORD` env + `--passwords-f
     `/profiles/user/my-profile/` for tenant) were symptoms of the
     seed gaps; the new seed binds every tenant/resident to a valid
     unit so the serializers no longer hit null dereferences.
+
+- **2026-04-24 (cabinet redesign + bug fixes)**:
+  - Desktop layout switched from top-navbar + white sidebar to indigo sidebar + CabinetTopbar
+  - `KpiCard` updated: `text-4xl` number + "Переглянути →" action text
+  - `MyPassesView` redesigned: filter tabs (Активні/Архів) + `ResidentPassCard` with monospace plate
+  - `news/page.tsx` refactored: pinned section + `NewsCard` component
+  - Bug: `IssueCreateAPIView.perform_create` used `profile.primary_unit` (removed PR-11) → fixed to use `Residency` lookup
+  - Bug: sidebar badge counters used paginated `.results.filter()` → fixed to use `.count`
+  - Bug: logout loop (429 → cookie not cleared → redirect to /welcome) → fixed with `deleteCookie` + eager client logout

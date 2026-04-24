@@ -72,6 +72,11 @@ class News(TimeStampedModel):
     published_at = models.DateTimeField(_("Published At"), null=True, blank=True)
     is_published = models.BooleanField(_("Published"), default=False)
     pinned = models.BooleanField(_("Pinned"), default=False)
+    notify_subscribers = models.BooleanField(
+        _("Notify Subscribers"),
+        default=False,
+        help_text=_("Send Telegram notification to org subscribers when published"),
+    )
     views_count = models.PositiveIntegerField(_("Views"), default=0)
     external_url = models.URLField(_("External URL"), blank=True)
 
@@ -83,6 +88,33 @@ class News(TimeStampedModel):
             models.Index(fields=["organization", "is_published"], name="news_org_published_idx"),
             models.Index(fields=["-published_at"], name="news_published_date_idx"),
         ]
+
+
+class NewsRead(models.Model):
+    """Tracks which News articles a user has already read.
+
+    Created (get_or_create) when a user fetches a news detail view.
+    Used to compute the per-user unread count for the sidebar badge.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="news_reads",
+        verbose_name=_("User"),
+    )
+    news = models.ForeignKey(
+        News,
+        on_delete=models.CASCADE,
+        related_name="reads",
+        verbose_name=_("News"),
+    )
+    read_at = models.DateTimeField(_("Read at"), auto_now_add=True)
+
+    class Meta:
+        unique_together = [("user", "news")]
+        verbose_name = _("News read")
+        verbose_name_plural = _("News reads")
 
     def __str__(self) -> str:
         return self.title

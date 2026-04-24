@@ -4,7 +4,7 @@ from typing import Dict
 
 from apps.common.models import ContentView
 from apps.issues.emails import send_resolution_email
-from apps.issues.models import Issue
+from apps.issues.models import Issue, IssueReview
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -239,3 +239,41 @@ class IssueAdminUpdateSerializer(serializers.ModelSerializer):
             except Profile.DoesNotExist:
                 pass
         return user
+
+
+class IssueReviewSerializer(serializers.ModelSerializer):
+    """Serializer for creating and reading IssueReview objects.
+
+    On write:  accepts ``rating`` (1–5) and optional ``comment``.
+    On read:   returns both fields plus reviewer/reviewee identifiers.
+    """
+
+    reviewer_name = serializers.CharField(
+        source="reviewer.get_full_name", read_only=True
+    )
+    reviewee_name = serializers.CharField(
+        source="reviewee.get_full_name", read_only=True
+    )
+
+    class Meta:
+        model = IssueReview
+        fields = [
+            "id",
+            "issue",
+            "reviewer",
+            "reviewer_name",
+            "reviewee",
+            "reviewee_name",
+            "rating",
+            "comment",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "issue",
+            "reviewer",
+            "reviewer_name",
+            "reviewee",
+            "reviewee_name",
+            "created_at",
+        ]
