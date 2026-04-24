@@ -324,6 +324,19 @@ class TelegramProfile(models.Model):
     notify_announcements = models.BooleanField(
         default=True, verbose_name=_("Announcements"),
     )
+    notify_emergency = models.BooleanField(
+        default=True, verbose_name=_("Emergency alerts"),
+    )
+    notify_visits = models.BooleanField(
+        default=False, verbose_name=_("Visit notifications"),
+    )
+    telegram_username = models.CharField(
+        _("Telegram username"),
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text=_("Cached Telegram @username from /start command."),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

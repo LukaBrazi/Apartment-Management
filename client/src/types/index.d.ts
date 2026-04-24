@@ -702,6 +702,9 @@ export interface TelegramStatus {
   notify_issues?: boolean;
   notify_passes?: boolean;
   notify_announcements?: boolean;
+  notify_emergency?: boolean;
+  notify_visits?: boolean;
+  telegram_username?: string | null;
   organization_slug?: string;
   created_at?: string;
 }
@@ -718,4 +721,6 @@ export interface TelegramSettingsData {
   notify_issues?: boolean;
   notify_passes?: boolean;
   notify_announcements?: boolean;
+  notify_emergency?: boolean;
+  notify_visits?: boolean;
 }

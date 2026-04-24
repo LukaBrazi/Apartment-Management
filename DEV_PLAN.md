@@ -45,15 +45,15 @@
 
 Дизайн передбачає 4 типи, backend має 3. Потрібно розширити.
 
-- [ ] Міграція: додати поля до `TelegramProfile`:
+- [x] Міграція: додати поля до `TelegramProfile`:
   - `notify_emergency` (BooleanField, default=True)
   - `notify_visits` (BooleanField, default=False)
   - `telegram_username` (CharField, nullable) — зберігати при /start
-- [ ] Оновити `TelegramStatusSerializer` — включити нові поля
-- [ ] Оновити `TelegramSettingsView` — приймати нові поля в PATCH
-- [ ] Оновити тип `TelegramStatus` у `client/src/types/index.d.ts`
-- [ ] Оновити `TelegramSettingsData` інтерфейс
-- [ ] Написати тести для нових полів (TDD)
+- [x] Оновити `TelegramStatusSerializer` — включити нові поля
+- [x] Оновити `TelegramSettingsView` — приймати нові поля в PATCH
+- [x] Оновити тип `TelegramStatus` у `client/src/types/index.d.ts`
+- [x] Оновити `TelegramSettingsData` інтерфейс
+- [x] Написати тести для нових полів (TDD)
 
 ---
 
@@ -71,9 +71,9 @@
   --nordic-teal: #3D7A8A;
   /* ... */
   ```
-- [ ] Радіуси: `--radius-lg: 16px` як стандарт для карточок
-- [ ] Тіні: `--shadow-sm`, `--shadow-md` — стандартизувати
-- [ ] Типографіка: перевірити що `Inter` підключений і є fallback
+- [x] Радіуси: `--radius-lg: 16px` як стандарт для карточок
+- [x] Тіні: `--shadow-sm`, `--shadow-md` — стандартизувати, додано `--shadow-lg`
+- [x] Типографіка: Inter cyrillic subset додано, fallback stack розширено
 
 ---
 
@@ -88,9 +88,10 @@
 
 Дизайн має `compact` prop для всіх станів — менші відступи, шрифти, іконки.
 
-- [ ] На viewport < 768px показувати compact layout:
-  - QR замість grid → вертикальний stack
-  - Розміри іконок, кнопок, відступів — зменшені
+- [x] На viewport < 768px показувати compact layout:
+  - QR замість grid → вертикальний stack (md: breakpoint)
+  - QR блок прихований на mobile (hidden md:flex)
+  - Розміри іконок, кнопок, відступів — зменшені (md: responsive classes)
 - [ ] Перевірити в DevTools iPhone SE / 375px
 
 ---

@@ -86,18 +86,38 @@ class TelegramStatusSerializer(serializers.ModelSerializer):
             "notify_issues",
             "notify_passes",
             "notify_announcements",
+            "notify_emergency",
+            "notify_visits",
+            "telegram_username",
             "organization_slug",
             "created_at",
         ]
-        read_only_fields = ["chat_id", "organization_slug", "created_at"]
+        read_only_fields = [
+            "chat_id",
+            "organization_slug",
+            "created_at",
+            "telegram_username",
+        ]
 
 
 class TelegramSettingsSerializer(serializers.ModelSerializer):
-    """Patch payload for ``PATCH /settings/`` — notification preferences only."""
+    """Patch payload for ``PATCH /settings/`` — notification preferences only.
+
+    ``telegram_username`` is intentionally absent: it is derived data written
+    by the Telegram bot's ``/start`` handler, not a user preference.  Exposing
+    it here would allow clients to spoof their @handle.  The field is surfaced
+    *read-only* on ``TelegramStatusSerializer`` for display purposes.
+    """
 
     class Meta:
         model = TelegramProfile
-        fields = ["notify_issues", "notify_passes", "notify_announcements"]
+        fields = [
+            "notify_issues",
+            "notify_passes",
+            "notify_announcements",
+            "notify_emergency",
+            "notify_visits",
+        ]
 
 
 # ── Super-admin OrganizationBot API (PR-14 phase 6) ────────────────────────
