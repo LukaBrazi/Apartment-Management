@@ -58,29 +58,29 @@ export default function ResidentDashboard() {
 			/>
 
 			{/* KPI row */}
-			<div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<KpiCard
 					label="Мої заявки"
 					value={issuesLoading ? "—" : issueCount}
 					icon={<ClipboardList className="h-5 w-5" />}
-					iconBg="bg-[#EEF3FD]"
-					iconColor="text-[#2F6FED]"
+					iconBg="bg-[#CADCFC]"
+					iconColor="text-[#1E2761]"
 					href="/profile"
 				/>
 				<KpiCard
 					label="Перепустки"
 					value={activePassCount > 0 ? activePassCount : "—"}
 					icon={<Car className="h-5 w-5" />}
-					iconBg="bg-[#FEF9EE]"
-					iconColor="text-[#D6A14A]"
+					iconBg="bg-[#FEF3C7]"
+					iconColor="text-[#B45309]"
 					href="/request-pass"
 				/>
 				<KpiCard
 					label="Оголошення"
 					value={announcementsLoading ? "—" : announcementCount}
 					icon={<Megaphone className="h-5 w-5" />}
-					iconBg="bg-[#EDFAF6]"
-					iconColor="text-[#2E7D6B]"
+					iconBg="bg-[#DCFCE7]"
+					iconColor="text-[#2D8A4E]"
 					href="/announcements"
 				/>
 				<KpiCard

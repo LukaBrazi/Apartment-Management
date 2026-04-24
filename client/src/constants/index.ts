@@ -37,9 +37,11 @@ export const occupationOptions = [
 export const leftNavLinks: LeftNavLink[] = [
 	{ path: "/welcome",       label: "Мій будинок",    imgLocation: "/assets/icons/home.svg" },
 	{ path: "/profile?tab=my-issues", label: "Мої заявки", imgLocation: "/assets/icons/report.svg" },
+	{ path: "/my-passes",     label: "Перепустки",     imgLocation: "/assets/icons/report.svg" },
 	{ path: "/payments",      label: "Платежі",        imgLocation: "/assets/icons/bookmark.svg" },
-	{ path: "/news", label: "Новини", imgLocation: "/assets/icons/speak.svg" },
+	{ path: "/news",          label: "Новини",         imgLocation: "/assets/icons/speak.svg" },
 	{ path: "/contacts",      label: "Контакти",       imgLocation: "/assets/icons/user-profile.svg" },
+	{ path: "/profile",       label: "Профіль",        imgLocation: "/assets/icons/user-profile.svg" },
 	// Staff/guard only (filtered in useAuthNavigation):
 	{ path: "/admin",         label: "Адмін панель",   imgLocation: "/assets/icons/tenants.svg" },
 	{ path: "/request-pass",  label: "Перепустка",     imgLocation: "/assets/icons/report.svg" },
