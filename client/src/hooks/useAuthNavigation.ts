@@ -23,14 +23,19 @@ export function useAuthNavigation() {
 	const isGuard = occupation === "guard";
 
 	const handleLogout = async () => {
+		// Always clear client-side auth state first so the user is never
+		// stuck on a protected page if the API call is rate-limited (429)
+		// or fails for any other reason.
+		dispatch(setLogout());
+		router.push("/login");
 		try {
 			await logoutUser().unwrap();
-			dispatch(setLogout());
-			router.push("/login");
 			toast.success("До побачення!");
 		} catch (e) {
+			// Session cleared client-side; server-side token may persist until
+			// expiry but the user is effectively logged out locally.
 			const errorMessage = extractErrorMessage(e);
-			toast.error(errorMessage || "An error occurred");
+			if (errorMessage) toast.error(errorMessage);
 		}
 	};
 

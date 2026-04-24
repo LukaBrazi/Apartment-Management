@@ -526,6 +526,8 @@ class LogoutAPIView(APIView):
     """Logout API View
 
     This class is used to logout the user by deleting the authentication cookies.
+    Throttling is intentionally disabled — logout is a critical user action that
+    must succeed regardless of request volume.
 
     Extends:
         APIView
@@ -536,6 +538,8 @@ class LogoutAPIView(APIView):
     Returns:
         Response: The response object.
     """
+
+    throttle_classes = []  # Logout must never be rate-limited
 
     # Method to handle the POST request
     def post(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:

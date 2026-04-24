@@ -457,15 +457,15 @@ def _seed_announcements(
 
 
 class _announcement_signal_suspended:
-    """Disconnect the ``on_announcement_created`` Celery-fan-out signal."""
+    """Disconnect the ``on_announcement_saved`` Celery-fan-out signal."""
 
     def __enter__(self):
         from apps.posts.models import Announcement
-        from apps.notifications.signals import on_announcement_created
+        from apps.notifications.signals import on_announcement_saved
         from django.db.models.signals import post_save
 
-        self._post = (post_save, on_announcement_created, Announcement)
-        post_save.disconnect(on_announcement_created, sender=Announcement)
+        self._post = (post_save, on_announcement_saved, Announcement)
+        post_save.disconnect(on_announcement_saved, sender=Announcement)
         return self
 
     def __exit__(self, exc_type, exc, tb):
