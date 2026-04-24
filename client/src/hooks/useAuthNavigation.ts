@@ -4,6 +4,7 @@ import { setLogout } from "@/lib/redux/features/auth/authSlice";
 import { useGetUserProfileQuery } from "@/lib/redux/features/users/usersApiSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks/typedHooks";
 import { extractErrorMessage } from "@/utils";
+import { deleteCookie } from "cookies-next";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
@@ -23,17 +24,19 @@ export function useAuthNavigation() {
 	const isGuard = occupation === "guard";
 
 	const handleLogout = async () => {
-		// Always clear client-side auth state first so the user is never
-		// stuck on a protected page if the API call is rate-limited (429)
-		// or fails for any other reason.
+		// Clear client-side auth state immediately — user must never be stuck
+		// on a protected page even if the API call fails (rate-limit, network, etc.).
 		dispatch(setLogout());
+		// `logged_in` is not httpOnly so we can delete it from JS too.
+		// This prevents ProtectedRoute from re-authenticating after a failed
+		// server-side logout.
+		deleteCookie("logged_in");
 		router.push("/login");
 		try {
 			await logoutUser().unwrap();
 			toast.success("До побачення!");
 		} catch (e) {
-			// Session cleared client-side; server-side token may persist until
-			// expiry but the user is effectively logged out locally.
+			// Server-side tokens will expire on their own; client is logged out.
 			const errorMessage = extractErrorMessage(e);
 			if (errorMessage) toast.error(errorMessage);
 		}

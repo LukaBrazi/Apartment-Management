@@ -21,14 +21,10 @@ export default function LeftNavbar() {
 	const { data: passesData } = useGetMyPassesQuery(undefined, { skip: !authState });
 	const { data: announcementsData } = useGetTenantAnnouncementsQuery(undefined, { skip: !authState });
 
-	const openIssuesCount =
-		issuesData?.my_issues?.results?.filter((i) =>
-			["reported", "accepted", "in_progress"].includes(i.status)
-		).length ?? 0;
-
-	const pendingPassesCount =
-		passesData?.results?.filter((p) => p.status === "pending").length ?? 0;
-
+	// Use total `.count` from the paginated API response — filtering paginated
+	// `.results` (max 10 per page) would give wrong counts for users with many items.
+	const openIssuesCount = issuesData?.my_issues?.count ?? 0;
+	const pendingPassesCount = passesData?.count ?? 0;
 	const announcementsCount = announcementsData?.count ?? 0;
 
 	const getBadgeCount = (path: string): number => {

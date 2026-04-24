@@ -256,11 +256,16 @@ class IssueCreateAPIView(generics.CreateAPIView):
                     )
         else:
             # Default: derive Unit from the reporter's primary Residency.
-            unit = (
-                getattr(profile, "primary_unit", None)
-                if profile is not None
-                else None
+            # `Profile.unit` FK was removed in PR-11; unit is now resolved
+            # through the Residency through-model.
+            from apps.apartments.models import Residency
+
+            primary_residency = (
+                Residency.objects.filter(user=user, is_primary=True)
+                .select_related("unit")
+                .first()
             )
+            unit = primary_residency.unit if primary_residency else None
             if unit is None:
                 raise ValidationError({
                     "detail": (
