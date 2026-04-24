@@ -527,7 +527,7 @@ class BookmarkedPostsListAPIView(generics.ListAPIView):
         ).annotate(
             replies_count=Count("replies", distinct=True),
             view_count=Count("content_views", distinct=True),
-        )
+        ).order_by("-created_at")
 
 
 # ReplyCreateAPIView class
@@ -827,5 +827,5 @@ class PostsByTagListAPIView(generics.ListAPIView):
         tag_slug = self.kwargs.get("tag_slug")
         qs = Post.objects.filter(tags__slug=tag_slug).annotate(
             replies_count=Count("replies")
-        )
+        ).order_by("-created_at")
         return _scope_posts_to_user_orgs(qs, self.request.user)
