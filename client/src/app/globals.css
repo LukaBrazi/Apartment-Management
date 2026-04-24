@@ -59,8 +59,10 @@
     --danger: #D64545;
     --danger-light: #FFF0F0;
     --radius: 16px;
+    --radius-lg: 16px;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.06);
 
     /* Telegram / indigo palette */
     --indigo-900: #1E2761;
@@ -102,6 +104,11 @@
     --select-option-hover-background-color: #1A2E3A;
     --select-value-text-color:              #F0EDE6;
     --select-menu-background-color:         #1E2D3D;
+
+    /* Elevated shadows need higher alpha on dark surfaces to read. */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.32);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.32);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.65), 0 4px 10px rgba(0,0,0,0.45);
   }
 }
 

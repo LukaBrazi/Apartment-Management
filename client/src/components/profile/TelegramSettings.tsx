@@ -79,6 +79,22 @@ const NOTIF_TYPES = [
     iconColor: "#2D8A4E",
     Icon: Car,
   },
+  {
+    key: "notify_emergency" as const,
+    label: "Аварійні повідомлення",
+    desc: "Відключення води, світла, газу",
+    iconBg: "#FEE2E2",
+    iconColor: "#C0392B",
+    Icon: AlertCircle,
+  },
+  {
+    key: "notify_visits" as const,
+    label: "Візити гостей",
+    desc: "Коли охорона пропускає гостя",
+    iconBg: "#DCFCE7",
+    iconColor: "#2D8A4E",
+    Icon: Car,
+  },
 ] as const;
 
 // Preview notification list shown on the default (not-connected) panel
@@ -164,7 +180,12 @@ export default function TelegramSettings() {
   };
 
   const handleToggle = async (
-    field: "notify_issues" | "notify_passes" | "notify_announcements",
+    field:
+      | "notify_issues"
+      | "notify_passes"
+      | "notify_announcements"
+      | "notify_emergency"
+      | "notify_visits",
     value: boolean,
   ) => {
     try {
@@ -204,7 +225,7 @@ export default function TelegramSettings() {
     // Bot not configured warning
     if (!status?.bot_configured) {
       return (
-        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-6">
+        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-4 md:p-7">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-[#CADCFC] flex items-center justify-center">
               <TelegramLogo size={22} />
@@ -226,15 +247,15 @@ export default function TelegramSettings() {
     // Waiting panel (deepLink set, polling for connection confirmation)
     if (!status?.connected && deepLink) {
       return (
-        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-8 sm:p-10 text-center">
+        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-4 md:p-7 text-center">
           {/* Spinning ring + TG logo */}
-          <div className="relative mx-auto mb-5" style={{ width: 80, height: 80 }}>
+          <div className="relative mx-auto mb-5 w-20 h-20 md:w-24 md:h-24">
             <div className="absolute inset-0 rounded-full bg-[#CADCFC] flex items-center justify-center">
               <TelegramLogo size={44} />
             </div>
             <svg
-              width="100"
-              height="100"
+              width="100%"
+              height="100%"
               viewBox="0 0 100 100"
               style={{ position: 'absolute', inset: -10, animation: 'tgspin 1.6s linear infinite' }}
             >
@@ -266,13 +287,13 @@ export default function TelegramSettings() {
             </code>
           </p>
 
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-col md:flex-row justify-center gap-3">
             <button
               onClick={() => {
                 setDeepLink(null);
                 setIsPolling(false);
               }}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-[#2D3D4F] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1C2B3A] transition-colors"
+              className="w-full md:w-auto px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-[#2D3D4F] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1C2B3A] transition-colors"
             >
               Скасувати
             </button>
@@ -280,7 +301,7 @@ export default function TelegramSettings() {
               href={deepLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[#1E2761] hover:bg-[#16204f] text-white transition-colors"
+              className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[#1E2761] hover:bg-[#16204f] text-white transition-colors"
             >
               <TelegramLogo size={16} mono />
               Відкрити Telegram знову
@@ -296,40 +317,47 @@ export default function TelegramSettings() {
       return (
         <div className="flex flex-col gap-4">
           {/* Header card */}
-          <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-5">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 rounded-2xl bg-[#229ED9] flex items-center justify-center text-white text-xl font-bold">
-                  T
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#2D8A4E] border-2 border-white dark:border-[#162032] flex items-center justify-center">
-                  <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-[#0F172A] dark:text-white text-base">
-                    Telegram підключено
-                  </span>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#2D8A4E]">
-                    Підключено
-                  </span>
-                </div>
-                {status.created_at && (
-                  <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono">
-                    Підключено{" "}
-                    {new Date(status.created_at).toLocaleDateString("uk-UA", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+          <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-4 md:p-7">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="relative flex-shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-[#229ED9] flex items-center justify-center text-white text-xl font-bold">
+                    T
                   </div>
-                )}
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#2D8A4E] border-2 border-white dark:border-[#162032] flex items-center justify-center">
+                    <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-[#0F172A] dark:text-white text-base">
+                      Telegram підключено
+                    </span>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#2D8A4E]">
+                      Підключено
+                    </span>
+                  </div>
+                  {status.telegram_username && (
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">
+                      @{status.telegram_username}
+                    </div>
+                  )}
+                  {status.created_at && (
+                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono">
+                      Підключено{" "}
+                      {new Date(status.created_at).toLocaleDateString("uk-UA", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
               <button
                 onClick={handleDisconnect}
                 disabled={isDisconnecting}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#FEE2E2] dark:bg-red-900/20 text-[#C0392B] border border-[#C0392B]/30 hover:bg-[#FEE2E2]/80 transition-colors disabled:opacity-50"
+                className="w-full md:w-auto md:flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 md:py-1.5 rounded-lg text-sm font-medium bg-[#FEE2E2] dark:bg-red-900/20 text-[#C0392B] border border-[#C0392B]/30 hover:bg-[#FEE2E2]/80 transition-colors disabled:opacity-50"
               >
                 {isDisconnecting ? "…" : "Відʼєднати"}
               </button>
@@ -337,7 +365,7 @@ export default function TelegramSettings() {
           </div>
 
           {/* Notification toggles */}
-          <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-5">
+          <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-4 md:p-7">
             <div className="flex items-center justify-between mb-1">
               <div>
                 <h4 className="font-semibold text-[#0F172A] dark:text-white text-sm">
@@ -359,7 +387,7 @@ export default function TelegramSettings() {
                   className="flex items-center gap-4 py-4 border-b border-slate-50 dark:border-[#1C2B3A] last:border-0"
                 >
                   <div
-                    className="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
+                    className="w-9 h-9 md:w-11 md:h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
                     style={{ background: iconBg, color: iconColor }}
                   >
                     <Icon className="w-5 h-5" />
@@ -421,7 +449,7 @@ export default function TelegramSettings() {
     return (
       <div className="flex flex-col gap-4">
         {/* Main connection card */}
-        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-6 sm:p-7">
+        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-4 md:p-7">
           {/* Header */}
           <div className="flex items-center gap-3 mb-5 sm:mb-6">
             <TelegramLogo size={44} />
@@ -438,10 +466,10 @@ export default function TelegramSettings() {
             </span>
           </div>
 
-          {/* QR + steps — two-column on desktop, stacked on mobile */}
-          <div className="flex flex-col sm:grid sm:grid-cols-[200px_1fr] gap-5 sm:gap-7 items-start">
-            {/* Decorative QR code */}
-            <div className="flex flex-col items-center gap-2 mx-auto sm:mx-0">
+          {/* QR + steps — two-column on desktop (≥md), stacked on mobile */}
+          <div className="flex flex-col md:grid md:grid-cols-[200px_1fr] gap-5 md:gap-7 items-start">
+            {/* Decorative QR code — hidden on mobile, shown on md+ */}
+            <div className="hidden md:flex flex-col items-center gap-3">
               <div className="p-3 border border-slate-200 dark:border-[#2D3D4F] rounded-xl bg-white">
                 <QRCode size={160} seed="apartmentos-tg-1" />
               </div>
@@ -480,11 +508,11 @@ export default function TelegramSettings() {
                 </div>
               </div>
 
-              {/* CTA button */}
+              {/* CTA button — full-width on mobile, auto-width on desktop */}
               <button
                 onClick={handleConnect}
                 disabled={isGenerating}
-                className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#1E2761] hover:bg-[#16204f] disabled:opacity-60 text-white px-4 py-3 text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-2 w-full md:w-auto rounded-xl bg-[#1E2761] hover:bg-[#16204f] disabled:opacity-60 text-white px-4 py-3 text-sm font-semibold transition-colors"
               >
                 {isGenerating ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -498,7 +526,7 @@ export default function TelegramSettings() {
         </div>
 
         {/* Preview notification list */}
-        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-5">
+        <div className="rounded-2xl border border-slate-100 dark:border-[#2D3D4F] shadow-sm p-4 md:p-7">
           <h4 className="text-sm font-semibold text-[#0F172A] dark:text-white mb-0.5">
             Що ви будете отримувати
           </h4>
@@ -512,7 +540,7 @@ export default function TelegramSettings() {
                 className="flex items-center gap-4 py-3.5 border-b border-slate-50 dark:border-[#1C2B3A] last:border-0"
               >
                 <div
-                  className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
+                  className="w-9 h-9 md:w-11 md:h-11 rounded-xl flex-shrink-0 flex items-center justify-center"
                   style={{ background: iconBg, color: iconColor }}
                 >
                   <Icon className="w-5 h-5" />
