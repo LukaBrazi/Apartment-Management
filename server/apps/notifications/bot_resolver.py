@@ -32,42 +32,58 @@ TELEGRAM_FEATURE_FLAG = "telegram_notifications"
 
 
 def get_bot_for_org(organization: "Organization | None") -> OrganizationBot | None:
-    """Return the primary active bot for ``organization``.
+    """Return the active bot for ``organization``, falling back to the default bot.
 
-    Preconditions checked (in order of cheapness):
-
-    1. ``organization`` must be truthy.  Passing ``None`` is a common
-       shape when signal handlers fire before an org is attached — we
-       treat it the same as "no bot", not as an error.
-    2. The org must have ``telegram_notifications`` enabled in its
-       ``features`` JSONField.  That's the customer-facing kill switch.
-    3. The org must have an ``OrganizationBot`` row with ``is_primary``
-       and ``is_active`` both ``True``.  ``is_configured`` additionally
-       verifies the token and username are filled in — otherwise the
-       send would fail on the Telegram API side anyway.
+    Resolution order:
+    1. organization is None → return None (no org context at all)
+    2. feature flag off → return None (explicit opt-out, default bot is NOT used)
+    3. org has its own primary active bot → return it
+    4. no org bot → fallback to the platform default bot (is_default=True)
+    5. no default bot either → return None
     """
     if organization is None:
         return None
     if not organization.is_feature_enabled(TELEGRAM_FEATURE_FLAG):
         return None
 
+    # Org-specific bot takes priority.
     bot = (
         OrganizationBot.objects
         .filter(organization=organization, is_primary=True, is_active=True)
         .first()
     )
-    if bot is None:
+    if bot is not None and bot.is_configured:
+        return bot
+
+    if bot is not None:
         logger.debug(
-            "notifications: no primary bot for org=%s (feature on, table empty)",
-            getattr(organization, "slug", "?"),
-        )
-        return None
-    if not bot.is_configured:
-        logger.debug(
-            "notifications: bot for org=%s present but not configured "
-            "(missing token or username)",
+            "notifications: bot for org=%s present but not configured, trying default",
             organization.slug,
         )
+
+    # Fallback to platform default bot.
+    default_bot = _get_default_bot()
+    if default_bot is None:
+        logger.debug(
+            "notifications: no org bot and no default bot for org=%s",
+            getattr(organization, "slug", "?"),
+        )
+    else:
+        logger.debug(
+            "notifications: using default bot as fallback for org=%s",
+            getattr(organization, "slug", "?"),
+        )
+    return default_bot
+
+
+def _get_default_bot() -> OrganizationBot | None:
+    """Return the platform-wide default bot, or None if not configured."""
+    bot = (
+        OrganizationBot.objects
+        .filter(is_default=True, is_active=True)
+        .first()
+    )
+    if bot is None or not bot.is_configured:
         return None
     return bot
 

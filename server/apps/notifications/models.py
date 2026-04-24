@@ -55,17 +55,18 @@ def _make_internal_secret() -> str:
 
 
 class OrganizationBot(models.Model):
-    """Per-organization Telegram bot credentials.
+    """Per-organization Telegram bot credentials, plus optional platform default.
 
     Token is stored Fernet-encrypted. Access it via the ``bot_token``
     property, which decrypts on read and encrypts on write — callers
     never touch ``encrypted_token`` directly.
 
-    White-labelling: each ЖК / management company brings their own
-    ``@…Bot`` via BotFather and pastes the token here. The platform
-    never ships a default — if this row is missing or inactive, the
-    org simply receives no Telegram notifications (silent fallback;
-    see ADR-014 §7).
+    White-labelling: each ЖК / management company can bring their own
+    ``@…Bot`` via BotFather and paste the token here.  When an org has no
+    bot of its own, the platform-wide *default bot* (``is_default=True``,
+    ``organization=NULL``) is used as a fallback so residents still receive
+    Telegram notifications.  If neither is configured, notifications degrade
+    silently (see ADR-014 §7 and the updated ``bot_resolver.get_bot_for_org``).
     """
 
     pkid = models.BigAutoField(primary_key=True, editable=False)
@@ -73,9 +74,22 @@ class OrganizationBot(models.Model):
 
     organization = models.ForeignKey(
         "organizations.Organization",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="telegram_bots",
         verbose_name=_("Organization"),
+    )
+
+    is_default = models.BooleanField(
+        _("Default bot"),
+        default=False,
+        db_index=True,
+        help_text=_(
+            "If True, this bot is used as fallback for orgs without their own bot. "
+            "Only one default bot allowed (enforced by unique constraint). "
+            "organization must be NULL for the default bot."
+        ),
     )
 
     bot_username = models.CharField(
@@ -168,13 +182,21 @@ class OrganizationBot(models.Model):
         verbose_name_plural = _("Organization Bots")
         ordering = ["organization", "-is_primary", "-created_at"]
         constraints = [
-            # Only one primary bot per org — but non-primary (backup)
-            # bots are allowed to proliferate. Partial unique keeps the
-            # schema simple: no need to pre-create "slots".
+            # Only one primary bot per org (for orgs with their own bot) —
+            # but non-primary (backup) bots are allowed to proliferate.
+            # Partial unique keeps the schema simple: no need to pre-create
+            # "slots". Condition includes organization__isnull=False so the
+            # default bot (organization=NULL) is not captured by this rule.
             models.UniqueConstraint(
                 fields=["organization"],
-                condition=models.Q(is_primary=True),
+                condition=models.Q(is_primary=True, organization__isnull=False),
                 name="unique_primary_telegram_bot_per_org",
+            ),
+            # Exactly one platform-wide default bot at any time.
+            models.UniqueConstraint(
+                fields=["is_default"],
+                condition=models.Q(is_default=True),
+                name="unique_default_telegram_bot",
             ),
             # Usernames are globally unique on Telegram's side — enforce
             # the same in our DB so two orgs can't both claim the same
@@ -183,11 +205,20 @@ class OrganizationBot(models.Model):
                 fields=["bot_username"],
                 name="unique_bot_username",
             ),
+            # The default bot must not belong to any org — prevents a
+            # logical inconsistency where an org-bot is also marked default.
+            models.CheckConstraint(
+                check=models.Q(is_default=False) | models.Q(organization__isnull=True),
+                name="default_bot_must_have_no_org",
+            ),
         ]
 
     def __str__(self) -> str:
         status = "active" if self.is_active else "inactive"
-        return f"@{self.bot_username} → {self.organization.name} ({status})"
+        if self.is_default:
+            return f"@{self.bot_username} → [DEFAULT] ({status})"
+        org_name = self.organization.name if self.organization_id else "—"
+        return f"@{self.bot_username} → {org_name} ({status})"
 
     # ── Token accessors ──────────────────────────────────────────────────────
 
@@ -228,9 +259,13 @@ class OrganizationBot(models.Model):
 
         ``base_url`` is the public origin (e.g. ``https://apartmentos.org``).
         The path uses the org slug so routing stays readable in logs.
+        For the platform default bot (``organization=NULL``) a special
+        ``/default/`` segment is used instead of an org slug.
         """
         base = base_url.rstrip("/")
-        return f"{base}/api/v1/notifications/telegram/webhook/{self.organization.slug}/"
+        if self.organization_id:
+            return f"{base}/api/v1/notifications/telegram/webhook/{self.organization.slug}/"
+        return f"{base}/api/v1/notifications/telegram/webhook/default/"
 
 
 # ── Per-(user, organization) profile + verification token (PR-14 phase 2) ──

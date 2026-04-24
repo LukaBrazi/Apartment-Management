@@ -94,6 +94,7 @@ class OrganizationBotAdminForm(forms.ModelForm):
             "bot_token",
             "is_active",
             "is_primary",
+            "is_default",
         ]
 
     def save(self, commit: bool = True):
@@ -117,10 +118,11 @@ class OrganizationBotAdmin(admin.ModelAdmin):
         "masked_token",
         "is_active",
         "is_primary",
+        "is_default",
         "last_tested_at",
         "last_test_ok",
     ]
-    list_filter = ["is_active", "is_primary", "organization"]
+    list_filter = ["is_active", "is_primary", "is_default", "organization"]
     search_fields = ["bot_username", "organization__name", "organization__slug"]
     ordering = ["organization__name", "-is_primary"]
     readonly_fields = [
@@ -150,7 +152,12 @@ class OrganizationBotAdmin(admin.ModelAdmin):
         (
             _("Status"),
             {
-                "fields": ("is_active", "is_primary"),
+                "fields": ("is_active", "is_primary", "is_default"),
+                "description": _(
+                    "Set 'Default bot' only when organization is empty — "
+                    "this bot becomes the platform-wide fallback for orgs "
+                    "without their own bot."
+                ),
             },
         ),
         (
@@ -233,6 +240,16 @@ class OrganizationBotAdmin(admin.ModelAdmin):
         if not change and obj.created_by_id is None:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+    # ── Queryset: default bot always at the top ───────────────────────────
+
+    def get_queryset(self, request):
+        """Sort so the platform default bot (is_default=True) floats to top."""
+        return (
+            super()
+            .get_queryset(request)
+            .order_by("-is_default", "organization__name", "-is_primary")
+        )
 
     # ── Admin actions ─────────────────────────────────────────────────────
 

@@ -187,3 +187,181 @@ class TestResolveOrgFromUser:
 
     def test_returns_none_for_user_with_no_membership(self, user_no_membership):
         assert resolve_org_from_user_and_context(user_no_membership) is None
+
+
+# ── Fixtures для нових тестів ──────────────────────────────────────────────
+
+
+@pytest.fixture
+def org_a(db):
+    """Орг з увімкненим feature flag."""
+    return Organization.objects.create(
+        name="ОСББ A",
+        slug="osbb-a",
+        type=OrganizationType.HOUSING_COMPLEX,
+        features={TELEGRAM_FEATURE_FLAG: True},
+    )
+
+
+@pytest.fixture
+def org_flag_off(db):
+    """Орг з вимкненим feature flag."""
+    return Organization.objects.create(
+        name="ОСББ Off",
+        slug="osbb-flag-off",
+        type=OrganizationType.HOUSING_COMPLEX,
+        features={TELEGRAM_FEATURE_FLAG: False},
+    )
+
+
+@pytest.fixture
+def bot_factory(db):
+    """Створює ``OrganizationBot``.
+
+    Підтримує ``organization=None`` для платформового дефолтного бота
+    (``is_default=True``).
+    """
+    def _make(organization, **overrides):
+        bot = OrganizationBot(
+            organization=organization,
+            bot_username=overrides.pop("bot_username", "AlphaOSBBBot"),
+            is_active=overrides.pop("is_active", True),
+            is_primary=overrides.pop("is_primary", True),
+        )
+        bot.bot_token = overrides.pop("bot_token", "123456789:AAE-configured-token-xyz")
+        for k, v in overrides.items():
+            setattr(bot, k, v)
+        bot.save()
+        return bot
+
+    return _make
+
+
+# ── TestGetDefaultBot ──────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestGetDefaultBot:
+    """Перевірка логіки ``_get_default_bot()``."""
+
+    def test_returns_bot_when_default_active_configured(self, bot_factory):
+        """Дефолтний бот з is_default=True, is_active=True і токеном → повертається."""
+        from apps.notifications.bot_resolver import _get_default_bot
+
+        default_bot = bot_factory(
+            None,
+            is_default=True,
+            is_primary=False,
+            bot_username="ApartmentOSBot",
+        )
+        result = _get_default_bot()
+        assert result is not None
+        assert result.pk == default_bot.pk
+
+    def test_returns_none_when_no_default_bot(self):
+        """Жодного дефолтного бота в БД → None."""
+        from apps.notifications.bot_resolver import _get_default_bot
+
+        assert _get_default_bot() is None
+
+    def test_returns_none_when_default_bot_inactive(self, bot_factory):
+        """Дефолтний бот є, але is_active=False → None."""
+        from apps.notifications.bot_resolver import _get_default_bot
+
+        bot_factory(
+            None,
+            is_default=True,
+            is_active=False,
+            is_primary=False,
+            bot_username="ApartmentOSBot",
+        )
+        assert _get_default_bot() is None
+
+    def test_returns_none_when_default_bot_has_no_token(self, bot_factory):
+        """Дефолтний бот є і активний, але без токена → не налаштований → None."""
+        from apps.notifications.bot_resolver import _get_default_bot
+
+        bot = bot_factory(
+            None,
+            is_default=True,
+            is_primary=False,
+            bot_username="ApartmentOSBot",
+        )
+        # Витерти токен після збереження
+        bot.bot_token = ""
+        bot.save(update_fields=["encrypted_token"])
+
+        assert _get_default_bot() is None
+
+
+# ── TestGetBotForOrgFallback ───────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestGetBotForOrgFallback:
+    """Перевірка fallback-логіки ``get_bot_for_org()`` → дефолтний бот."""
+
+    def test_org_without_own_bot_gets_default(self, org_a, bot_factory):
+        """Орг без власного бота → отримує дефолтний бот."""
+        default_bot = bot_factory(
+            None,
+            is_default=True,
+            is_primary=False,
+            bot_username="ApartmentOSBot",
+        )
+        result = get_bot_for_org(org_a)
+        assert result is not None
+        assert result.pk == default_bot.pk
+
+    def test_org_with_own_bot_gets_own_bot_not_default(
+        self, org_a, configured_bot_factory, bot_factory
+    ):
+        """Орг з власним ботом → отримує свій бот, НЕ дефолтний."""
+        own_bot = configured_bot_factory(org_a, bot_username="OrgOwnBot")
+        # Дефолтний бот теж існує
+        bot_factory(
+            None,
+            is_default=True,
+            is_primary=False,
+            bot_username="ApartmentOSBot",
+        )
+        result = get_bot_for_org(org_a)
+        assert result is not None
+        assert result.pk == own_bot.pk
+
+    def test_org_with_flag_off_gets_none_even_with_default(
+        self, org_flag_off, bot_factory
+    ):
+        """Вимкнений feature flag → None, навіть якщо є дефолтний бот."""
+        bot_factory(
+            None,
+            is_default=True,
+            is_primary=False,
+            bot_username="ApartmentOSBot",
+        )
+        assert get_bot_for_org(org_flag_off) is None
+
+    def test_none_org_returns_none(self):
+        """organization=None → None (без змін)."""
+        assert get_bot_for_org(None) is None
+
+    def test_own_bot_not_configured_falls_back_to_default(
+        self, org_a, configured_bot_factory, bot_factory
+    ):
+        """Власний бот є, але без токена → fallback на дефолтний бот."""
+        # Створити власний бот, потім витерти токен
+        own_bot = configured_bot_factory(org_a, bot_username="OrgOwnBot")
+        own_bot.bot_token = ""
+        own_bot.save(update_fields=["encrypted_token"])
+
+        # Дефолтний бот налаштований
+        default_bot = bot_factory(
+            None,
+            is_default=True,
+            is_primary=False,
+            bot_username="ApartmentOSBot",
+        )
+
+        result = get_bot_for_org(org_a)
+        assert result is not None
+        assert result.pk == default_bot.pk
