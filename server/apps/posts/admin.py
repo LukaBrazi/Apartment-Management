@@ -10,10 +10,33 @@ from rest_framework.request import Request
 
 @admin.register(Announcement)
 class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ["id", "building", "title", "is_active", "created_at"]
-    list_filter = ["building", "is_active"]
+    list_display = ["id", "building", "title", "notify_subscribers", "is_active", "created_at"]
+    list_filter = ["building", "is_active", "notify_subscribers"]
     search_fields = ["title", "body", "building__name"]
     autocomplete_fields = ["building"]
+    fields = ["building", "organization", "entrance", "title", "body", "is_active", "notify_subscribers"]
+
+    def save_model(self, request, obj, form, change):
+        from apps.notifications.utils import get_announcement_target_chat_ids
+        from django.contrib import messages
+
+        if obj.notify_subscribers:
+            # Determine org
+            org = getattr(obj.building, "organization", None) if obj.building else None
+            if org is None:
+                org = obj.organization
+            if org:
+                # Estimate subscriber count before saving
+                try:
+                    count = get_announcement_target_chat_ids(obj, org)
+                    messages.warning(
+                        request,
+                        f"⚠️ Це оголошення буде надіслано {len(count)} підписникам через Telegram."
+                    )
+                except Exception:
+                    pass
+
+        super().save_model(request, obj, form, change)
 
 
 # Reply Inline

@@ -78,12 +78,36 @@ def on_pass_saved(sender, instance, created, **kwargs):
         notify_tenant_pass_status.delay(str(instance.pk), instance.status)
 
 
+_announcement_old_notify_subscribers: dict = {}
+
+
+@receiver(pre_save, sender="posts.Announcement")
+def cache_announcement_old_state(sender, instance, **kwargs):
+    """Cache old notify_subscribers before saving."""
+    if instance.pk:
+        try:
+            old = sender.objects.get(pk=instance.pk)
+            _announcement_old_notify_subscribers[str(instance.pk)] = old.notify_subscribers
+        except sender.DoesNotExist:
+            pass
+
+
 @receiver(post_save, sender="posts.Announcement")
-def on_announcement_created(sender, instance, created, **kwargs):
-    """Notify all tenants when new announcement is published."""
+def on_announcement_saved(sender, instance, created, **kwargs):
+    """Notify tenants when announcement is saved with notify_subscribers=True."""
+    from apps.notifications.tasks import notify_building_tenants_announcement
+
+    pk_str = str(instance.pk)
+
     if created:
-        from apps.notifications.tasks import notify_building_tenants_announcement
-        notify_building_tenants_announcement.delay(str(instance.pk))
+        if instance.notify_subscribers:
+            notify_building_tenants_announcement.delay(pk_str)
+        return
+
+    old_notify = _announcement_old_notify_subscribers.pop(pk_str, None)
+    if old_notify is False and instance.notify_subscribers is True:
+        # Toggled on — fire now.
+        notify_building_tenants_announcement.delay(pk_str)
 
 
 def connect_all():
@@ -101,4 +125,5 @@ def connect_all():
     pre_save.connect(cache_issue_old_state, sender=Issue, weak=False)
     post_save.connect(on_issue_saved, sender=Issue, weak=False)
     post_save.connect(on_pass_saved, sender=VehiclePass, weak=False)
-    post_save.connect(on_announcement_created, sender=Announcement, weak=False)
+    pre_save.connect(cache_announcement_old_state, sender=Announcement, weak=False)
+    post_save.connect(on_announcement_saved, sender=Announcement, weak=False)

@@ -18,17 +18,42 @@ User = get_user_model()
 # ── Announcement Model ─────────────────────────────────────────────────────
 
 class Announcement(TimeStampedModel):
-    """Building-scoped announcement created by admin."""
+    """Building-scoped or org-wide announcement created by admin."""
 
     building = models.ForeignKey(
         Building,
         on_delete=models.CASCADE,
         related_name="announcements",
         verbose_name=_("Building"),
+        null=True,
+        blank=True,
+    )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        related_name="announcements",
+        null=True,
+        blank=True,
+        verbose_name=_("Organization"),
+        help_text=_("Required for org-wide announcements (when building is not set)"),
+    )
+    entrance = models.ForeignKey(
+        "apartments.Entrance",
+        on_delete=models.SET_NULL,
+        related_name="announcements",
+        null=True,
+        blank=True,
+        verbose_name=_("Entrance"),
+        help_text=_("If set, only residents of this entrance receive the notification"),
     )
     title = models.CharField(_("Title"), max_length=255)
     body = models.TextField(_("Body"))
     is_active = models.BooleanField(_("Active"), default=True)
+    notify_subscribers = models.BooleanField(
+        _("Notify Subscribers"),
+        default=False,
+        help_text=_("Send Telegram notification to matching subscribers when published"),
+    )
 
     class Meta:
         verbose_name = _("Announcement")
@@ -36,7 +61,11 @@ class Announcement(TimeStampedModel):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"[{self.building.name}] {self.title}"
+        if self.building:
+            return f"[{self.building.name}] {self.title}"
+        if self.organization:
+            return f"[{self.organization.name}] {self.title}"
+        return self.title
 
 
 # Post Model

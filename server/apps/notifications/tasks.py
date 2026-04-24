@@ -132,19 +132,10 @@ def notify_tenant_issue_status_changed(
         from apps.notifications.bot_resolver import get_bot_for_org
         from apps.notifications.models import TelegramProfile
 
-        issue = Issue.objects.select_related("reported_by").get(pk=issue_id)
+        issue = Issue.objects.select_related("reported_by", "assigned_to").get(pk=issue_id)
         org = _org_of_issue(issue)
         bot = get_bot_for_org(org)
         if bot is None:
-            return
-
-        profile = TelegramProfile.objects.filter(
-            user=issue.reported_by,
-            organization=org,
-            is_active=True,
-            notify_issues=True,
-        ).first()
-        if not profile:
             return
 
         status_labels = {
@@ -163,7 +154,27 @@ def notify_tenant_issue_status_changed(
             f"Статус: {old_label} → {new_label}\n\n"
             f"_{_site_name()}_"
         )
-        send_telegram_message.delay(str(bot.id), profile.chat_id, text)
+
+        # Notify reporter
+        reporter_profile = TelegramProfile.objects.filter(
+            user=issue.reported_by,
+            organization=org,
+            is_active=True,
+            notify_issues=True,
+        ).first()
+        if reporter_profile:
+            send_telegram_message.delay(str(bot.id), reporter_profile.chat_id, text)
+
+        # Also notify assigned_to (if different from reporter) — independently
+        if issue.assigned_to_id and issue.assigned_to_id != issue.reported_by_id:
+            assigned_profile = TelegramProfile.objects.filter(
+                user=issue.assigned_to,
+                organization=org,
+                is_active=True,
+                notify_issues=True,
+            ).first()
+            if assigned_profile:
+                send_telegram_message.delay(str(bot.id), assigned_profile.chat_id, text)
     except Exception as exc:  # noqa: BLE001
         if self.request.retries >= self.max_retries:
             logger.error(
@@ -244,10 +255,13 @@ def notify_worker_assigned(self, issue_id: str) -> None:
         if not profile:
             return
 
+        platform_url = getattr(settings, "PLATFORM_PUBLIC_URL", "").rstrip("/")
+        link_line = f"\n🔗 {platform_url}/issue/{issue.id}" if platform_url else ""
+
         text = (
             f"👷 *Вам призначено заявку*\n"
             f"*{issue.title}*\n"
-            f"Пріоритет: {issue.priority}\n\n"
+            f"Пріоритет: {issue.priority}{link_line}\n\n"
             f"_{_site_name()}_"
         )
         send_telegram_message.delay(str(bot.id), profile.chat_id, text)
@@ -264,37 +278,44 @@ def notify_worker_assigned(self, issue_id: str) -> None:
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def notify_building_tenants_announcement(self, announcement_id: str) -> None:
-    """Notify every tenant of the announcement's org about a new announcement.
+    """Notify announcement subscribers, scoped by entrance/building/org.
 
-    Cross-tenant fix: pre-PR-14 this sent to every tenant on the
-    platform. Now we derive the org from ``announcement.building`` and
-    filter profiles to that org only.
-
-    Fan-out goes through ``send_telegram_broadcast`` instead of a
-    per-recipient loop so the Redis queue is not flooded when a building
-    has hundreds of tenants.
+    - Returns early if announcement.notify_subscribers is False.
+    - Derives org from announcement.building.organization OR announcement.organization.
+    - Uses get_announcement_target_chat_ids() for scoped recipient lookup.
+    - No occupation filter — all active subscribers receive it.
     """
     try:
         from apps.notifications.bot_resolver import get_bot_for_org
-        from apps.notifications.models import TelegramProfile
+        from apps.notifications.utils import get_announcement_target_chat_ids
         from apps.posts.models import Announcement
 
         announcement = Announcement.objects.select_related(
             "building__organization",
+            "organization",
+            "entrance",
         ).get(pk=announcement_id)
+
+        # Early exit if notifications are disabled for this announcement.
+        if not announcement.notify_subscribers:
+            return
+
+        # Derive org: building-scoped first, then direct org FK.
         org = getattr(announcement.building, "organization", None)
+        if org is None:
+            org = announcement.organization
+        if org is None:
+            logger.warning(
+                "notify_building_tenants_announcement: no org for announcement %s",
+                announcement_id,
+            )
+            return
+
         bot = get_bot_for_org(org)
         if bot is None:
             return
 
-        chat_ids = list(
-            TelegramProfile.objects.filter(
-                organization=org,
-                is_active=True,
-                notify_announcements=True,
-                user__profile__occupation="tenant",
-            ).values_list("chat_id", flat=True)
-        )
+        chat_ids = get_announcement_target_chat_ids(announcement, org)
         if not chat_ids:
             return
 

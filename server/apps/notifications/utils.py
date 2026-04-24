@@ -52,6 +52,31 @@ def get_active_dispatcher_chat_ids(organization: "Organization") -> list[int]:
     )
 
 
+def get_announcement_target_chat_ids(announcement, org) -> list[int]:
+    """Return chat_ids scoped to announcement's target audience.
+
+    Scoping rules (in priority order):
+      1. entrance is set  → residents of that entrance only
+         (filter via user__residencies__unit__entrance)
+      2. building is set  → all org subscribers (org already constrains to building's org)
+      3. neither          → all org subscribers (org-wide)
+
+    No occupation filter — all active notify_announcements=True subscribers qualify.
+    """
+    from apps.notifications.models import TelegramProfile
+
+    qs = TelegramProfile.objects.filter(
+        organization=org,
+        is_active=True,
+        notify_announcements=True,
+    )
+
+    if announcement.entrance_id:
+        qs = qs.filter(user__residencies__unit__entrance=announcement.entrance)
+
+    return list(qs.values_list("chat_id", flat=True))
+
+
 def get_active_guard_chat_ids(organization: "Organization") -> list[int]:
     """Chat IDs of this org's guards who opted into pass alerts.
 
