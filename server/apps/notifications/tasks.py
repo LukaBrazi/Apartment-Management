@@ -21,13 +21,17 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# Number of chat_ids per Redis task when broadcasting to many tenants.
+# Keeps queue spikes manageable for large buildings (500+ tenants).
+BROADCAST_CHUNK_SIZE = 25
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 
 def _site_name() -> str:
-    """Platform name for footers — falls back to 'EstateOS' for legacy envs."""
-    return getattr(settings, "SITE_NAME", "EstateOS")
+    """Platform name for footers — falls back to 'ApartmentOS' if SITE_NAME is unset."""
+    return getattr(settings, "SITE_NAME", "ApartmentOS")
 
 
 def _org_of_issue(issue):
@@ -88,6 +92,30 @@ def send_telegram_message(self, bot_id: str, chat_id: int, text: str) -> None:
                 "send_telegram_message exhausted retries bot=%s chat_id=%s: %s",
                 bot_id,
                 chat_id,
+                exc,
+            )
+            return
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_telegram_broadcast(self, bot_id: str, chat_ids: list[int], text: str) -> None:
+    """Fan-out a message to multiple chat_ids through one bot.
+
+    Chunks into groups of BROADCAST_CHUNK_SIZE to avoid Redis queue spikes.
+    Each chunk is dispatched as individual ``send_telegram_message`` tasks,
+    so per-recipient retry semantics are preserved.
+    """
+    try:
+        for i in range(0, len(chat_ids), BROADCAST_CHUNK_SIZE):
+            chunk = chat_ids[i : i + BROADCAST_CHUNK_SIZE]
+            for chat_id in chunk:
+                send_telegram_message.delay(bot_id, chat_id, text)
+    except Exception as exc:  # noqa: BLE001
+        if self.request.retries >= self.max_retries:
+            logger.error(
+                "send_telegram_broadcast exhausted retries bot=%s: %s",
+                bot_id,
                 exc,
             )
             return
@@ -241,6 +269,10 @@ def notify_building_tenants_announcement(self, announcement_id: str) -> None:
     Cross-tenant fix: pre-PR-14 this sent to every tenant on the
     platform. Now we derive the org from ``announcement.building`` and
     filter profiles to that org only.
+
+    Fan-out goes through ``send_telegram_broadcast`` instead of a
+    per-recipient loop so the Redis queue is not flooded when a building
+    has hundreds of tenants.
     """
     try:
         from apps.notifications.bot_resolver import get_bot_for_org
@@ -271,8 +303,7 @@ def notify_building_tenants_announcement(self, announcement_id: str) -> None:
             f"*{announcement.title}*\n\n"
             f"_{_site_name()}_"
         )
-        for chat_id in chat_ids:
-            send_telegram_message.delay(str(bot.id), chat_id, text)
+        send_telegram_broadcast.delay(str(bot.id), chat_ids, text)
     except Exception as exc:  # noqa: BLE001
         if self.request.retries >= self.max_retries:
             logger.error(
@@ -287,7 +318,12 @@ def notify_building_tenants_announcement(self, announcement_id: str) -> None:
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def notify_tenant_pass_status(self, pass_id: str, new_status: str) -> None:
-    """Notify tenant when their vehicle pass is approved/closed."""
+    """Notify tenant when their vehicle pass status changes.
+
+    VehiclePass has two statuses:
+      - ``pending``  — pass submitted, awaiting guard review.
+      - ``closed``   — guard confirmed the vehicle has passed through.
+    """
     try:
         from apps.notifications.bot_resolver import get_bot_for_org
         from apps.notifications.models import TelegramProfile
@@ -310,12 +346,13 @@ def notify_tenant_pass_status(self, pass_id: str, new_status: str) -> None:
         if not profile:
             return
 
-        status_text = (
-            "✅ підтверджена" if new_status == "closed"
-            else f"оновлена: {new_status}"
-        )
+        pass_status_labels = {
+            "pending": "⏳ очікує перевірки",
+            "closed": "✅ авто зафіксовано охоронцем",
+        }
+        status_label = pass_status_labels.get(new_status, f"оновлена: {new_status}")
         text = (
-            f"🚗 *Перепустка {status_text}*\n"
+            f"🚗 *Перепустка {status_label}*\n"
             f"Авто: `{vehicle_pass.car_number}`\n\n"
             f"_{_site_name()}_"
         )

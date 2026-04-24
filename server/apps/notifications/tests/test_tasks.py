@@ -33,11 +33,13 @@ from apps.notifications.bot_resolver import TELEGRAM_FEATURE_FLAG
 from apps.notifications.models import OrganizationBot, TelegramProfile
 from apps.notifications.tasks import (
     _org_of_issue,
+    _site_name,
     notify_building_tenants_announcement,
     notify_dispatchers_new_issue,
     notify_tenant_issue_status_changed,
     notify_tenant_pass_status,
     notify_worker_assigned,
+    send_telegram_broadcast,
     send_telegram_message,
 )
 from apps.organizations.models import Organization, OrganizationType
@@ -384,7 +386,13 @@ class TestNotifyWorkerAssigned:
 class TestAnnouncementCrossTenantRegression:
     """The pre-PR-14 code sent announcements to EVERY tenant on the
     platform. These tests lock in the fix: a building's announcement
-    only ever reaches its own org's tenants."""
+    only ever reaches its own org's tenants.
+
+    Fan-out now goes through one ``send_telegram_broadcast`` task that
+    receives all eligible chat_ids at once. Tests that check *isolation*
+    mock ``send_telegram_broadcast.delay``; tests that check the
+    *broadcast internals* mock ``send_telegram_message.delay``.
+    """
 
     def test_does_not_leak_to_tenants_in_other_orgs(
         self, org_a, org_b, bot_factory,
@@ -401,7 +409,7 @@ class TestAnnouncementCrossTenantRegression:
             user=tenant_b, organization=org_b, chat_id=202,
             is_active=True, notify_announcements=True,
         )
-        bot_factory(org_a, bot_username="AlphaBot")
+        bot_a = bot_factory(org_a, bot_username="AlphaBot")
         bot_factory(org_b, bot_username="BetaBot")
 
         building_a = Building.objects.create(
@@ -412,12 +420,14 @@ class TestAnnouncementCrossTenantRegression:
         )
 
         with patch(
-            "apps.notifications.tasks.send_telegram_message.delay",
+            "apps.notifications.tasks.send_telegram_broadcast.delay",
         ) as mock_delay:
             notify_building_tenants_announcement(str(announcement.pk))
+            # One broadcast dispatched with only org_a's tenant.
             assert mock_delay.call_count == 1
-            # Only org_a's tenant was addressed.
-            assert mock_delay.call_args.args[1] == 101
+            _bot_id, chat_ids, _text = mock_delay.call_args.args
+            assert _bot_id == str(bot_a.id)
+            assert chat_ids == [101]
 
     def test_uses_target_orgs_bot_not_another(self, org_a, org_b, bot_factory):
         """Even if another org happens to have a bot, the announcement
@@ -440,10 +450,11 @@ class TestAnnouncementCrossTenantRegression:
         )
 
         with patch(
-            "apps.notifications.tasks.send_telegram_message.delay",
+            "apps.notifications.tasks.send_telegram_broadcast.delay",
         ) as mock_delay:
             notify_building_tenants_announcement(str(announcement.pk))
-            assert mock_delay.call_args.args[0] == str(bot_a.id)
+            bot_id_used = mock_delay.call_args.args[0]
+            assert bot_id_used == str(bot_a.id)
 
     def test_noop_when_target_org_has_no_bot(self, org_a, org_b, bot_factory):
         """If the announcement's org has no bot configured, nothing is
@@ -464,7 +475,7 @@ class TestAnnouncementCrossTenantRegression:
         )
 
         with patch(
-            "apps.notifications.tasks.send_telegram_message.delay",
+            "apps.notifications.tasks.send_telegram_broadcast.delay",
         ) as mock_delay:
             notify_building_tenants_announcement(str(announcement.pk))
             mock_delay.assert_not_called()
@@ -486,10 +497,28 @@ class TestAnnouncementCrossTenantRegression:
         )
 
         with patch(
-            "apps.notifications.tasks.send_telegram_message.delay",
+            "apps.notifications.tasks.send_telegram_broadcast.delay",
         ) as mock_delay:
             notify_building_tenants_announcement(str(announcement.pk))
             mock_delay.assert_not_called()
+
+    def test_send_telegram_broadcast_fans_out_to_send_telegram_message(
+        self, org_a, bot_factory,
+    ):
+        """``send_telegram_broadcast`` must enqueue one
+        ``send_telegram_message`` per chat_id."""
+        bot = bot_factory(org_a)
+        chat_ids = [111, 222, 333]
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_message.delay",
+        ) as mock_send:
+            send_telegram_broadcast(str(bot.id), chat_ids, "hello")
+            assert mock_send.call_count == 3
+            addressed = {call.args[1] for call in mock_send.call_args_list}
+            assert addressed == {111, 222, 333}
+            for call in mock_send.call_args_list:
+                assert call.args[0] == str(bot.id)
 
 
 # ── notify_tenant_pass_status ──────────────────────────────────────────────
@@ -531,3 +560,231 @@ class TestNotifyTenantPassStatus:
         ) as mock_delay:
             notify_tenant_pass_status(str(vp.pk), "closed")
             mock_delay.assert_not_called()
+
+
+# ── _site_name() fallback (БАГ 1) ─────────────────────────────────────────
+
+
+class TestSiteName:
+    """Verify the platform-name helper returns the correct fallback.
+
+    BUG 1: Before the fix, _site_name() returned "EstateOS" when
+    SITE_NAME was unset. After the fix it must return "ApartmentOS".
+    """
+
+    def test_fallback_returns_apartmentos_when_setting_absent(self, settings):
+        """Deleting the setting entirely must yield the new default."""
+        if hasattr(settings, "SITE_NAME"):
+            delattr(settings, "SITE_NAME")
+        assert _site_name() == "ApartmentOS"
+
+    def test_returns_custom_value_when_setting_is_present(self, settings):
+        """An explicitly configured SITE_NAME must be honoured as-is."""
+        settings.SITE_NAME = "МійЖК"
+        assert _site_name() == "МійЖК"
+
+    def test_default_is_not_estateos(self, settings):
+        """Regression: the old buggy default must never appear again."""
+        if hasattr(settings, "SITE_NAME"):
+            delattr(settings, "SITE_NAME")
+        assert _site_name() != "EstateOS"
+
+
+# ── notify_tenant_pass_status — status label mapping (БАГ 2) ──────────────
+
+
+@pytest.mark.django_db
+class TestNotifyTenantPassStatusLabels:
+    """Verify that every status value produces the correct Ukrainian label
+    in the notification text, and that unknown statuses don't raise KeyError.
+
+    BUG 2: Before the fix, the dict lookup was unguarded and would raise
+    KeyError for any status not explicitly listed. The fix uses .get() with
+    a fallback "оновлена: <status>".
+    """
+
+    def _create_vp_and_profile(self, org, bot):
+        """Helper — creates a tenant with a linked Telegram profile and pass."""
+        tenant = _mk_user("tp_label", "tp_label@demo.com")
+        TelegramProfile.objects.create(
+            user=tenant, organization=org, chat_id=700,
+            is_active=True, notify_passes=True,
+        )
+        vp = VehiclePass.objects.create(
+            tenant=tenant, organization=org,
+            car_number="BB5678CC", visit_date=date.today(),
+        )
+        return vp
+
+    def test_closed_status_text_contains_зафіксовано(self, org_a, bot_factory):
+        """'closed' must produce text that includes 'зафіксовано', not 'підтверджена'."""
+        bot = bot_factory(org_a)
+        vp = self._create_vp_and_profile(org_a, bot)
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_message.delay",
+        ) as mock_delay:
+            notify_tenant_pass_status(str(vp.pk), "closed")
+            mock_delay.assert_called_once()
+            text = mock_delay.call_args.args[2]
+            assert "зафіксовано" in text
+            # Ensure the old wrong label is absent.
+            assert "підтверджена" not in text
+
+    def test_pending_status_text_contains_очікує(self, org_a, bot_factory):
+        """'pending' must produce text that includes 'очікує'."""
+        bot = bot_factory(org_a)
+        vp = self._create_vp_and_profile(org_a, bot)
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_message.delay",
+        ) as mock_delay:
+            notify_tenant_pass_status(str(vp.pk), "pending")
+            mock_delay.assert_called_once()
+            text = mock_delay.call_args.args[2]
+            assert "очікує" in text
+
+    def test_unknown_status_uses_fallback_without_key_error(
+        self, org_a, bot_factory,
+    ):
+        """An unexpected status string must never raise KeyError — it must
+        produce the generic 'оновлена: <status>' fallback label."""
+        bot = bot_factory(org_a)
+        vp = self._create_vp_and_profile(org_a, bot)
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_message.delay",
+        ) as mock_delay:
+            # Must not raise.
+            notify_tenant_pass_status(str(vp.pk), "unknown_status")
+            mock_delay.assert_called_once()
+            text = mock_delay.call_args.args[2]
+            assert "оновлена: unknown_status" in text
+
+
+# ── send_telegram_broadcast (БАГ 3) ───────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestSendTelegramBroadcast:
+    """Verify the fan-out task that replaced the per-recipient loop.
+
+    BUG 3: Before the fix, notify_building_tenants_announcement called
+    send_telegram_message.delay in a loop — one Redis task per tenant.
+    The fix introduces send_telegram_broadcast which chunks the list to
+    keep queue spikes manageable.
+    """
+
+    def test_60_chat_ids_produces_exactly_60_send_calls(
+        self, org_a, bot_factory,
+    ):
+        """60 recipients → exactly 60 send_telegram_message.delay calls.
+
+        With BROADCAST_CHUNK_SIZE=25 the internal loop runs 3 iterations
+        (25 + 25 + 10), but each individual chat_id still triggers exactly
+        one send call — the chunking is an implementation detail that must
+        not drop or duplicate recipients.
+        """
+        bot = bot_factory(org_a)
+        chat_ids = list(range(1, 61))  # 60 unique chat_ids
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_message.delay",
+        ) as mock_send:
+            send_telegram_broadcast(str(bot.id), chat_ids, "hello 60")
+            assert mock_send.call_count == 60
+            addressed = {call.args[1] for call in mock_send.call_args_list}
+            assert addressed == set(chat_ids)
+
+    def test_empty_list_produces_zero_calls(self, org_a, bot_factory):
+        """An empty chat_ids list must be a silent no-op — no tasks, no errors."""
+        bot = bot_factory(org_a)
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_message.delay",
+        ) as mock_send:
+            send_telegram_broadcast(str(bot.id), [], "nobody home")
+            mock_send.assert_not_called()
+
+    def test_single_chat_id_uses_correct_bot_id(self, org_a, bot_factory):
+        """A broadcast to a single recipient must pass the correct bot_id."""
+        bot = bot_factory(org_a)
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_message.delay",
+        ) as mock_send:
+            send_telegram_broadcast(str(bot.id), [999], "one recipient")
+            mock_send.assert_called_once()
+            bot_id_used, chat_id_used, text_used = mock_send.call_args.args
+            assert bot_id_used == str(bot.id)
+            assert chat_id_used == 999
+            assert "one recipient" in text_used
+
+
+@pytest.mark.django_db
+class TestAnnouncementUsesBroadcastTask:
+    """Verify that notify_building_tenants_announcement dispatches a
+    single send_telegram_broadcast.delay call — not a per-recipient loop.
+
+    This is the observable guarantee of BUG 3's fix: no matter how many
+    tenants an org has, the announcement dispatcher enqueues exactly one
+    broadcast task and lets that task handle chunking internally.
+    """
+
+    def test_dispatches_single_broadcast_delay_not_per_recipient_loop(
+        self, org_a, bot_factory,
+    ):
+        """3 tenants → send_telegram_broadcast.delay called once (not 3 times)."""
+        for i in range(3):
+            u = _mk_user(f"bt{i}", f"bt{i}@demo.com", occupation="tenant")
+            TelegramProfile.objects.create(
+                user=u, organization=org_a, chat_id=2000 + i,
+                is_active=True, notify_announcements=True,
+            )
+        bot = bot_factory(org_a)
+        building = Building.objects.create(
+            name="Broadcast Дім", address="вул. Нова 5", organization=org_a,
+        )
+        announcement = Announcement.objects.create(
+            building=building, title="Новини ЖК", body="—",
+        )
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_broadcast.delay",
+        ) as mock_broadcast:
+            notify_building_tenants_announcement(str(announcement.pk))
+            # Exactly ONE broadcast task dispatched, regardless of tenant count.
+            mock_broadcast.assert_called_once()
+            bot_id_used, chat_ids_used, text_used = mock_broadcast.call_args.args
+            assert bot_id_used == str(bot.id)
+            assert set(chat_ids_used) == {2000, 2001, 2002}
+            assert "Новини ЖК" in text_used
+
+    def test_broadcast_carries_all_chat_ids_in_single_call(
+        self, org_a, bot_factory,
+    ):
+        """All eligible tenant chat_ids must be passed to the single
+        broadcast call — none dropped, none duplicated."""
+        expected_ids = set()
+        for i in range(5):
+            u = _mk_user(f"bc{i}", f"bc{i}@demo.com", occupation="tenant")
+            TelegramProfile.objects.create(
+                user=u, organization=org_a, chat_id=3000 + i,
+                is_active=True, notify_announcements=True,
+            )
+            expected_ids.add(3000 + i)
+        bot_factory(org_a)
+        building = Building.objects.create(
+            name="Broadcast Дім 2", address="вул. Нова 6", organization=org_a,
+        )
+        announcement = Announcement.objects.create(
+            building=building, title="Тест broadcast ids", body="—",
+        )
+
+        with patch(
+            "apps.notifications.tasks.send_telegram_broadcast.delay",
+        ) as mock_broadcast:
+            notify_building_tenants_announcement(str(announcement.pk))
+            mock_broadcast.assert_called_once()
+            _, chat_ids_used, _ = mock_broadcast.call_args.args
+            assert set(chat_ids_used) == expected_ids
