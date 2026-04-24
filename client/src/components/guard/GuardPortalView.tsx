@@ -3,9 +3,7 @@
 import Spinner from "@/components/shared/Spinner";
 import VehiclePassCard from "@/components/cards/VehiclePassCard";
 import { useGetAllPassesQuery } from "@/lib/redux/features/passes/passApiSlice";
-import { useGetAllIssuesQuery } from "@/lib/redux/features/issues/issueApiSlice";
-import { useGetTenantAnnouncementsQuery } from "@/lib/redux/features/posts/postApiSlice";
-import { ShieldIcon, AlertTriangle, ClipboardList, Megaphone } from "lucide-react";
+import { ShieldIcon, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 
 export default function GuardPortalView() {
@@ -21,109 +19,13 @@ export default function GuardPortalView() {
 		{ skip: !selectedDate },
 	);
 
-	const {
-		data: issuesData,
-		isLoading: issuesLoading,
-	} = useGetAllIssuesQuery();
-
-	const {
-		data: announcementsData,
-		isLoading: announcementsLoading,
-	} = useGetTenantAnnouncementsQuery();
-
 	const passes = data?.results ?? [];
-	// GenericJSONRenderer wraps: { status_code, issues: { count, results: [...] } }
-	const issues = (issuesData as any)?.issues?.results
-		?? (issuesData as any)?.issues
-		?? [];
-	const announcements = Array.isArray(announcementsData)
-		? announcementsData
-		: (announcementsData as any)?.results ?? [];
 
 	return (
 		<div className="max-w-4xl mx-auto">
 			<div className="flex items-center gap-3 mb-6">
 				<ShieldIcon className="size-8 text-pumpkin" />
 				<h1 className="h2-bold dark:text-babyPowder">Портал охорони</h1>
-			</div>
-
-			{/* Announcements Panel */}
-			<div className="bg-lightGrey dark:bg-deepBlueGrey rounded-xl p-4 mb-6">
-				<div className="flex items-center gap-2 mb-3">
-					<Megaphone className="size-5 text-blue-500" />
-					<h2 className="text-lg font-semibold dark:text-babyPowder">Оголошення ЖК</h2>
-				</div>
-				{announcementsLoading ? (
-					<div className="flex justify-center py-4">
-						<Spinner size="sm" />
-					</div>
-				) : announcements.length === 0 ? (
-					<p className="text-sm text-gray-500 dark:text-gray-400">Оголошень немає.</p>
-				) : (
-					<div className="space-y-2">
-						{announcements.slice(0, 5).map((ann: any) => (
-							<div
-								key={ann.id}
-								className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
-							>
-								<div className="flex items-start justify-between">
-									<div>
-										<h3 className="font-medium dark:text-babyPowder text-sm">{ann.title}</h3>
-										{ann.building_name && (
-											<span className="text-xs text-gray-500 dark:text-gray-400">
-												{ann.building_name}
-											</span>
-										)}
-									</div>
-									<span className="text-xs text-gray-400 whitespace-nowrap ml-2">
-										{new Date(ann.created_at).toLocaleDateString("uk-UA")}
-									</span>
-								</div>
-								{ann.body && (
-									<p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
-										{ann.body}
-									</p>
-								)}
-							</div>
-						))}
-					</div>
-				)}
-			</div>
-
-			{/* Recent Issues Panel */}
-			<div className="bg-lightGrey dark:bg-deepBlueGrey rounded-xl p-4 mb-6">
-				<div className="flex items-center gap-2 mb-3">
-					<ClipboardList className="size-5 text-amber-500" />
-					<h2 className="text-lg font-semibold dark:text-babyPowder">Останні заявки</h2>
-				</div>
-				{issuesLoading ? (
-					<div className="flex justify-center py-4">
-						<Spinner size="sm" />
-					</div>
-				) : issues.length === 0 ? (
-					<p className="text-sm text-gray-500 dark:text-gray-400">Заявок немає.</p>
-				) : (
-					<div className="space-y-2">
-						{issues.slice(0, 5).map((issue: any) => (
-							<div
-								key={issue.id}
-								className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
-							>
-								<div className="flex items-start justify-between">
-									<div>
-										<h3 className="font-medium dark:text-babyPowder text-sm">{issue.title}</h3>
-										<span className="text-xs text-gray-500 dark:text-gray-400">
-											{issue.reported_by_username} • {issue.status}
-										</span>
-									</div>
-									<span className="text-xs text-gray-400 whitespace-nowrap ml-2">
-										{new Date(issue.created_at).toLocaleDateString("uk-UA")}
-									</span>
-								</div>
-							</div>
-						))}
-					</div>
-				)}
 			</div>
 
 			{/* Passes Section */}

@@ -49,7 +49,7 @@ export default function UpdateIssueForm({ params }: UpdateParamsProps) {
 					"Заявку оновлено. Мешканець отримає підтвердження електронною поштою",
 				);
 				reset();
-				router.push("/profile");
+				router.push("/welcome");
 			} catch (error) {
 				const errorMessage = extractErrorMessage(error);
 				toast.error(errorMessage || "An error occurred");

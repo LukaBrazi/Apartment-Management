@@ -23,8 +23,11 @@ export const passApiSlice = baseApiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["VehiclePass"],
 		}),
-		getMyPasses: builder.query<VehiclePassesResponse, void>({
-			query: () => "/passes/my/",
+		getMyPasses: builder.query<VehiclePassesResponse, { page?: number } | void>({
+			query: (params) => ({
+				url: "/passes/my/",
+				params: params ? { page: (params as { page?: number }).page } : undefined,
+			}),
 			providesTags: ["VehiclePass"],
 		}),
 		getAllPasses: builder.query<VehiclePassesResponse, PassListParams>({

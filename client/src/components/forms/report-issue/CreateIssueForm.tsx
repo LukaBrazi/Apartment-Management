@@ -84,7 +84,7 @@ export default function CreateIssueForm() {
 			reset();
 			setSelectedBuildingId(null);
 			setNotBuildingRelated(false);
-			router.push("/profile");
+			router.push("/welcome");
 		} catch (error) {
 			const errorMessage = extractErrorMessage(error);
 			toast.error(errorMessage || "Сталася помилка. Спробуйте ще раз.");

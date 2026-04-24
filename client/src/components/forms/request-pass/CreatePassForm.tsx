@@ -31,7 +31,7 @@ export default function CreatePassForm() {
 			await createPass(values).unwrap();
 			toast.success("Перепустку успішно замовлено.");
 			reset();
-			router.push("/profile");
+			router.push("/welcome");
 		} catch (error) {
 			const msg = extractErrorMessage(error);
 			toast.error(msg || "An error occurred");

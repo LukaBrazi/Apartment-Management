@@ -95,7 +95,7 @@ export default function PassesMiniPanel() {
 			{/* Footer */}
 			<div className="border-t border-[#E5E7EB] px-5 py-3 dark:border-[#2D3D4F]">
 				<Link
-					href="/request-pass"
+					href="/my-passes"
 					className="text-sm font-medium text-[#D6A14A] transition-opacity hover:opacity-75"
 				>
 					Всі перепустки →

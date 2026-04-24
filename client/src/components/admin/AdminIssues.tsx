@@ -20,6 +20,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { occupationOptions } from "@/constants";
+
+const OCCUPATION_LABELS: Record<string, string> = Object.fromEntries(
+	occupationOptions.map((o) => [o.value, o.label]),
+);
 
 const STATUS_OPTIONS = [
 	{ value: "reported", label: "Подано" },
@@ -79,7 +84,7 @@ export default function AdminIssues() {
 		{ value: "__none__", label: "Не призначено" },
 		...workers.map((w) => ({
 			value: w.username,
-			label: w.full_name || w.username,
+			label: `${w.full_name || w.username} (${OCCUPATION_LABELS[w.occupation] ?? w.occupation})`,
 		})),
 	];
 
