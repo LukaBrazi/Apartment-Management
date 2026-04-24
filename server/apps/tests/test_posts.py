@@ -183,6 +183,23 @@ def superuser_client(superuser):
     return c
 
 
+@pytest.fixture
+def tenant_org(tenant):
+    """Create an org and add tenant as a member — required so org-scoped
+    views (bookmark, upvote, downvote, reply) can find the post."""
+    org = make_org("tenant-home")
+    add_membership(tenant, org)
+    return org
+
+
+@pytest.fixture
+def other_tenant_org(other_tenant):
+    """Org for other_tenant — separate from tenant_org."""
+    org = make_org("other-home")
+    add_membership(other_tenant, org)
+    return org
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # PostListAPIView — strict org-scoping (IsAuthenticated)
 # ═════════════════════════════════════════════════════════════════════════════
@@ -416,15 +433,15 @@ class TestPostUpdate:
 
 @pytest.mark.django_db
 class TestBookmark:
-    def test_bookmark_first_call_returns_200(self, tenant_client, tenant):
-        post = make_post(tenant, title="B1")
+    def test_bookmark_first_call_returns_200(self, tenant_client, tenant, tenant_org):
+        post = make_post(tenant, title="B1", organization=tenant_org)
         resp = tenant_client.patch(_bookmark_url(post.slug))
         assert resp.status_code == 200
         assert resp.json()["message"] == "Post bookmarked successfully."
         assert post.bookmarked_by.filter(pk=tenant.pk).exists()
 
-    def test_bookmark_duplicate_returns_400(self, tenant_client, tenant):
-        post = make_post(tenant, title="B2")
+    def test_bookmark_duplicate_returns_400(self, tenant_client, tenant, tenant_org):
+        post = make_post(tenant, title="B2", organization=tenant_org)
         r1 = tenant_client.patch(_bookmark_url(post.slug))
         assert r1.status_code == 200
         r2 = tenant_client.patch(_bookmark_url(post.slug))
@@ -435,24 +452,24 @@ class TestBookmark:
         # Still only one M2M row
         assert post.bookmarked_by.filter(pk=tenant.pk).count() == 1
 
-    def test_unbookmark_without_existing_returns_400(self, tenant_client, tenant):
-        post = make_post(tenant, title="B3")
+    def test_unbookmark_without_existing_returns_400(self, tenant_client, tenant, tenant_org):
+        post = make_post(tenant, title="B3", organization=tenant_org)
         resp = tenant_client.patch(_unbookmark_url(post.slug))
         assert resp.status_code == 400
         assert resp.json()["message"] == "Post not bookmarked."
 
-    def test_bookmark_unbookmark_roundtrip(self, tenant_client, tenant):
-        post = make_post(tenant, title="B4")
+    def test_bookmark_unbookmark_roundtrip(self, tenant_client, tenant, tenant_org):
+        post = make_post(tenant, title="B4", organization=tenant_org)
         assert tenant_client.patch(_bookmark_url(post.slug)).status_code == 200
         assert tenant_client.patch(_unbookmark_url(post.slug)).status_code == 200
         post.refresh_from_db()
         assert not post.bookmarked_by.filter(pk=tenant.pk).exists()
 
     def test_bookmarked_list_shows_only_own_bookmarks(
-        self, tenant_client, tenant, other_tenant
+        self, tenant_client, tenant, tenant_org, other_tenant, other_tenant_org
     ):
-        mine = make_post(tenant, title="mine-bm")
-        theirs = make_post(other_tenant, title="theirs-bm")
+        mine = make_post(tenant, title="mine-bm", organization=tenant_org)
+        theirs = make_post(other_tenant, title="theirs-bm", organization=other_tenant_org)
         mine.bookmarked_by.add(tenant)
         theirs.bookmarked_by.add(other_tenant)  # not the caller
 
@@ -471,8 +488,8 @@ class TestBookmark:
 
 @pytest.mark.django_db
 class TestVoting:
-    def test_upvote_first_call_increments_by_one(self, tenant_client, tenant):
-        post = make_post(tenant, title="U1")
+    def test_upvote_first_call_increments_by_one(self, tenant_client, tenant, tenant_org):
+        post = make_post(tenant, title="U1", organization=tenant_org)
         assert post.upvotes == 0
 
         resp = tenant_client.patch(_upvote_url(post.id))
@@ -484,12 +501,12 @@ class TestVoting:
         )
         assert post.upvoted_by.filter(pk=tenant.pk).exists()
 
-    def test_upvote_repeat_is_idempotent(self, tenant_client, tenant):
+    def test_upvote_repeat_is_idempotent(self, tenant_client, tenant, tenant_org):
         """Second upvote from same user must NOT double-count.
 
         Serializer guards with `if user not in instance.upvoted_by.all()`.
         """
-        post = make_post(tenant, title="U2")
+        post = make_post(tenant, title="U2", organization=tenant_org)
         tenant_client.patch(_upvote_url(post.id))
         tenant_client.patch(_upvote_url(post.id))
         post.refresh_from_db()
@@ -498,8 +515,12 @@ class TestVoting:
         )
         assert post.upvoted_by.filter(pk=tenant.pk).count() == 1
 
-    def test_upvote_different_users_accumulate(self, tenant_client, other_tenant_client, tenant):
-        post = make_post(tenant, title="U3")
+    def test_upvote_different_users_accumulate(
+        self, tenant_client, other_tenant_client, tenant, tenant_org, other_tenant, other_tenant_org
+    ):
+        # Both users must be in the same org to see each other's posts.
+        add_membership(other_tenant, tenant_org)
+        post = make_post(tenant, title="U3", organization=tenant_org)
         tenant_client.patch(_upvote_url(post.id))
         other_tenant_client.patch(_upvote_url(post.id))
         post.refresh_from_db()
@@ -507,20 +528,20 @@ class TestVoting:
             f"Two distinct users upvoting must yield 2. Got {post.upvotes}."
         )
 
-    def test_upvote_missing_post_returns_404(self, tenant_client):
+    def test_upvote_missing_post_returns_404(self, tenant_client, tenant_org):
         from uuid import uuid4
 
         resp = tenant_client.patch(_upvote_url(uuid4()))
         assert resp.status_code == 404
 
-    def test_upvote_anonymous_401(self, api_client, tenant):
-        post = make_post(tenant, title="U4")
+    def test_upvote_anonymous_401(self, api_client, tenant, tenant_org):
+        post = make_post(tenant, title="U4", organization=tenant_org)
         resp = api_client.patch(_upvote_url(post.id))
         assert resp.status_code == 401
 
-    def test_downvote_removes_existing_upvote(self, tenant_client, tenant):
+    def test_downvote_removes_existing_upvote(self, tenant_client, tenant, tenant_org):
         """Downvote by an already-upvoted user: upvote -1, downvote +1."""
-        post = make_post(tenant, title="D1")
+        post = make_post(tenant, title="D1", organization=tenant_org)
         tenant_client.patch(_upvote_url(post.id))
         post.refresh_from_db()
         assert post.upvotes == 1
@@ -545,8 +566,8 @@ class TestVoting:
 
 @pytest.mark.django_db
 class TestReplies:
-    def test_reply_create_auto_sets_author_and_post(self, tenant_client, tenant):
-        post = make_post(tenant, title="R1")
+    def test_reply_create_auto_sets_author_and_post(self, tenant_client, tenant, tenant_org):
+        post = make_post(tenant, title="R1", organization=tenant_org)
         resp = tenant_client.post(
             _reply_create_url(post.id),
             {"body": "great read"},
@@ -565,8 +586,8 @@ class TestReplies:
         assert r.author_id == tenant.pk
         assert r.post_id == post.pk
 
-    def test_reply_create_anonymous_401(self, api_client, tenant):
-        post = make_post(tenant, title="R2")
+    def test_reply_create_anonymous_401(self, api_client, tenant, tenant_org):
+        post = make_post(tenant, title="R2", organization=tenant_org)
         resp = api_client.post(
             _reply_create_url(post.id),
             {"body": "anon"},
@@ -574,7 +595,7 @@ class TestReplies:
         )
         assert resp.status_code == 401
 
-    def test_reply_create_missing_post_returns_404(self, tenant_client):
+    def test_reply_create_missing_post_returns_404(self, tenant_client, tenant_org):
         from uuid import uuid4
 
         resp = tenant_client.post(
@@ -584,8 +605,8 @@ class TestReplies:
         )
         assert resp.status_code == 404
 
-    def test_reply_list_ordered_newest_first(self, tenant_client, tenant):
-        post = make_post(tenant, title="R3")
+    def test_reply_list_ordered_newest_first(self, tenant_client, tenant, tenant_org):
+        post = make_post(tenant, title="R3", organization=tenant_org)
         r1 = Reply.objects.create(post=post, author=tenant, body="first")
         r2 = Reply.objects.create(post=post, author=tenant, body="second")
         r3 = Reply.objects.create(post=post, author=tenant, body="third")
@@ -603,9 +624,9 @@ class TestReplies:
         # post's replies leaking in)
         assert {str(r1.id), str(r2.id), str(r3.id)} == {r["id"] for r in results}
 
-    def test_reply_list_scoped_by_post_id(self, tenant_client, tenant):
-        post_a = make_post(tenant, title="RA")
-        post_b = make_post(tenant, title="RB")
+    def test_reply_list_scoped_by_post_id(self, tenant_client, tenant, tenant_org):
+        post_a = make_post(tenant, title="RA", organization=tenant_org)
+        post_b = make_post(tenant, title="RB", organization=tenant_org)
         Reply.objects.create(post=post_a, author=tenant, body="in-A")
         Reply.objects.create(post=post_b, author=tenant, body="in-B")
 

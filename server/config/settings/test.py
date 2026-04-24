@@ -54,3 +54,11 @@ MEDIA_URL = "/media/"
 
 # Remove storage-related third-party apps not needed in tests
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in ("storages",)]
+
+# Disable throttling in tests — LocMemCache persists between test methods,
+# and login throttle (5/min) triggers 429 on repeated auth test calls.
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "DEFAULT_THROTTLE_CLASSES": [],
+    "DEFAULT_THROTTLE_RATES": {},
+}

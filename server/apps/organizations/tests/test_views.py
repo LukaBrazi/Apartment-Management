@@ -7,6 +7,64 @@ from apps.organizations.models import Organization, OrganizationMembership, OrgR
 User = get_user_model()
 
 
+# ── Security Tests ─────────────────────────────────────────────────────────────
+
+@pytest.mark.django_db
+class TestOrganizationSecurityFixes:
+    """Tests for security fixes: authentication and superuser-only org creation."""
+
+    def test_unauthenticated_get_orgs_returns_401(self):
+        """Unauthenticated GET /api/v1/orgs/ must return 401."""
+        client = APIClient()
+        response = client.get("/api/v1/orgs/", format="json")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_unauthenticated_get_memberships_returns_401(self):
+        """Unauthenticated GET /api/v1/org-memberships/ must return 401."""
+        client = APIClient()
+        response = client.get("/api/v1/org-memberships/", format="json")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_tenant_cannot_create_org_returns_403(self, resident_user):
+        """Tenant (non-superuser) POST /api/v1/orgs/ must return 403."""
+        client = APIClient()
+        client.force_authenticate(user=resident_user)
+
+        data = {
+            "name": "Tenant Org",
+            "slug": "tenant-org",
+            "type": OrganizationType.HOUSING_COMPLEX,
+        }
+        response = client.post("/api/v1/orgs/", data, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_director_user_cannot_create_org_returns_403(self, director_user):
+        """Director (non-superuser) POST /api/v1/orgs/ must return 403."""
+        client = APIClient()
+        client.force_authenticate(user=director_user)
+
+        data = {
+            "name": "Director Org",
+            "slug": "director-org",
+            "type": OrganizationType.HOUSING_COMPLEX,
+        }
+        response = client.post("/api/v1/orgs/", data, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_superuser_can_create_org_returns_201(self, superadmin):
+        """Superuser POST /api/v1/orgs/ must return 201."""
+        client = APIClient()
+        client.force_authenticate(user=superadmin)
+
+        data = {
+            "name": "Superuser Org",
+            "slug": "superuser-org",
+            "type": OrganizationType.HOUSING_COMPLEX,
+        }
+        response = client.post("/api/v1/orgs/", data, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+
+
 @pytest.mark.django_db
 class TestOrganizationViewSet:
     """Tests for Organization viewset"""

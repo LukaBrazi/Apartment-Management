@@ -109,15 +109,15 @@ class TestIssuePermissions:
         issues = data.get("my_issues", {}).get("results", [])
         assert len(issues) == 1
 
-    def test_detail_tenant_sees_own_issue(self, tenant_client):
+    def test_detail_tenant_sees_own_issue(self, tenant_client, org):
         client, user = tenant_client
-        issue = IssueFactory(reported_by=user)
+        issue = IssueFactory(reported_by=user, organization=org)
         resp = client.get(f"/api/v1/issues/{issue.id}/")
         assert resp.status_code == 200
 
-    def test_detail_tenant_cannot_see_others_issue(self, tenant_client):
+    def test_detail_tenant_cannot_see_others_issue(self, tenant_client, org):
         client, _ = tenant_client
-        issue = IssueFactory()
+        issue = IssueFactory(organization=org)  # same org, different user → 403
         resp = client.get(f"/api/v1/issues/{issue.id}/")
         assert resp.status_code == 403
 
