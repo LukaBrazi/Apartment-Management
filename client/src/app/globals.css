@@ -61,6 +61,16 @@
     --radius: 16px;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+
+    /* Telegram / indigo palette */
+    --indigo-900: #1E2761;
+    --indigo-200: #CADCFC;
+    --tg-blue: #229ED9;
+    --blue-500: #4A90D9;
+
+    /* Radii */
+    --radius-card: 16px;
+    --radius-btn: 12px;
   }
 
   .dark {

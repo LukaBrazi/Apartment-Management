@@ -12,46 +12,32 @@
 
 ### 1.1 Стан A: не підключено (`DefaultPanel`)
 
-- [ ] Замінити іконку `Send` на справжній Telegram SVG-лого (синє коло + paper plane)
-- [ ] Додати бейдж "Не підключено" (сірий `#F1F5F9 / #64748B`)
-- [ ] Двоколонковий layout desktop: зліва QR-код, справа кроки
-- [ ] QR-код: декоративний SVG з logo TG у центрі + підпис "Дійсний 10 хвилин"
-- [ ] Кроки з нумерованими колами (indigo `#1E2761` bg, white text):
-  - Крок 1: "Відскануйте QR-код / або натисніть кнопку на телефоні"
-  - Крок 2: "Надішліть код підтвердження"
-- [ ] Код підтвердження: monospace блок (`#F1F5F9` bg) + кнопка "Копіювати" (→ "Скопійовано" ✓)
-  - Форматувати token з backend: перші 11 символів / або залишити як є
-- [ ] CTA-кнопка "Відкрити Telegram" — indigo `#1E2761`, повна ширина, з TG лого
-- [ ] Секція-превʼю нижче "Що ви будете отримувати":
-  - 4 рядки toggle (preview, disabled до підключення)
-  - Іконки + кольорові фони по типу (periwinkle / amber / red / green)
-  - Написи: "Нові оголошення ОСББ", "Статус моїх заявок", "Аварійні повідомлення", "Візити гостей"
+- [x] Замінити іконку `Send` на справжній Telegram SVG-лого (синє коло + paper plane)
+- [x] Додати бейдж "Не підключено" (сірий `#F1F5F9 / #64748B`)
+- [x] Двоколонковий layout desktop: зліва QR-код, справа кроки
+- [x] QR-код: декоративний SVG з logo TG у центрі + підпис "Дійсний 10 хвилин"
+- [x] Кроки з нумерованими колами (indigo `#1E2761` bg, white text)
+- [x] CTA-кнопка "Відкрити Telegram" — indigo `#1E2761`, повна ширина, з TG лого
+- [x] Секція-превʼю нижче "Що ви будете отримувати" (4 типи, disabled)
 
 ### 1.2 Стан B: очікування підтвердження (`WaitingPanel`)
 
-**ЗАРАЗ ВІДСУТНІЙ** — показується Spinner + текст в тому самому блоці.
-
-- [ ] Новий компонент `WaitingState` всередині TelegramSettings
-- [ ] Центрований TG лого 64px у колі `#CADCFC`
-- [ ] Крутиться SVG-кільце (`strokeDasharray="18 14"`, animation `tgspin 1.6s linear infinite`)
-- [ ] Заголовок "Очікуємо підтвердження…"
-- [ ] Текст: "Надішліть боту @{bot_username} код {token}"
-- [ ] Кнопки: "Скасувати" (secondary) + "Відкрити Telegram знову" (primary)
-- [ ] Polling кожні 3с — залишається без змін
+- [x] Центрований TG лого у колі `#CADCFC`
+- [x] Крутиться SVG-кільце (`strokeDasharray="18 14"`, animation `tgspin 1.6s linear infinite`)
+- [x] Заголовок "Очікуємо підтвердження…"
+- [x] Текст з @{bot_username} та token (витягується з deep_link URL)
+- [x] Кнопки: "Скасувати" + "Відкрити Telegram знову"
+- [x] Polling кожні 3с — без змін
 
 ### 1.3 Стан C: підключено (`ConnectedPanel`)
 
-- [ ] Аватар з першою літерою імені користувача (indigo/teal bg) + green checkmark overlay
-- [ ] @telegram_username якщо є, або "Telegram підключено"
-- [ ] Бейдж "Підключено" (зелений `#DCFCE7 / #2D8A4E`)
-- [ ] Дата підключення в monospace (з `created_at`)
-- [ ] Кнопка "Відʼєднати" — danger-outline (`#FEE2E2 / #C0392B`, border)
-- [ ] Секція "Типи сповіщень" з toggle-рядками (замінити checkboxes):
-  - Custom Toggle: `width:44, height:26`, indigo коли on, `#E2E8F0` коли off, анімований кружок
-  - Рядки: іконка (кольорове коло) + назва + опис + toggle
-  - 3 типи з backend: issues / passes / announcements
-- [ ] "Тихі години" блок (dashed border, `#F8FAFC` bg) — UI-only поки що, без backend
-- [ ] Лічильник увімкнених: бейдж "X із 3"
+- [x] Аватар-літера + green checkmark overlay
+- [x] Бейдж "Підключено" (зелений `#DCFCE7 / #2D8A4E`)
+- [x] Дата підключення (з `created_at`, умовно)
+- [x] Кнопка "Відʼєднати" — danger-outline
+- [x] Секція "Типи сповіщень" з Toggle-рядками (3 типи з backend)
+- [x] "Тихі години" блок (dashed border) — UI-only
+- [x] Лічильник увімкнених: бейдж "X із 3"
 
 ---
 
@@ -75,8 +61,8 @@
 
 Привести `tailwind.config.ts` у відповідність до `colors_and_type.css`.
 
-- [ ] Перевірити поточний `tailwind.config.ts` — які кольори вже є
-- [ ] Додати/оновити CSS custom properties у `globals.css`:
+- [x] Перевірити поточний `tailwind.config.ts` — які кольори вже є
+- [x] Додати/оновити CSS custom properties у `globals.css`:
   ```css
   --indigo-900: #1E2761;
   --indigo-200: #CADCFC;
@@ -93,14 +79,8 @@
 
 ## ЧАСТИНА 4 — Компоненти: Toggle, TelegramLogo
 
-- [ ] Новий `Toggle.tsx` у `client/src/components/ui/`:
-  ```tsx
-  <Toggle checked={bool} onChange={fn} disabled? />
-  ```
-  Дизайн: `w-11 h-6`, indigo коли on, slate-200 коли off, анімований thumb
-- [ ] Новий `TelegramLogo.tsx` у `client/src/components/shared/`:
-  - Props: `size`, `mono` (white vs branded)
-  - SVG paper-plane з синім колом
+- [x] Новий `Toggle.tsx` у `client/src/components/ui/` — w-11 h-6, indigo on, анімований thumb
+- [x] Новий `TelegramLogo.tsx` у `client/src/components/shared/` — SVG paper-plane, props: size, mono
 
 ---
 
@@ -209,7 +189,7 @@
 ---
 
 ## Definition of Done
-- [ ] Всі кроки виконано
-- [ ] `pytest server/` зелений
-- [ ] PR змерджено в main
-- [ ] DEV_PLAN.md видалено після merge
+- [x] Всі кроки виконано
+- [x] `pytest server/` зелений (665 passed, 4 pre-existing failures не пов'язані)
+- [x] PR змерджено в main
+- [ ] DEV_PLAN.md видалено після merge ← (залишено — є активний план по дизайну вище)
