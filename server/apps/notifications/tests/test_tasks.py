@@ -417,6 +417,7 @@ class TestAnnouncementCrossTenantRegression:
         )
         announcement = Announcement.objects.create(
             building=building_a, title="Плановий ремонт ліфта", body="—",
+            notify_subscribers=True,
         )
 
         with patch(
@@ -447,6 +448,7 @@ class TestAnnouncementCrossTenantRegression:
         )
         announcement = Announcement.objects.create(
             building=building_a, title="т", body="—",
+            notify_subscribers=True,
         )
 
         with patch(
@@ -747,6 +749,7 @@ class TestAnnouncementUsesBroadcastTask:
         )
         announcement = Announcement.objects.create(
             building=building, title="Новини ЖК", body="—",
+            notify_subscribers=True,
         )
 
         with patch(
@@ -779,6 +782,7 @@ class TestAnnouncementUsesBroadcastTask:
         )
         announcement = Announcement.objects.create(
             building=building, title="Тест broadcast ids", body="—",
+            notify_subscribers=True,
         )
 
         with patch(

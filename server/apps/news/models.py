@@ -80,6 +80,9 @@ class News(TimeStampedModel):
     views_count = models.PositiveIntegerField(_("Views"), default=0)
     external_url = models.URLField(_("External URL"), blank=True)
 
+    def __str__(self) -> str:
+        return self.title
+
     class Meta:
         verbose_name = _("News")
         verbose_name_plural = _("News")
