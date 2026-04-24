@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 function ProfilePageContent() {
 	return (
 		<>
-			<div className="grid items-start gap-4 px-4 pb-4 md:gap-6 md:px-6">
+			<div className="flex flex-col gap-4 px-0 pb-4 md:gap-6">
 				<Header />
 				<ProfileTabs />
 			</div>

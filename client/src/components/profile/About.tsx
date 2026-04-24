@@ -135,7 +135,7 @@ function AboutContent() {
 			    left-aligned placement matching the legacy desktop layout. */}
 			<div className="flex cursor-pointer p-4">
 				<Link href="/profile/edit" className="w-full md:w-auto">
-					<Button className="tap h3-semibold electricIndigo-gradient w-full rounded-lg text-babyPowder md:w-64">
+					<Button className="w-full rounded-xl bg-[#1E2761] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1a2255] md:w-auto">
 						Оновити профіль
 					</Button>
 				</Link>

@@ -33,35 +33,45 @@ export default function ProfileTabs() {
 				    is handled by modern mobile browsers by default. Desktop
 				    keeps the space-x-4 flex layout, no scroll needed. */}
 				<div className="overflow-x-auto scrollbar-none">
-					<TabsList className="bg-baby_rich flex w-max gap-2 px-2 md:w-full md:space-x-4 md:gap-0 md:px-0">
+					<TabsList className="flex w-max gap-1 bg-[#F8FAFC] p-1 md:w-full dark:bg-[#1A2B3C]">
 						<TabsTrigger
 							value="about"
-							className="h3-semibold tab whitespace-nowrap"
+							className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
+								data-[state=active]:bg-[#1E2761] data-[state=active]:text-white data-[state=active]:shadow-sm
+								data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#475569] dark:data-[state=inactive]:text-[#8FA8B8]"
 						>
 							Про мене
 						</TabsTrigger>
 						<TabsTrigger
 							value="posts"
-							className="h3-semibold tab whitespace-nowrap"
+							className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
+								data-[state=active]:bg-[#1E2761] data-[state=active]:text-white data-[state=active]:shadow-sm
+								data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#475569] dark:data-[state=inactive]:text-[#8FA8B8]"
 						>
 							Публікації
 						</TabsTrigger>
 						<TabsTrigger
 							value="my-issues"
-							className="h3-semibold tab whitespace-nowrap"
+							className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
+								data-[state=active]:bg-[#1E2761] data-[state=active]:text-white data-[state=active]:shadow-sm
+								data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#475569] dark:data-[state=inactive]:text-[#8FA8B8]"
 						>
 							Мої заявки
 						</TabsTrigger>
 						<TabsTrigger
 							value="my-reports"
-							className="h3-semibold tab whitespace-nowrap"
+							className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
+								data-[state=active]:bg-[#1E2761] data-[state=active]:text-white data-[state=active]:shadow-sm
+								data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#475569] dark:data-[state=inactive]:text-[#8FA8B8]"
 						>
 							Мої скарги
 						</TabsTrigger>
 						{isAuthenticated && (
 							<TabsTrigger
 								value="notifications"
-								className="h3-semibold tab whitespace-nowrap"
+								className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
+									data-[state=active]:bg-[#1E2761] data-[state=active]:text-white data-[state=active]:shadow-sm
+									data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#475569] dark:data-[state=inactive]:text-[#8FA8B8]"
 							>
 								Сповіщення
 							</TabsTrigger>
@@ -69,7 +79,9 @@ export default function ProfileTabs() {
 						{!isTenant && (
 							<TabsTrigger
 								value="assigned-issues"
-								className="h3-semibold tab whitespace-nowrap"
+								className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
+									data-[state=active]:bg-[#1E2761] data-[state=active]:text-white data-[state=active]:shadow-sm
+									data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#475569] dark:data-[state=inactive]:text-[#8FA8B8]"
 							>
 								Призначені заявки
 							</TabsTrigger>
