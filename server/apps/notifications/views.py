@@ -262,20 +262,32 @@ class TelegramWebhookView(APIView):
     authentication_classes: list = []
 
     def post(self, request, org_slug: str):
-        try:
-            org = Organization.objects.get(slug=org_slug)
-        except Organization.DoesNotExist:
-            # Same response shape as the secret-mismatch branch — no
-            # "this org doesn't exist" vs "wrong secret" differential.
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        if org_slug == "default":
+            bot = (
+                OrganizationBot.objects
+                .filter(organization__isnull=True, is_default=True, is_active=True)
+                .first()
+            )
+            if bot is None:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            # Use a sentinel for logging — there is no org slug to reference.
+            _log_slug = "default"
+        else:
+            try:
+                org = Organization.objects.get(slug=org_slug)
+            except Organization.DoesNotExist:
+                # Same response shape as the secret-mismatch branch — no
+                # "this org doesn't exist" vs "wrong secret" differential.
+                return Response(status=status.HTTP_403_FORBIDDEN)
 
-        bot = (
-            OrganizationBot.objects
-            .filter(organization=org, is_primary=True, is_active=True)
-            .first()
-        )
-        if bot is None:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            bot = (
+                OrganizationBot.objects
+                .filter(organization=org, is_primary=True, is_active=True)
+                .first()
+            )
+            if bot is None:
+                return Response(status=status.HTTP_403_FORBIDDEN)
+            _log_slug = org_slug
 
         got_secret = request.headers.get(
             "X-Telegram-Bot-Api-Secret-Token", "",
@@ -285,7 +297,7 @@ class TelegramWebhookView(APIView):
             and hmac.compare_digest(bot.webhook_secret, got_secret)
         ):
             logger.warning(
-                "telegram webhook: bad secret for org=%s", org.slug,
+                "telegram webhook: bad secret for org=%s", _log_slug,
             )
             return Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -298,7 +310,7 @@ class TelegramWebhookView(APIView):
             # move on rather than sending a 500 that Telegram will
             # retry forever. The ops team gets the traceback.
             logger.exception(
-                "telegram webhook: handler crash (org=%s)", org.slug,
+                "telegram webhook: handler crash (org=%s)", _log_slug,
             )
             return Response(status=status.HTTP_200_OK)
 
@@ -321,7 +333,7 @@ class TelegramWebhookView(APIView):
                 except Exception:  # noqa: BLE001
                     logger.exception(
                         "telegram webhook: reply send failed "
-                        "(org=%s, chat_id=%s)", org.slug, chat_id,
+                        "(org=%s, chat_id=%s)", _log_slug, chat_id,
                     )
 
         return Response(status=status.HTTP_200_OK)

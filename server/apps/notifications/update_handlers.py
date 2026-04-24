@@ -46,6 +46,9 @@ MSG_STOP_NO_PROFILE = "Профіль не знайдено."
 MSG_STATUS_NOT_LINKED = (
     "Акаунт не підключено. Використайте /start з токеном."
 )
+MSG_DEFAULT_BOT_NO_ACTION = (
+    "Для управління сповіщеннями перейдіть в особистий кабінет на сайті."
+)
 
 
 @dataclass(frozen=True)
@@ -139,6 +142,10 @@ def handle_stop(bot, chat_id: int) -> HandlerResult:
     on chat_id alone. A user with bindings under two orgs gets to mute
     only the bot they messaged, not every ЖК at once.
     """
+    # Default bot has no org context — direct user to the web UI.
+    if bot.organization_id is None:
+        return HandlerResult(MSG_DEFAULT_BOT_NO_ACTION)
+
     from apps.notifications.models import TelegramProfile
 
     updated = TelegramProfile.objects.filter(
@@ -155,6 +162,10 @@ def handle_status(bot, chat_id: int) -> HandlerResult:
     Scoped to this bot's org so the answer is never about "some other
     ЖК I also happen to be in".
     """
+    # Default bot has no org context — direct user to the web UI.
+    if bot.organization_id is None:
+        return HandlerResult(MSG_DEFAULT_BOT_NO_ACTION)
+
     from apps.notifications.models import TelegramProfile
 
     profile = (

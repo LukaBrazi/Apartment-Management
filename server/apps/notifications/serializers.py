@@ -131,12 +131,8 @@ class OrganizationBotSerializer(serializers.ModelSerializer):
     )
     bot_token_masked = serializers.CharField(read_only=True)
     is_configured = serializers.BooleanField(read_only=True)
-    organization_slug = serializers.CharField(
-        source="organization.slug", read_only=True,
-    )
-    organization_name = serializers.CharField(
-        source="organization.name", read_only=True,
-    )
+    organization_slug = serializers.SerializerMethodField()
+    organization_name = serializers.SerializerMethodField()
     webhook_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -174,6 +170,12 @@ class OrganizationBotSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_organization_slug(self, obj: OrganizationBot) -> str | None:
+        return obj.organization.slug if obj.organization_id else None
+
+    def get_organization_name(self, obj: OrganizationBot) -> str | None:
+        return obj.organization.name if obj.organization_id else None
 
     def get_webhook_url(self, obj: OrganizationBot) -> str:
         from django.conf import settings
