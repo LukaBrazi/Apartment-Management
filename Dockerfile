@@ -16,11 +16,8 @@ COPY server/requirements/production.txt /app/requirements/production.txt
 COPY server/requirements/base.txt /app/requirements/base.txt
 RUN pip install --no-cache-dir -r requirements/production.txt
 
-# Copy server code
+# Copy server code (entrypoint.sh lives inside server/ so it lands at /app/entrypoint.sh)
 COPY server/ /app/
-
-# Copy entrypoint script
-COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # NOTE: collectstatic is intentionally NOT run here.
