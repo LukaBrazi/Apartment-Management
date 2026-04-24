@@ -14,19 +14,19 @@ class TestOrganizationSecurityFixes:
     """Tests for security fixes: authentication and superuser-only org creation."""
 
     def test_unauthenticated_get_orgs_returns_401(self):
-        """Unauthenticated GET /api/v1/orgs/ must return 401."""
+        """Unauthenticated GET /api/v1/orgs/organizations/ must return 401."""
         client = APIClient()
-        response = client.get("/api/v1/orgs/", format="json")
+        response = client.get("/api/v1/orgs/organizations/", format="json")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_unauthenticated_get_memberships_returns_401(self):
-        """Unauthenticated GET /api/v1/org-memberships/ must return 401."""
+        """Unauthenticated GET /api/v1/orgs/memberships/ must return 401."""
         client = APIClient()
-        response = client.get("/api/v1/org-memberships/", format="json")
+        response = client.get("/api/v1/orgs/memberships/", format="json")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_tenant_cannot_create_org_returns_403(self, resident_user):
-        """Tenant (non-superuser) POST /api/v1/orgs/ must return 403."""
+        """Tenant (non-superuser) POST /api/v1/orgs/organizations/ must return 403."""
         client = APIClient()
         client.force_authenticate(user=resident_user)
 
@@ -35,11 +35,11 @@ class TestOrganizationSecurityFixes:
             "slug": "tenant-org",
             "type": OrganizationType.HOUSING_COMPLEX,
         }
-        response = client.post("/api/v1/orgs/", data, format="json")
+        response = client.post("/api/v1/orgs/organizations/", data, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_director_user_cannot_create_org_returns_403(self, director_user):
-        """Director (non-superuser) POST /api/v1/orgs/ must return 403."""
+        """Director (non-superuser) POST /api/v1/orgs/organizations/ must return 403."""
         client = APIClient()
         client.force_authenticate(user=director_user)
 
@@ -48,11 +48,11 @@ class TestOrganizationSecurityFixes:
             "slug": "director-org",
             "type": OrganizationType.HOUSING_COMPLEX,
         }
-        response = client.post("/api/v1/orgs/", data, format="json")
+        response = client.post("/api/v1/orgs/organizations/", data, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_superuser_can_create_org_returns_201(self, superadmin):
-        """Superuser POST /api/v1/orgs/ must return 201."""
+        """Superuser POST /api/v1/orgs/organizations/ must return 201."""
         client = APIClient()
         client.force_authenticate(user=superadmin)
 
@@ -61,7 +61,7 @@ class TestOrganizationSecurityFixes:
             "slug": "superuser-org",
             "type": OrganizationType.HOUSING_COMPLEX,
         }
-        response = client.post("/api/v1/orgs/", data, format="json")
+        response = client.post("/api/v1/orgs/organizations/", data, format="json")
         assert response.status_code == status.HTTP_201_CREATED
 
 
