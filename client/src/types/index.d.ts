@@ -689,3 +689,33 @@ export interface OrganizationSummary {
 	slug: string;
 	is_active: boolean;
 }
+
+// ── PR-14: Telegram Profile (user-side linking UI) ────────────────────────
+
+export interface TelegramStatus {
+  connected: boolean;
+  feature_enabled: boolean;
+  bot_configured: boolean;
+  // Present only when connected=true:
+  chat_id?: number;
+  is_active?: boolean;
+  notify_issues?: boolean;
+  notify_passes?: boolean;
+  notify_announcements?: boolean;
+  organization_slug?: string;
+  created_at?: string;
+}
+
+export interface TelegramGenerateTokenResponse {
+  token: string;
+  expires_at: string;
+  bot_username: string;
+  deep_link: string;
+  organization_slug: string;
+}
+
+export interface TelegramSettingsData {
+  notify_issues?: boolean;
+  notify_passes?: boolean;
+  notify_announcements?: boolean;
+}

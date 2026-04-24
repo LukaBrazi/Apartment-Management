@@ -8,6 +8,7 @@ import Posts from "@/components/profile/Posts";
 import Issues from "@/components/profile/Issues";
 import AssignedIssues from "@/components/profile/AssignedIssues";
 import Reports from "@/components/profile/Reports";
+import TelegramSettings from "@/components/profile/TelegramSettings";
 import { useSearchParams } from "next/navigation";
 
 export default function ProfileTabs() {
@@ -57,6 +58,14 @@ export default function ProfileTabs() {
 						>
 							Мої скарги
 						</TabsTrigger>
+						{isTenant && (
+							<TabsTrigger
+								value="notifications"
+								className="h3-semibold tab whitespace-nowrap"
+							>
+								Сповіщення
+							</TabsTrigger>
+						)}
 						{!isTenant && (
 							<TabsTrigger
 								value="assigned-issues"
@@ -72,6 +81,7 @@ export default function ProfileTabs() {
 				<Posts />
 				<Issues />
 				<Reports />
+				{isTenant && <TelegramSettings />}
 				{!isTenant && <AssignedIssues />}
 			</Tabs>
 		</div>

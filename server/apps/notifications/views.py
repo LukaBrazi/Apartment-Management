@@ -29,6 +29,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.notifications.bot_resolver import (
+    TELEGRAM_FEATURE_FLAG,
     get_bot_for_org,
     resolve_org_from_user_and_context,
 )
@@ -180,20 +181,25 @@ class TelegramStatusView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = TelegramStatusSerializer
 
-    def get_object(self):
-        org = _resolve_org_from_request(self.request)
-        return (
-            TelegramProfile.objects.filter(
-                user=self.request.user, organization=org,
-            ).first()
-        )
-
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance is None:
-            return Response({"connected": False}, status=status.HTTP_200_OK)
-        serializer = self.get_serializer(instance)
-        return Response({"connected": True, **serializer.data})
+        org = _resolve_org_from_request(request)
+        feature_enabled = org.is_feature_enabled(TELEGRAM_FEATURE_FLAG)
+        bot = get_bot_for_org(org)
+        bot_configured = bot is not None
+
+        profile = TelegramProfile.objects.filter(
+            user=request.user, organization=org,
+        ).first()
+
+        base = {
+            "feature_enabled": feature_enabled,
+            "bot_configured": bot_configured,
+        }
+
+        if profile is None:
+            return Response({"connected": False, **base}, status=status.HTTP_200_OK)
+        serializer = self.get_serializer(profile)
+        return Response({"connected": True, **base, **serializer.data})
 
 
 class TelegramDisconnectView(APIView):
