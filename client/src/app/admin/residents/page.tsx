@@ -50,6 +50,7 @@ const editSchema = z.object({
 		"electrician",
 		"hvac",
 		"tenant",
+		"owner",
 		"guard",
 	]),
 	bio: z.string().optional(),
