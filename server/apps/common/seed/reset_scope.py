@@ -96,6 +96,7 @@ class ResetReport:
     non_demo_buildings_preserved: int = 0
     demo_issues_matched: int = 0
     demo_posts_matched: int = 0
+    demo_news_matched: int = 0
     demo_passes_matched: int = 0
     demo_ratings_matched: int = 0
     # PR-13: the seed now creates an Organization — tracked separately
@@ -138,6 +139,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
     # command loader.
     from apps.apartments.models import Building
     from apps.issues.models import Issue
+    from apps.news.models import News
     from apps.organizations.models import Organization
     from apps.passes.models import VehiclePass
     from apps.posts.models import Post
@@ -225,6 +227,9 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         reported_by_id__in=user_ids,
     ) | Issue.objects.filter(assigned_to_id__in=user_ids)
     demo_posts_qs = Post.objects.filter(author_id__in=user_ids)
+    # News is scoped by organisation — the seed always sets organization=demo_org
+    # so a single org-filter is the cleanest way to identify demo articles.
+    demo_news_qs = News.objects.filter(organization__in=demo_orgs_qs)
     demo_passes_qs = VehiclePass.objects.filter(
         tenant_id__in=user_ids,
     ) | VehiclePass.objects.filter(closed_by_id__in=user_ids)
@@ -236,16 +241,17 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
 
     matched_issues = demo_issues_qs.count()
     matched_posts = demo_posts_qs.count()
+    matched_news = demo_news_qs.count()
     matched_passes = demo_passes_qs.count()
     matched_ratings = demo_ratings_qs.count()
 
     logger.info(
         "reset_demo_scope: dry_run=%s  demo_users=%d  demo_buildings=%d  "
-        "demo_orgs=%d  demo_issues=%d  demo_posts=%d  demo_passes=%d  "
-        "demo_ratings=%d  pre_superusers=%d  pre_non_demo_users=%d  "
-        "pre_non_demo_buildings=%d  pre_non_demo_orgs=%d",
+        "demo_orgs=%d  demo_issues=%d  demo_posts=%d  demo_news=%d  "
+        "demo_passes=%d  demo_ratings=%d  pre_superusers=%d  "
+        "pre_non_demo_users=%d  pre_non_demo_buildings=%d  pre_non_demo_orgs=%d",
         dry_run, matched_users, matched_buildings, matched_orgs,
-        matched_issues, matched_posts, matched_passes, matched_ratings,
+        matched_issues, matched_posts, matched_news, matched_passes, matched_ratings,
         pre_superusers, pre_non_demo_users, pre_non_demo_buildings,
         pre_non_demo_orgs,
     )
@@ -258,6 +264,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
             demo_organizations_matched=matched_orgs,
             demo_issues_matched=matched_issues,
             demo_posts_matched=matched_posts,
+            demo_news_matched=matched_news,
             demo_passes_matched=matched_passes,
             demo_ratings_matched=matched_ratings,
             superusers_preserved=pre_superusers,
@@ -275,6 +282,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         # safe because we've already pinned the pk set above.
         demo_ratings_qs.delete()
         demo_passes_qs.delete()
+        demo_news_qs.delete()         # NewsRead rows cascade via News FK
         demo_posts_qs.delete()        # Replies cascade via Post.replies → Post
         demo_issues_qs.delete()       # Issue has its own table; no children
 
@@ -343,6 +351,7 @@ def reset_demo_scope(*, dry_run: bool = False) -> ResetReport:
         demo_organizations_matched=matched_orgs,
         demo_issues_matched=matched_issues,
         demo_posts_matched=matched_posts,
+        demo_news_matched=matched_news,
         demo_passes_matched=matched_passes,
         demo_ratings_matched=matched_ratings,
         superusers_preserved=pre_superusers,

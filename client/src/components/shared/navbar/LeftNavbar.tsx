@@ -29,8 +29,8 @@ export default function LeftNavbar() {
 	const newsUnreadCount = newsData?.unread_count ?? 0;
 
 	const getBadgeCount = (path: string): number => {
-		if (path === "/profile?tab=my-issues" || path === "/report-issue") return openIssuesCount;
-		if (path === "/request-pass" || path === "/my-passes") return pendingPassesCount;
+		if (path === "/profile?tab=my-issues") return openIssuesCount;
+		if (path === "/my-passes") return pendingPassesCount;
 		if (path === "/news") return newsUnreadCount;
 		return 0;
 	};

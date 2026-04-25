@@ -25,6 +25,11 @@ def update_user_report_count_and_reputation(
 
     # If the report was created
     if created:
+        # reported_user is nullable — reports without a linked user
+        # (free-text name only) still need to be saved successfully.
+        if instance.reported_user is None:
+            return
+
         # Create a transaction
         with transaction.atomic():
             # Get the reported user profile

@@ -88,7 +88,13 @@ class Report(TimeStampedModel):
         """
 
         # Return the string representation
-        return f"Report by {self.reported_by.full_name} against {self.reported_user.full_name}"
+        reporter = self.reported_by.full_name if self.reported_by_id else "unknown"
+        target = (
+            self.reported_user.full_name
+            if self.reported_user_id
+            else (self.reported_person_name or "unknown")
+        )
+        return f"Report by {reporter} against {target}"
 
     def save(self, *args, **kwargs) -> None:
         """Auto-populate ``organization`` from the reporter's primary membership."""

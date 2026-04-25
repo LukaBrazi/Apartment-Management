@@ -15,13 +15,32 @@
 # reference for a future migration off Railway.
 from __future__ import annotations
 
+import io
 import logging
+import re
 
 from celery import shared_task
 from django.core.management import call_command
 
 
 logger = logging.getLogger(__name__)
+
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+class _LoggerWriter(io.TextIOBase):
+    """Redirect management-command stdout to logger.info.
+
+    Celery captures raw sys.stdout and emits every line at WARNING level,
+    which makes routine seed output look alarming in production logs.
+    Passing this writer to call_command keeps seed progress at INFO.
+    """
+
+    def write(self, message: str) -> int:
+        clean = _ANSI_ESCAPE.sub("", message).rstrip()
+        if clean:
+            logger.info(clean)
+        return len(message)
 
 
 @shared_task(
@@ -50,5 +69,5 @@ def seed_demo_reset() -> None:
     Expected duration: 5–30 seconds on warm DB.
     """
     logger.info("seed_demo_reset: starting nightly demo reset")
-    call_command("seed_demo", reset=True, passwords_from_env=True, verbosity=1)
+    call_command("seed_demo", reset=True, passwords_from_env=True, verbosity=1, stdout=_LoggerWriter())
     logger.info("seed_demo_reset: done")

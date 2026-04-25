@@ -52,6 +52,7 @@ from apps.common.seed import (
     reset_scope,
     seed_building,
     seed_issues,
+    seed_news,
     seed_organization,
     seed_passes,
     seed_posts,
@@ -120,6 +121,12 @@ class Command(BaseCommand):
             type=int,
             default=22,
             help="Total VehiclePasses to create (plan default 22).",
+        )
+        parser.add_argument(
+            "--news-count",
+            type=int,
+            default=8,
+            help="Total News articles to create (plan default 8).",
         )
 
     # ────────────────────────── main entrypoint ──────────────────────────
@@ -239,6 +246,17 @@ class Command(BaseCommand):
             f"(skip={posts_result.posts_skipped}, replies=+{posts_result.replies_created}); "
             f"announcements: +{posts_result.announcements_created} "
             f"(skip={posts_result.announcements_skipped})"
+        )
+
+        news_result = seed_news.seed(
+            users_result=users_result,
+            organization_result=organization_result,
+            news_count=opts["news_count"],
+        )
+        self.stdout.write(
+            f"  • news: +{news_result.news_created} "
+            f"(skip={news_result.news_skipped}, "
+            f"categories=+{news_result.categories_created})"
         )
 
         passes_result = seed_passes.seed(

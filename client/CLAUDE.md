@@ -171,9 +171,12 @@ All password: `Demo1234!` (prod rotates via `DEMO_PASSWORD` env + `--passwords-f
 - `/api/v1/posts/all/` — `PostListAPIView` (not `/posts/posts/`)
 - `/api/v1/posts/create/` — `PostCreateAPIView`
 - `/api/v1/issues/admin/update/<uuid:id>/` — `IssueAdminUpdateAPIView`
+- `/api/v1/issues/<uuid:id>/review/` — `IssueReviewAPIView` (POST: submit review, GET: list reviews)
 - `/api/v1/passes/` — `VehiclePassListCreateAPIView`
 - `/api/v1/passes/my/` — `MyVehiclePassListAPIView`
 - `/api/v1/passes/<uuid:pass_id>/close/` — `CloseVehiclePassAPIView`
+- `/api/v1/orgs/organizations/` — `OrganizationViewSet` list/create (not `/api/v1/orgs/`)
+- `/api/v1/orgs/memberships/` — `OrganizationMembershipViewSet` (not `/api/v1/org-memberships/`)
 
 ## 🏠 Desktop layout — Indigo Cabinet (since 2026-04-24)
 
@@ -244,6 +247,15 @@ The estate layout (`app/(estate)/layout.tsx`) was restructured:
     `/profiles/user/my-profile/` for tenant) were symptoms of the
     seed gaps; the new seed binds every tenant/resident to a valid
     unit so the serializers no longer hit null dereferences.
+
+- **2026-04-24 (feature batch: issue review + TG news + fixes)**:
+  - **Mutual issue review**: `IssueReview` model, `POST /api/v1/issues/<uuid>/review/`, `GET /api/v1/issues/<uuid>/reviews/`. After issue is `done`, author rates worker, worker rates author. Frontend: `IssueReview` types in `index.d.ts`, `useReviewIssueMutation` + `useGetIssueReviewsQuery` in `issueApiSlice`, `StarRating` component + review section in `IssueDetails.tsx`
+  - **TG notify on news**: `notify_subscribers` BooleanField on `News` model + `notify_subscribers_news` Celery task. Admin forms (AdminPosts + `admin/news/page.tsx`) have toggle checkbox
+  - **Rating visibility fix**: `About.tsx` — `average_rating` shown only when `isWorker` (not to tenants)
+  - **Complaint form**: `reported_person_name` free text field (was FK username lookup). `CreateReportForm.tsx` updated, `ReportCreateSchema.ts` updated
+  - **Sidebar labels**: `/request-pass` → "Створити перепустку", `/my-passes` → "Мої перепустки"
+  - **Passes delete**: `DeleteVehiclePassAPIView` — owner-only delete (removed `is_admin` bypass)
+  - **Test fixes**: `News.__str__` added, annotation QuerySets got `.order_by("-created_at")` (UnorderedObjectListWarning), org test URLs fixed to `/api/v1/orgs/organizations/` + `/api/v1/orgs/memberships/`
 
 - **2026-04-24 (cabinet redesign + bug fixes)**:
   - Desktop layout switched from top-navbar + white sidebar to indigo sidebar + CabinetTopbar

@@ -28,7 +28,7 @@
 
 - **Backend:** Django + DRF (`server/`)
 - **Frontend:** Next.js 14 App Router (`client/`)
-- **E2E Tests:** Playwright (окремий репо `sckandi-e2e`)
+- **E2E Tests:** Playwright (окремий репо `sckandi-e2e`) — **наразі не потрібні, пропускати у планах розробки**
 - **Domain:** apartmentos.org
 
 ## Naming

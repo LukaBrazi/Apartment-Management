@@ -11,6 +11,21 @@ from django.utils.translation import gettext_lazy as _
 User = get_user_model()
 
 
+def _default_features() -> dict:
+    """Default feature flags for a new Organization.
+
+    All core modules are enabled out-of-the-box; an admin can disable
+    individual features via the JSONField in Django Admin.
+    """
+    return {
+        "posts": True,
+        "issues": True,
+        "passes": True,
+        "ratings": True,
+        "announcements": True,
+    }
+
+
 # ── Organization Type Choices ──────────────────────────────────────────────────
 
 class OrganizationType(models.TextChoices):
@@ -95,7 +110,7 @@ class Organization(TimeStampedModel):
     )
     features = models.JSONField(
         _("Features"),
-        default=dict,
+        default=_default_features,
         help_text=_("Feature flags for this organization"),
     )
     address = models.CharField(
@@ -174,9 +189,22 @@ class Organization(TimeStampedModel):
         """Save the organization.
 
         Автоматично генерує слаг з назви, якщо не вказаний.
+
+        ``allow_unicode=True`` is required so Cyrillic / non-ASCII org
+        names don't all collapse to "" and collide on the unique
+        constraint.  Falls back to a UUID prefix if the name produces an
+        empty slug (e.g., pure emoji / symbol names).  Appends a counter
+        suffix to guarantee uniqueness without a full slug regeneration.
         """
         if not self.slug:
-            self.slug = slugify(self.name)
+            base = slugify(self.name, allow_unicode=True) or str(self.id or "")[:8] or "org"
+            slug = base
+            counter = 1
+            qs = self.__class__.objects.exclude(pk=self.pk) if self.pk else self.__class__.objects.all()
+            while qs.filter(slug=slug).exists():
+                slug = f"{base}-{counter}"
+                counter += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
     # Feature Flag Methods
