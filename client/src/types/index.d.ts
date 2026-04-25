@@ -470,6 +470,7 @@ export interface ProfileData {
 		| "electrician"
 		| "hvac"
 		| "tenant"
+		| "owner"
 		| "guard";
 	phone_number: string;
 }
