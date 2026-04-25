@@ -483,6 +483,7 @@ export type Occupation =
 	| "electrician"
 	| "hvac"
 	| "tenant"
+	| "owner"
 	| "guard";
 
 export interface VehiclePass {

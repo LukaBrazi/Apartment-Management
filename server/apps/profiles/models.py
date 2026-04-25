@@ -102,6 +102,7 @@ class Profile(TimeStampedModel):
         ELECTRICIAN = ("electrician", _("Electrician"))
         HVAC = ("hvac", _("HVAC"))
         TENANT = ("tenant", _("Tenant"))
+        OWNER = ("owner", _("Owner"))
         GUARD = ("guard", _("Guard"))
 
     # Attributes

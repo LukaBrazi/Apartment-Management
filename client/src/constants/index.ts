@@ -30,8 +30,16 @@ export const occupationOptions = [
 	{ value: "painter", label: "Маляр" },
 	{ value: "electrician", label: "Електрик" },
 	{ value: "hvac", label: "Вентиляція/Кондиціювання" },
-	{ value: "tenant", label: "Мешканець" },
+	{ value: "tenant", label: "Орендар" },
+	{ value: "owner", label: "Власник" },
 	{ value: "guard", label: "Охоронець" },
+];
+
+// Options shown to residents (tenant / owner) in the profile edit form.
+// Workers and guards have their occupation assigned by admin and cannot change it.
+export const residentOccupationOptions = [
+	{ value: "tenant", label: "Орендар" },
+	{ value: "owner", label: "Власник" },
 ];
 
 export const leftNavLinks: LeftNavLink[] = [
