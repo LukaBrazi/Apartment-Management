@@ -65,7 +65,7 @@ export default function ResidentDashboard() {
 					icon={<ClipboardList className="h-5 w-5" />}
 					iconBg="bg-[#CADCFC]"
 					iconColor="text-[#1E2761]"
-					href="/profile"
+					href="/profile?tab=my-issues"
 				/>
 				<KpiCard
 					label="Перепустки"
@@ -73,7 +73,7 @@ export default function ResidentDashboard() {
 					icon={<Car className="h-5 w-5" />}
 					iconBg="bg-[#FEF3C7]"
 					iconColor="text-[#B45309]"
-					href="/request-pass"
+					href="/my-passes"
 				/>
 				<KpiCard
 					label="Оголошення"
