@@ -85,10 +85,17 @@ class ConsentMeAPIView(APIView):
                 "current": log.version == current_versions[ct],
             }
 
+        # current_versions exposed so the frontend ConsentGate knows which
+        # version string to send back in POST /consent/. Without this, the
+        # client had to use a "current" sentinel which the server stored
+        # verbatim, never matching the configured versions on next GET —
+        # the modal would never dismiss. (Hotfix 2026-04-26.)
         return Response(
             {
                 "tos": _shape(ConsentLog.ConsentType.TOS),
                 "privacy": _shape(ConsentLog.ConsentType.PRIVACY),
+                "tos_current_version": current_versions[ConsentLog.ConsentType.TOS],
+                "privacy_current_version": current_versions[ConsentLog.ConsentType.PRIVACY],
             },
             status=status.HTTP_200_OK,
         )

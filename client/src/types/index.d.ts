@@ -17,6 +17,10 @@ export interface Consent {
 export interface ConsentMeResponse {
 	tos: Consent | null;
 	privacy: Consent | null;
+	/** Server-side currently configured ToS version. Use this when POSTing /consent/. */
+	tos_current_version: string;
+	/** Server-side currently configured Privacy version. Use this when POSTing /consent/. */
+	privacy_current_version: string;
 }
 
 export interface PostState {

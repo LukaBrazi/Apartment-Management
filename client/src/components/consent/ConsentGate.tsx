@@ -70,39 +70,19 @@ export default function ConsentGate({ children }: ConsentGateProps) {
 	const handleAccept = async () => {
 		setSubmitError(null);
 		try {
-			// Versions are sourced from the response shape: a missing record
-			// uses the server-current default, an outdated one already
-			// carries the new version after refetch.  We send what the
-			// admin has configured server-side via TOS_VERSION / PRIVACY_VERSION,
-			// fetched implicitly through the next refetch.
-			//
-			// For the POST itself we just send "current" — the server's
-			// settings are the source of truth, and the next /consent/me/
-			// call will report current=true.
-			//
-			// To send the right version we read it back from /consent/me/'s
-			// implicit knowledge: when the record exists but is outdated,
-			// the *target* version is whatever the server treats as current,
-			// which we don't have client-side without a separate endpoint.
-			// MVP shortcut: send "current" — backend stores verbatim.
-			// The DEV_PLAN spec calls for the version literal to be sent;
-			// the server happily echoes it. We use "current" as a portable
-			// sentinel until a /consent/versions/ endpoint is added.
+			// Hotfix 2026-04-26: use server-provided current versions from
+			// /consent/me/. Previously we sent data.tos?.version (which echoes
+			// the user's stale version) or "current" sentinel — both never
+			// matched settings.TOS_VERSION on next GET, so `current` stayed
+			// false and the modal looped forever.
 			const targets: { type: ConsentType; version: string }[] = [];
 			if (tosNeeded) {
-				targets.push({
-					type: "tos",
-					// outdated path: use the server's current version (we don't have it
-					// here, so fall back to the literal "current" sentinel which the
-					// server will record as-is). For the missing-record path the same
-					// applies. A future PR will expose TOS_VERSION via /consent/me/.
-					version: data.tos?.version ?? "current",
-				});
+				targets.push({ type: "tos", version: data.tos_current_version });
 			}
 			if (privacyNeeded) {
 				targets.push({
 					type: "privacy",
-					version: data.privacy?.version ?? "current",
+					version: data.privacy_current_version,
 				});
 			}
 

@@ -112,3 +112,46 @@ class TestConsentMe:
         client = APIClient()
         response = client.get(CONSENT_ME_URL)
         assert response.status_code == 401
+
+    def test_get_consent_me_returns_current_versions_for_frontend(
+        self, auth_client, settings
+    ):
+        """Hotfix 2026-04-26: response must expose server-side current
+        versions so frontend can POST the correct version literal.
+
+        Without these fields, the frontend was sending version='current'
+        as a sentinel, which the backend stored verbatim, causing
+        current=False on next GET → modal never dismissed.
+        """
+        settings.TOS_VERSION = "1.0"
+        settings.PRIVACY_VERSION = "2.0"
+        response = auth_client.get(CONSENT_ME_URL)
+        body = response.json()
+        assert body["tos_current_version"] == "1.0"
+        assert body["privacy_current_version"] == "2.0"
+
+    def test_accept_with_correct_version_sets_current_true(
+        self, auth_client, user, settings
+    ):
+        """Full round-trip: POST with correct version → GET shows current=True."""
+        settings.TOS_VERSION = "1.0"
+        settings.PRIVACY_VERSION = "1.0"
+
+        # 1. First GET: nothing accepted yet
+        body1 = auth_client.get(CONSENT_ME_URL).json()
+        assert body1["tos"] is None
+        assert body1["tos_current_version"] == "1.0"
+
+        # 2. Accept ToS using version from server
+        post = auth_client.post(
+            CONSENT_URL,
+            {"consent_type": "tos", "version": body1["tos_current_version"]},
+            format="json",
+        )
+        assert post.status_code == 201
+
+        # 3. GET again: ToS now current
+        body2 = auth_client.get(CONSENT_ME_URL).json()
+        assert body2["tos"] is not None
+        assert body2["tos"]["version"] == "1.0"
+        assert body2["tos"]["current"] is True
