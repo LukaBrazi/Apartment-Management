@@ -127,12 +127,15 @@ curl https://apartmentos.org/api/v1/health/
 # {"status": "unhealthy", "checks": {"db": "fail", "cache": "ok"}}
 ```
 
-**Конфігурація Railway** (`railway.toml`):
-```toml
-[deploy]
-healthcheckPath = "/api/v1/health/"
-healthcheckTimeout = 30
-```
+**Конфігурація на Railway** — **per-service у dashboard**, НЕ в `railway.toml`:
+
+| Сервіс | Healthcheck Path |
+|---|---|
+| Web (Django) | `/api/v1/health/` |
+| Celery Worker | _(порожнє — TCP probe)_ |
+| Celery Beat | _(порожнє — TCP probe)_ |
+
+> Чому per-service: якщо `healthcheckPath` стоїть у root `railway.toml`, він застосовується **до всіх 3 сервісів**, і Celery (без HTTP сервера) падає у "service unavailable". Покрокова інструкція — у [docs/RAILWAY_SETUP.md](docs/RAILWAY_SETUP.md).
 
 Endpoint не експонує внутрішню інформацію (DB version, Redis URL тощо) — лише `ok`/`fail` на check.
 

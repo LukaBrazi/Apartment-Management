@@ -5,35 +5,63 @@ dockerfilePath = "Dockerfile"
 [deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-# PR-7: liveness/readiness probe. Railway hits this URL after deploy
-# and rolls back if it does not return 2xx within healthcheckTimeout.
-# The endpoint pings DB + Redis and returns 503 on either failure
-# (see server/apps/common/health.py).
-healthcheckPath = "/api/v1/health/"
-healthcheckTimeout = 30
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ⚠️  HEALTHCHECK НАЛАШТОВУЄТЬСЯ В RAILWAY DASHBOARD — НЕ ТУТ!
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Цей repo деплоїть 3 окремих сервіси з одного Dockerfile:
+#   1. Web (Django + Gunicorn)        — має HTTP сервер
+#   2. Celery Worker                   — НЕ має HTTP сервера
+#   3. Celery Beat                     — НЕ має HTTP сервера
+#
+# Якщо `healthcheckPath` стоїть тут (у root railway.toml), Railway
+# успадковує його ДЛЯ ВСІХ 3 сервісів. Celery worker/beat не мають
+# HTTP сервера → Railway отримує "service unavailable" → деплой падає.
+#
+# ➜ Налаштовуй healthcheck per-service у Railway dashboard:
+#   Покрокова інструкція: docs/RAILWAY_SETUP.md
+#
+# Швидкий чеклист (чого там очікувати):
+#
+#   ┌──────────────────┬──────────────────────────────────┬──────────────────┐
+#   │ Сервіс           │ Healthcheck Path                 │ Healthcheck TO   │
+#   ├──────────────────┼──────────────────────────────────┼──────────────────┤
+#   │ Web              │ /api/v1/health/                  │ 30               │
+#   │ Celery Worker    │ (порожнє — TCP probe)            │ —                │
+#   │ Celery Beat      │ (порожнє — TCP probe)            │ —                │
+#   └──────────────────┴──────────────────────────────────┴──────────────────┘
+#
+# ═══════════════════════════════════════════════════════════════════════════════
 
 [environments.production]
-# Цей railway.toml описує основний web-сервіс (Django + Gunicorn).
-# Для повноцінної роботи на Railway потрібні ще ДВА сервіси з того ж
-# репо — створюються вручну в Railway dashboard:
+# ─── Web (Django + Gunicorn) ──────────────────────────────────────────────────
+# Цей сервіс — root, описаний цим railway.toml.
+# Healthcheck: /api/v1/health/ (DB + Redis ping → 200/503).
+# Endpoint exempted from SSL redirect via SECURE_REDIRECT_EXEMPT in
+# server/config/settings/production.py.
 #
-# 1. Celery Worker
-#    Start command:
-#      celery -A config.celery_app worker --loglevel=info --concurrency=1
-#    Env vars: всі ті ж що у web-сервіса (DATABASE_URL, CELERY_BROKER_URL,
-#    DEMO_PASSWORD ...). DEMO_PASSWORD обов'язковий, бо worker виконує
-#    nightly `seed_demo_reset` (див. server/apps/common/tasks.py) і
-#    без env-паролю `--passwords-from-env` падає з CommandError.
+# ─── Celery Worker ────────────────────────────────────────────────────────────
+# Створюється вручну в Railway dashboard як другий сервіс з ТОГО Ж РЕПО.
+# Start command:
+#   celery -A config.celery_app worker --loglevel=info --concurrency=1
+# Env vars: ВСІ ті ж що у web-сервіса (DATABASE_URL, CELERY_BROKER_URL,
+# DEMO_PASSWORD, ...). DEMO_PASSWORD обов'язковий, бо worker виконує
+# nightly `seed_demo_reset` (server/apps/common/tasks.py) і без env-паролю
+# `--passwords-from-env` падає з CommandError.
+# Healthcheck Path: ⚠️  ЗАЛИШИТИ ПОРОЖНІМ. Інакше деплой падає.
 #
-# 2. Celery Beat
-#    Start command:
-#      celery -A config.celery_app beat --loglevel=info \
-#        --scheduler django_celery_beat.schedulers:DatabaseScheduler
-#    Replicas: рівно 1 — інакше schedule дублюватиметься.
-#    Env vars: DATABASE_URL + CELERY_BROKER_URL достатньо (beat нічого
-#    сам не виконує, лише ставить job у чергу worker-а).
+# ─── Celery Beat ──────────────────────────────────────────────────────────────
+# Створюється вручну в Railway dashboard як третій сервіс з ТОГО Ж РЕПО.
+# Start command:
+#   celery -A config.celery_app beat --loglevel=info \
+#     --scheduler django_celery_beat.schedulers:DatabaseScheduler
+# Replicas: рівно 1 — інакше schedule дублюватиметься.
+# Env vars: DATABASE_URL + CELERY_BROKER_URL достатньо (beat нічого сам
+# не виконує, лише ставить job у чергу worker-а).
+# Healthcheck Path: ⚠️  ЗАЛИШИТИ ПОРОЖНІМ. Інакше деплой падає.
 #
-# Schedule `seed-demo-reset-nightly` (23:00 Europe/Kyiv) описано
-# декларативно у server/config/settings/base.py::CELERY_BEAT_SCHEDULE
-# і автоматично потрапляє в django_celery_beat.PeriodicTask при першому
-# запуску beat. Після цього schedule можна редагувати через Django Admin.
+# Schedule `seed-demo-reset-nightly` (23:00 Europe/Kyiv) описано декларативно
+# у server/config/settings/base.py::CELERY_BEAT_SCHEDULE і автоматично
+# потрапляє в django_celery_beat.PeriodicTask при першому запуску beat.
+# Після цього schedule можна редагувати через Django Admin.

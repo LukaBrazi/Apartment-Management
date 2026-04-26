@@ -747,10 +747,15 @@ curl -X POST https://api.apartmentos.org/api/v1/orgs/memberships/ \
 
 ### 9.1. Health Checks
 
-**Backend:**
+> **Налаштування Railway healthcheck — див. покрокову інструкцію [docs/RAILWAY_SETUP.md](docs/RAILWAY_SETUP.md).**
+> Це окремий gotcha для multi-service Railway деплоїв: Celery Worker і Beat
+> мають мати **порожній** healthcheck path, інакше деплой падає.
+
+**Backend (perdiously DB + Redis ping):**
 ```bash
-curl https://api.apartmentos.org/api/v1/schema/
-# Очікуємо: 200 + OpenAPI schema JSON
+curl https://api.apartmentos.org/api/v1/health/
+# 200 OK: {"status":"healthy","checks":{"db":"ok","cache":"ok"}}
+# 503:    {"status":"unhealthy","checks":{"db":"fail","cache":"ok"}}
 ```
 
 **Frontend:**
