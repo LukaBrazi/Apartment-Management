@@ -36,11 +36,13 @@ export default function CabinetTopbar() {
 	const role =
 		profile?.occupation === "tenant"
 			? "Орендар"
+			: profile?.occupation === "owner"
+			? "Власник"
 			: profile?.occupation === "guard"
 			? "Охорона"
 			: profile?.occupation
 			? "Персонал"
-			: "Мешканець";
+			: "";
 
 	return (
 		<div className="hidden md:flex h-16 items-center justify-between gap-6 border-b border-[#F1F5F9] bg-white px-8">

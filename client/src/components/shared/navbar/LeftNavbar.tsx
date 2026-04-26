@@ -41,6 +41,8 @@ export default function LeftNavbar() {
 	const roleLabel =
 		profile?.occupation === "tenant"
 			? "Орендар"
+			: profile?.occupation === "owner"
+			? "Власник"
 			: profile?.occupation === "guard"
 			? "Охорона"
 			: profile?.occupation
