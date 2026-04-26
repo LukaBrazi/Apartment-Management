@@ -168,14 +168,7 @@ export default function MyPassesView() {
 						<Car className="h-8 w-8 opacity-60" />
 					</div>
 					<p className="text-base font-medium mb-1">Перепусток ще немає</p>
-					<p className="text-sm mb-6">Створіть першу заявку на в&apos;їзд авто</p>
-					<Link
-						href="/request-pass"
-						className="flex items-center gap-1.5 rounded-xl bg-[#1E2761] px-4 py-2 text-sm font-medium text-white hover:bg-[#16204f] transition-colors"
-					>
-						<Plus className="h-4 w-4" />
-						Подати заявку
-					</Link>
+					<p className="text-sm">Створіть першу заявку на в&apos;їзд авто</p>
 				</div>
 			) : (
 				<>
