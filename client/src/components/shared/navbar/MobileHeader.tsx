@@ -18,7 +18,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import AuthAvatar from "./AuthAvatar";
-import NotificationBell from "./NotificationBell";
 import { useGetSiteSettingsQuery } from "@/lib/redux/features/siteSettings/siteSettingsApiSlice";
 
 export default function MobileHeader() {
@@ -61,7 +60,6 @@ export default function MobileHeader() {
 			</Link>
 
 			<div className="flex items-center gap-2">
-				<NotificationBell />
 				<AuthAvatar />
 			</div>
 		</header>

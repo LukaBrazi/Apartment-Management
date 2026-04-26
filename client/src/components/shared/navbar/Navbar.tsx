@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import MobileNavbar from "./MobileNavbar";
-import NotificationBell from "./NotificationBell";
 import ThemeSwitcher from "./ThemeSwitcher";
 import AuthAvatar from "@/components/shared/navbar/AuthAvatar";
 import { useGetSiteSettingsQuery } from "@/lib/redux/features/siteSettings/siteSettingsApiSlice";
@@ -65,7 +64,6 @@ export default function Navbar() {
 
 			<div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
 				<ThemeSwitcher />
-				<NotificationBell />
 				<AuthAvatar />
 				<MobileNavbar />
 			</div>
