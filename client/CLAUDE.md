@@ -1,7 +1,8 @@
 # ApartmentOS — Client (Next.js) Context
 
 > Context for developers and AI agents working in `client/`.
-> Last updated: **2026-04-18** — after the `seed_demo` rewrite.
+> Last updated: **2026-04-26** — after PR-1..PR-8 + 3 hotfixes batch (tech-debt,
+> GDPR consent, production hardening).
 
 ## 🚨 Package manager policy: npm ONLY
 
@@ -169,14 +170,29 @@ All password: `Demo1234!` (prod rotates via `DEMO_PASSWORD` env + `--passwords-f
 ## 🔗 Verified API routes (relevant to this client)
 
 - `/api/v1/posts/all/` — `PostListAPIView` (not `/posts/posts/`)
-- `/api/v1/posts/create/` — `PostCreateAPIView`
+- `/api/v1/posts/create/` — `PostCreateAPIView` (throttle: `post_create` 10/h)
 - `/api/v1/issues/admin/update/<uuid:id>/` — `IssueAdminUpdateAPIView`
 - `/api/v1/issues/<uuid:id>/review/` — `IssueReviewAPIView` (POST: submit review, GET: list reviews)
-- `/api/v1/passes/` — `VehiclePassListCreateAPIView`
+- `/api/v1/issues/` (POST) — `IssueCreateAPIView` (throttle: `issue_create` 20/h)
+- `/api/v1/passes/` — `VehiclePassListCreateAPIView` (POST throttle: `pass_create` 30/h, GET unthrottled через `WriteOnlyScopedThrottle`)
 - `/api/v1/passes/my/` — `MyVehiclePassListAPIView`
 - `/api/v1/passes/<uuid:pass_id>/close/` — `CloseVehiclePassAPIView`
 - `/api/v1/orgs/organizations/` — `OrganizationViewSet` list/create (not `/api/v1/orgs/`)
 - `/api/v1/orgs/memberships/` — `OrganizationMembershipViewSet` (not `/api/v1/org-memberships/`)
+- `/api/v1/site-settings/superadmin/orgs/` — `SuperAdminOrgsAPIView` (NOT `/site-settings/orgs/`)
+- `/api/v1/auth/users/reset_password/` — Djoser password reset (PR-7 — раніше повертав 404 у prod, тепер активний з throttle 3/hour)
+- `/api/v1/auth/users/reset_password_confirm/` — те саме
+- `/api/v1/consent/` (POST) — `ConsentCreateAPIView` (GDPR ToS+Privacy)
+- `/api/v1/consent/me/` (GET) — `ConsentMeAPIView` повертає `{tos, privacy, tos_current_version, privacy_current_version}` — frontend має слати `*_current_version` при POST, інакше modal зациклюється
+- `/api/v1/health/` — `HealthCheckAPIView` (no auth, no throttle, DB+Redis ping → 200/503)
+
+## 🌐 Public pages (Next.js, без auth)
+
+- `/terms` — `client/src/app/terms/page.tsx` (Умови користування, version 1.0)
+- `/privacy` — `client/src/app/privacy/page.tsx` (Політика приватності, GDPR-aligned, version 1.0)
+- `client/src/components/consent/ConsentGate.tsx` обгортає `(estate)/layout.tsx` —
+  показує modal якщо `current=false` для ToS чи Privacy. POST шле
+  `version: data.tos_current_version` (НЕ `data.tos?.version` — це баг hotfix 2026-04-26)
 
 ## 🏠 Desktop layout — Indigo Cabinet (since 2026-04-24)
 
@@ -202,6 +218,49 @@ The estate layout (`app/(estate)/layout.tsx`) was restructured:
 
 - `Profile.unit` FK **does not exist** (removed PR-11). Never use `profile.primary_unit` or `profile.unit`. Always resolve unit via `Residency.objects.filter(user=user, is_primary=True).first().unit`
 - `on_announcement_created` signal was renamed to `on_announcement_saved` — any code that imports the old name will break
+- **Cross-platform lockfile drift** — npm 10+ не матеріалізує optional peers, і macOS vs Linux резолвлять їх по-різному. Якщо Docker білд падає з `Missing: yaml@2.8.3 from lock file` — `yaml` зробили **прямою devDependency** у `package.json` (PR-7 hotfix). Не міняй на optional/transitive. Подібні pitfalls з іншими peer-deps можуть з'явитись — рішення те саме (explicit dep)
+- **DRF `SimpleRateThrottle.THROTTLE_RATES` cache** — це **class-level** атрибут, заповнюється at-import-time з settings. Тести що змінюють rate через `override_settings` НЕ працюють — треба monkey-patch напряму (`SimpleRateThrottle.THROTTLE_RATES["scope"] = "..."`). Паттерн з DRF self-tests, див. `apps/users/tests/test_password_reset_throttle.py`
+- **`ATOMIC_REQUESTS=True` + view test mocking** — Django відкриває savepoint через `connection.cursor()` ДО того як view виконається. Глобальний `patch.object(connection, "cursor", ...)` крашить transaction middleware → 500 замість очікуваного status. Замість цього патч **module-level reference** у view (`patch.object(apps.common.health, "connection", ...)`)
+- **pytest `--import-mode=importlib`** обов'язково у `server/pytest.ini` — без нього кілька `apps/*/tests/__init__.py` пакетів конфліктують за ім'я `tests` (PR-1)
+- **ConsentGate version sentinel** — у POST `/consent/` шли `data.tos_current_version`, НЕ `data.tos?.version` (echo'ить stale версію → modal зациклюється). Hotfix 2026-04-26
+
+## 🛡️ Security headers (PR-8, since 2026-04-26)
+
+Заголовки безпеки відправляє **Next.js** (`client/next.config.mjs:headers()`),
+не Django. Користувачі ходять через Vercel, Django admin за secret URL —
+окремий django-csp на бекенді не додавали.
+
+Активні headers:
+- `Content-Security-Policy` — baseline з `'unsafe-inline' 'unsafe-eval'` для
+  Next.js хайдрейту (planned посилення через nonces). `connect-src`
+  включає `api.apartmentos.org` + `*.up.railway.app` — **НЕ видаляй**, інакше
+  всі API запити зломаються.
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+Lock-down тест `apps/common/tests/test_security_headers.py` падає, якщо
+видалили `headers()` callback або зламали критичні директиви.
+
+## 🗑️ Removed (видалено 2026-04-26 у PR-2)
+
+Якщо натрапиш на згадку у legacy code/docs:
+- `Navbar.tsx`, `RightNavbar.tsx`, `MobileNavbar.tsx`, `ThemeSwitcher.tsx` (видалені — заміщені indigo cabinet)
+- `AdminDashboard.tsx` (заміщений `app/admin/page.tsx`)
+- `TenantInfo.tsx` (0 imports)
+- Shadcn UI: `form.tsx`, `menubar.tsx`, `sheet.tsx` (3 з 5 — `pagination` і `skeleton` ЗАЛИШЕНІ)
+- 7 RTK hooks: `useGetUserQuery`, `useRefreshJWTMutation` (refresh через `baseApiSlice` напряму), `useGetAllIssuesQuery`, `useGetMyPostsQuery`, `useUnBookmarkPostMutation`, `useGetAllRepliesQuery`, `useGetTelegramBotQuery`
+- TS type `RepliesResponse`
+- Tailwind tokens: `googleBlue`, `richBlack`, `ballonWhite`, увесь `nordic.*` блок (12 ключів), `fontFamily.openSans`
+- npm dep: `@radix-ui/react-menubar`
+- `NotificationBell.tsx` ЗБЕРЕЖЕНИЙ як `@stub` placeholder для майбутньої in-app notifications фічі (НЕ рендериться)
+
+## ♻️ Renamed
+
+- `client/src/hooks/useUseProfile.ts` → `useUserProfile.ts` (typo fix, PR-4)
+- `client/public/assets/logos/skandi-*.svg` → `apartmentos-*.svg` (PR-1, brand consistency)
+- Local `IssueCard` у `rate-worker/page.tsx` → `ReviewIssueCard` (no shadow з `components/cards/IssueCard.tsx`)
 
 ## 📅 Changelog of infra decisions
 
@@ -265,3 +324,45 @@ The estate layout (`app/(estate)/layout.tsx`) was restructured:
   - Bug: `IssueCreateAPIView.perform_create` used `profile.primary_unit` (removed PR-11) → fixed to use `Residency` lookup
   - Bug: sidebar badge counters used paginated `.results.filter()` → fixed to use `.count`
   - Bug: logout loop (429 → cookie not cleared → redirect to /welcome) → fixed with `deleteCookie` + eager client logout
+
+- **2026-04-26 (8 PR + 3 hotfixes batch — tech-debt + production hardening)**:
+
+  **Backend (PR-1, PR-3, PR-6):**
+  - **RBAC refactor:** новий `apps/common/permissions.py` (IsGuard, IsTenant, IsStaff, IsGuardOrAdmin, IsStaffOrSuperUser alias). Видалено silent `except Exception: pass` з `passes/permissions.py` і `issues/views.py` — тепер тільки `Profile.DoesNotExist` з `logger.warning`
+  - **JWT signing key fail-fast:** прибрано небезпечний default `"test-signing-key-change-in-production"` з `SIMPLE_JWT.SIGNING_KEY` — використовується `SECRET_KEY` напряму. Production вмирає з `ImproperlyConfigured` якщо `DJANGO_SECRET_KEY` env пропущено
+  - **N+1 fixes:** `SuperAdminOrgsAPIView` (annotated `Count(memberships, filter=Q(is_active=True))`, 9→3 queries), `news/views.py` list (subquery + select_related, 14→5), `update_all_reputations` Celery task (`bulk_update`, 31→≤5)
+  - **IDOR fix:** `IssueDetailAPIView.get_queryset()` тепер містить ПОВНИЙ auth predicate `Q(reported_by=user) | Q(assigned_to=user) | staff`. `get_object` більше не raise PermissionDenied — все що не у queryset → 404 (закриває info disclosure)
+  - **`get_avatar_url` helper** винесено у `apps/profiles/utils.py` (3 копії з `posts/serializers.py` усунено). Конкретні exception types (`AttributeError`, `Profile.DoesNotExist`, `ValueError`) замість silent except
+  - Видалено: `test_api_unit_cutover.py`, `ContentView.record_view` classmethod, дубль `isort` pin, 128 рядків disabled CI blocks
+  - Розгорнуто `ConsentLog` модель (PR-5): `consent_type` (tos|privacy), `version`, `accepted_at`, `ip_address`, `user_agent`. Migration `0002`. Legacy `purpose/given/timestamp` поля збережені nullable
+
+  **Frontend (PR-2, PR-4, PR-5):**
+  - 9 мертвих компонентів видалено (~1176 рядків) — див. розділ "Removed"
+  - 7 RTK hooks і 15 Tailwind tokens видалено
+  - `ConsentGate` modal (`client/src/components/consent/ConsentGate.tsx`) обгортає `(estate)/layout.tsx` — блокує UI поки користувач не прийме поточні ToS+Privacy
+  - `ConsentSummary` секція додана у профіль (вкладка "Про мене")
+  - RTK slice `consentApiSlice.ts` — `useGetMyConsentQuery`, `useAcceptConsentMutation`
+  - Public pages `/terms` і `/privacy` створені (раніше 404)
+
+  **Production hardening (PR-7, PR-8, hotfixes):**
+  - `/api/v1/health/` endpoint (DB+Redis ping). SSL redirect exempt у `production.py`. Per-service Railway healthcheck config (`docs/RAILWAY_SETUP.md`)
+  - 4 burst rate limits: `issue_create` 20/h, `pass_create` 30/h, `post_create` 10/h, `rating_create` 30/h. `WriteOnlyScopedThrottle` для mixed read+write views
+  - JSON structured logging у production (`python-json-logger`). Dev/test залишаються plain text
+  - CSP + 4 classic security headers через `next.config.mjs`
+  - CI security scan (`pip-audit` + `npm audit`, `continue-on-error`)
+  - Dependabot активний (npm + pip + actions)
+  - `.gitignore` більше не блокує `client/package-lock.json` (npm-only policy)
+  - `SECURE_REFERRER_POLICY` правильна назва (раніше `REFERRER_POLICY` — phantom setting що не емітив header)
+  - `OrganizationMembership` composite index `(user, is_active)` — hot path на кожному auth-request
+  - Composite indices: `ContentView` `(content_type, object_id)` + `(user, -created)`, `Report` `(reported_user, -created)` + `(organization, -created)`
+  - `<html lang>` виправлено `"en"` → `"uk"` (a11y/SEO)
+  - **5 lock-down regex tests** у `apps/tests/test_railway_config.py`, `apps/common/tests/test_security_headers.py`, `apps/common/tests/test_logging_config.py`, `apps/common/tests/test_health.py::test_production_settings_exempts_health_from_ssl_redirect`
+
+  **Documentation:**
+  - `docs/RAILWAY_SETUP.md` — покроковий гайд (3 services + troubleshooting)
+  - `docs/SECURITY_BACKLOG.md` — місце для CVE findings з CI scan
+  - `docs/audits/` — 5 ad-hoc `.md` перенесено з кореня
+  - `readme.md` — секції Health Check + Security Headers
+  - `DEPLOYMENT_GUIDE.md` §9.1 оновлено
+
+  **Tests:** 739 → 793 passed (+54 нових, 0 failed). Жодних regression.

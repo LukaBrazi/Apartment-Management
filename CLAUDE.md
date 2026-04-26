@@ -12,10 +12,31 @@
 - Якщо потрібно терміново пушнути — запитай дозвіл у CEO перед push.
 - Ніколи не робити репо публічним.
 
+**Direct-merge батчі (CEO authorized):** для великих cleanup/refactor batch'ів CEO
+може дати разовий дозвіл на pattern: feature branch → push → ff-merge до main →
+push origin main, **без GitHub PR review**. Тоді кожен PR отримує власний
+`MERGE-PR{N}.sh` скрипт що CEO запускає на Mac terminal. Скрипт виключає
+сам себе з commit (`git reset HEAD MERGE-*.sh`). Дозвіл діє тільки на ту
+конкретну розмову — повертайся до PR review за замовчуванням.
+
 ### CI/CD
 
 - Railway "Wait for CI" увімкнено — деплой тільки після зелених тестів.
 - GitHub Actions: Django pytest → Playwright E2E → auto-deploy.
+- **Dependabot** активний (npm + pip + actions, weekly Mon Europe/Kiev).
+  Гілки `dependabot/*` потребують ручного triage перед merge.
+- **Security scan** — `pip-audit` + `npm audit` у CI з `continue-on-error: true`.
+  Findings йдуть у `docs/SECURITY_BACKLOG.md` для розгрібання.
+
+### Railway deploy — multi-service setup
+
+ApartmentOS на Railway = 3 окремих сервіси (Web, Celery Worker, Celery Beat).
+**Кожен сервіс має свою конфігурацію в Railway dashboard.** `healthcheckPath`
+у root `railway.toml` ЗАБОРОНЕНО — він поширюється на всі 3 сервіси і
+ламає Celery deploys ("service unavailable"). Lock-down тест
+`apps/tests/test_railway_config.py` стереже це правило.
+
+Покрокова інструкція deploy/troubleshoot — `docs/RAILWAY_SETUP.md`.
 
 ### Git з Linux sandbox (важливо)
 
@@ -54,6 +75,20 @@
 - Тести пишуться до або паралельно з кодом — ніколи після
 - PR без тестів для нового функціоналу — не мержиться
 - Агенти (zhukuymosya) завжди включають написання тестів як окремий крок у плані
+
+### Lock-down regex tests (паттерн з 2026-04-26)
+
+Для config файлів (`railway.toml`, `next.config.mjs`, `production.py`) та
+змін що неможливо повноцінно покрити рантайм-тестом — пишемо **regex-based
+тести що читають файл як текст** і перевіряють критичні рядки. Приклади:
+
+- `apps/tests/test_railway_config.py` — `healthcheckPath` НЕ в root toml
+- `apps/common/tests/test_security_headers.py` — CSP block у `next.config.mjs`
+- `apps/common/tests/test_logging_config.py` — JsonFormatter в `production.py`
+- `apps/common/tests/test_health.py::test_production_settings_exempts_health_from_ssl_redirect` — SECURE_REDIRECT_EXEMPT регекс
+
+Lock-down тести унеможливлюють regression на critical config через
+звичайний rebase/refactor.
 
 ## Development Workflow
 
