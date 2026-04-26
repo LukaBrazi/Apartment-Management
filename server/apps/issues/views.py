@@ -606,10 +606,14 @@ class MyReviewableIssuesAPIView(generics.ListAPIView):
     Returns the current user's done issues that have an assigned worker.
     Each item includes ``my_review`` (null = not yet rated).
     Tenants use this list to rate the worker who resolved their request.
+
+    Pagination is disabled — the list is small (resolved issues per user)
+    and the client expects a plain JSON array, not a paginated envelope.
     """
 
     serializer_class = ReviewableIssueSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         from apps.organizations.utils import get_user_organizations
