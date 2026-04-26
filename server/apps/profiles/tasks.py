@@ -6,18 +6,20 @@ from celery import shared_task
 # Create a shared task to update all reputations
 @shared_task(name="update_all_reputations")
 def update_all_reputations() -> None:
-    """Update all reputations.
+    """Recompute and persist ``Profile.reputation`` for every profile.
 
-    This function is used to update all reputations.
+    PR-6 — switched from a per-row ``profile.save()`` loop (which
+    issued N UPDATE statements) to a single ``bulk_update`` call.
+    The reputation formula lives on the model
+    (``Profile.update_reputation``); we just call it in memory and
+    flush the changes in one round trip.
     """
 
-    # Get all the profiles
-    profiles = Profile.objects.all()
+    profiles = list(Profile.objects.all())
 
-    # Traverse over each profile
     for profile in profiles:
-        # Update the reputation
+        # In-memory mutation — does not hit the database.
         profile.update_reputation()
 
-        # Save the profile
-        profile.save()
+    if profiles:
+        Profile.objects.bulk_update(profiles, fields=["reputation"], batch_size=200)

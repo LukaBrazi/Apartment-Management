@@ -1,11 +1,16 @@
 # Imports
+import logging
+
 from apps.common.admin import ContentViewInline
 from apps.common.models import ContentView
 from apps.posts.models import Announcement, Post, Reply
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
+from django.db import DatabaseError
 from django.db.models.query import QuerySet
 from rest_framework.request import Request
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(Announcement)
@@ -26,15 +31,27 @@ class AnnouncementAdmin(admin.ModelAdmin):
             if org is None:
                 org = obj.organization
             if org:
-                # Estimate subscriber count before saving
+                # PR-6: estimate subscriber count before saving.  We narrow
+                # the previous bare ``except Exception: pass`` to the two
+                # failure modes that actually surface here — DB outages
+                # and bad-data ValueErrors — and warn the admin so a
+                # broadcast that won't reach anyone isn't silent.
                 try:
                     count = get_announcement_target_chat_ids(obj, org)
+                except (DatabaseError, ValueError) as exc:
+                    logger.error(
+                        "Failed to count Telegram subscribers for org %s: %s",
+                        getattr(org, "pk", None), exc,
+                    )
                     messages.warning(
                         request,
-                        f"⚠️ Це оголошення буде надіслано {len(count)} підписникам через Telegram."
+                        "Не вдалося порахувати підписників — broadcast може не дійти.",
                     )
-                except Exception:
-                    pass
+                else:
+                    messages.warning(
+                        request,
+                        f"⚠️ Це оголошення буде надіслано {len(count)} підписникам через Telegram.",
+                    )
 
         super().save_model(request, obj, form, change)
 

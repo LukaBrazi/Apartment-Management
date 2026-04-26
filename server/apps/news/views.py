@@ -29,17 +29,27 @@ class NewsListAPIView(APIView):
             from apps.organizations.utils import get_user_organizations
             user_orgs = get_user_organizations(request.user)
             qs = qs.filter(Q(organization__in=user_orgs) | Q(organization__isnull=True))
-        qs = qs.order_by("-pinned", "-published_at", "-created_at")
+        qs = (
+            qs.select_related("category")
+            .prefetch_related("tags")
+            .order_by("-pinned", "-published_at", "-created_at")
+        )
         serializer = NewsListSerializer(qs, many=True, context={"request": request})
 
-        # Compute unread count for the sidebar badge
+        # PR-6: compute unread count via a single subquery instead of
+        # materialising read_ids.  Avoids the extra ``.values_list`` round
+        # trip and the implicit ``.order_by()`` on the count query.
         if request.user.is_authenticated:
-            read_ids = NewsRead.objects.filter(
+            read_news_subquery = NewsRead.objects.filter(
                 user=request.user
-            ).values_list("news_id", flat=True)
-            unread_count = qs.exclude(pk__in=read_ids).count()
+            ).values("news_id")
+            unread_count = (
+                qs.exclude(pk__in=read_news_subquery)
+                .order_by()
+                .count()
+            )
         else:
-            unread_count = qs.count()
+            unread_count = qs.order_by().count()
 
         return Response({"news": serializer.data, "unread_count": unread_count})
 

@@ -273,41 +273,42 @@ class IssueDetailAPIView(generics.RetrieveAPIView):
     lookup_field = "id"
 
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            return _issue_base_qs()
+        """Authorisation lives entirely in the queryset (PR-6).
+
+        The previous version filtered by org in ``get_queryset`` and
+        then re-checked party-membership in ``get_object`` with a 403.
+        That leaked the existence of every same-org issue ID to any
+        tenant.  Now a non-staff user sees only issues where they are
+        the reporter or the assignee — anything else is filtered out
+        and DRF returns 404 from ``get_object_or_404``.
+        """
+        from django.db.models import Q
+
         from apps.organizations.utils import get_user_organizations
-        return _issue_base_qs().filter(
-            organization__in=get_user_organizations(self.request.user)
+
+        user = self.request.user
+        if user.is_superuser:
+            return _issue_base_qs()
+
+        qs = _issue_base_qs().filter(
+            organization__in=get_user_organizations(user)
         )
+        if user.is_staff:
+            return qs
+        return qs.filter(Q(reported_by=user) | Q(assigned_to=user))
 
     # Method to get the issue object
     def get_object(self) -> Issue:
-        """Method to get the issue object.
+        """Resolve the issue from the (already authorised) queryset.
 
-        Returns:
-            Issue: The issue object.
-
-        Raises:
-            PermissionDenied: The permission denied error.
+        ``get_queryset`` now encodes the full authorisation predicate,
+        so this override only adds the side-effect of recording a
+        view.  Anything not in the queryset returns 404 via the
+        standard DRF lookup — no extra ``PermissionDenied`` branch.
         """
 
-        # Get the issue
         issue = super().get_object()
-
-        # Get the user
-        user = self.request.user
-
-        # If the user is not the reporter, staff, or assignee
-        if not (
-            user == issue.reported_by or user.is_staff or user == issue.assigned_to
-        ):
-            # Raise the permission denied error
-            raise PermissionDenied("You do not have permission to view this issue.")
-
-        # Record the issue view
         self.record_issue_view(issue)
-
-        # Return the issue
         return issue
 
     # Method to record the issue view

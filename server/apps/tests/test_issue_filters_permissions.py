@@ -116,10 +116,17 @@ class TestIssuePermissions:
         assert resp.status_code == 200
 
     def test_detail_tenant_cannot_see_others_issue(self, tenant_client, org):
+        """Same-org tenant who isn't a party gets 404 (PR-6).
+
+        Used to be 403 — but that leaked the issue ID's existence to any
+        same-org tenant.  After PR-6 the authorisation predicate lives
+        in ``IssueDetailAPIView.get_queryset``, so the row is filtered
+        out entirely and DRF returns 404.
+        """
         client, _ = tenant_client
-        issue = IssueFactory(organization=org)  # same org, different user → 403
+        issue = IssueFactory(organization=org)  # same org, different user
         resp = client.get(f"/api/v1/issues/{issue.id}/")
-        assert resp.status_code == 403
+        assert resp.status_code == 404
 
 
 # ─── Building scoping for staff ───────────────────────────────────────────────

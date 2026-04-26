@@ -107,11 +107,8 @@ class TopPostSerialzier(serializers.ModelSerializer):
         Returns:
             str | None: The avatar URL, or None.
         """
-        try:
-            avatar = obj.author.profile.avatar
-            return avatar.url if avatar else None
-        except Exception:
-            return None
+        from apps.profiles.utils import get_avatar_url
+        return get_avatar_url(obj.author)
 
 
 # ReplySerializer
@@ -175,11 +172,8 @@ class ReplySerializer(serializers.ModelSerializer):
         Returns:
             str | None: The avatar URL, or None.
         """
-        try:
-            avatar = obj.author.profile.avatar
-            return avatar.url if avatar else None
-        except Exception:
-            return None
+        from apps.profiles.utils import get_avatar_url
+        return get_avatar_url(obj.author)
 
 
 # UpvotePostSerializer
@@ -498,11 +492,8 @@ class BasePostSerializer(serializers.ModelSerializer):
         Returns:
             str | None: The avatar URL, or None.
         """
-        try:
-            avatar = obj.author.profile.avatar
-            return avatar.url if avatar else None
-        except Exception:
-            return None
+        from apps.profiles.utils import get_avatar_url
+        return get_avatar_url(obj.author)
 
 
 # PostSerializer

@@ -39,6 +39,12 @@ def mock_celery_tasks(settings):
 
     patches = []
     for path in task_paths + signal_task_paths:
+        # PR-6: narrow the bare ``except Exception`` to the actual
+        # failure modes seen here — ``ModuleNotFoundError`` /
+        # ``ImportError`` when an optional app is not yet installed,
+        # and ``AttributeError`` when ``patch()`` cannot resolve the
+        # dotted path.  Anything else should bubble up so we don't
+        # mask real bugs in the patch wiring.
         try:
             mock_task = MagicMock()
             mock_task.delay = MagicMock(return_value=None)
@@ -46,12 +52,16 @@ def mock_celery_tasks(settings):
             p = patch(path, mock_task)
             p.start()
             patches.append(p)
-        except Exception:
-            pass  # If module not importable, skip silently
+        except (ModuleNotFoundError, ImportError, AttributeError):
+            # Module / attribute missing — task isn't installed in this
+            # test environment, nothing to patch.
+            pass
 
     yield
 
     for p in patches:
+        # ``p.stop()`` raises ``RuntimeError`` if the patcher was never
+        # successfully started — already specific, kept as-is.
         try:
             p.stop()
         except RuntimeError:
