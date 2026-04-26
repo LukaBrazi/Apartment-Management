@@ -10,6 +10,7 @@ from rest_framework import generics, status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 
 # Get the user model
 User = get_user_model()
@@ -43,6 +44,10 @@ class RatingCreateAPIView(generics.CreateAPIView):
     serializer_class = RatingSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "rating"
+    # PR-8: cap ratings at 30/hour per user.  Stops a compromised
+    # tenant account from sybil-attacking a single worker's reputation.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "rating_create"
 
     # Method to create a rating
     def create(self, request: Request, *args: Dict, **kwargs: Dict) -> Response:

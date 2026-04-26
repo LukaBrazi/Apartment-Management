@@ -57,8 +57,30 @@ INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in ("storages",)]
 
 # Disable throttling in tests — LocMemCache persists between test methods,
 # and login throttle (5/min) triggers 429 on repeated auth test calls.
+#
+# We zero out DEFAULT_THROTTLE_CLASSES so the global anon/user throttles
+# never bite, BUT we still keep the per-scope rates populated.  Why:
+# views can pin ``throttle_classes = [ScopedRateThrottle]`` directly on
+# the class body (PR-8 burst caps on issue/pass/post/rating creates),
+# and DRF's ``ScopedRateThrottle.allow_request`` resolves the rate from
+# ``THROTTLE_RATES`` regardless of what DEFAULT_THROTTLE_CLASSES says.
+# An empty rates dict raises ``ImproperlyConfigured: No default throttle
+# rate set for 'issue_create' scope`` in every issue-create test.
+#
+# Setting absurdly high values keeps the scope wired but practically
+# unreachable in any single test (the per-scope throttle tests in
+# test_burst_throttles.py override these explicitly).
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
     "DEFAULT_THROTTLE_CLASSES": [],
-    "DEFAULT_THROTTLE_RATES": {},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10000/day",
+        "user": "10000/day",
+        "login": "10000/day",
+        "password_reset": "10000/day",
+        "issue_create": "10000/hour",
+        "pass_create": "10000/hour",
+        "post_create": "10000/hour",
+        "rating_create": "10000/hour",
+    },
 }

@@ -238,6 +238,38 @@ python manage.py shell -c "from apps.common.tasks import seed_demo_reset_task; s
 
 ---
 
+## Production Logs — JSON (PR-8)
+
+Починаючи з PR-8 production-логи Django у Railway пишуться як
+структурований JSON (одне повідомлення = один рядок з полями
+`timestamp`, `level`, `logger`, `message`, `module`, `funcName`,
+`lineno`).
+
+Це робиться через override LOGGING у `server/config/settings/production.py`
+з форматтером `pythonjsonlogger.jsonlogger.JsonFormatter`. Dev / test
+залишаються з plain-text формат — читати у термінал зручніше.
+
+### Як читати ці логи
+
+```bash
+# Сирий JSON
+railway logs
+
+# Грепай по рівню
+railway logs | jq 'select(.level == "ERROR")'
+
+# Усі помилки за останню годину з конкретного логера
+railway logs | jq 'select(.level == "ERROR" and .logger | startswith("apps."))'
+
+# Тільки текст повідомлень (без JSON шуму)
+railway logs | jq -r '.message'
+```
+
+`django.request` логер виставлений у `WARNING` — INFO-логи 4xx
+запитів задушені, 5xx і unhandled exceptions залишаються видимими.
+
+---
+
 ## Контакти
 
 Якщо setup впав — звертайся до DevOps. Помилку постав у `#deploy-issues` Slack або зроби issue з тегом `infra`.

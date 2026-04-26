@@ -113,6 +113,25 @@ class ContentView(TimeStampedModel):
         verbose_name_plural = _("Content Views")
         unique_together = ["content_type", "object_id", "user", "viewer_ip"]
         ordering = ["-last_viewed"]
+        # PR-8: every read of an Issue / Post detail does a
+        # ``ContentView.objects.get_or_create(content_type=…, object_id=…,
+        # user=…, viewer_ip=…)`` and the annotation
+        # ``Count("content_views", distinct=True)`` joins on
+        # ``(content_type_id, object_id)``.  Without an index that join
+        # is a sequential scan as soon as the table grows past a few
+        # thousand rows.  The ``user`` + ``-created_at`` index supports
+        # future "history of pages this user viewed" queries which are
+        # likely once we ship a unified activity feed.
+        indexes = [
+            models.Index(
+                fields=["content_type", "object_id"],
+                name="contview_ct_obj_idx",
+            ),
+            models.Index(
+                fields=["user", "-created_at"],
+                name="contview_user_ts_idx",
+            ),
+        ]
 
     # String Representation
     def __str__(self) -> str:

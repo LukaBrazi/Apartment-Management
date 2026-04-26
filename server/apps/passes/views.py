@@ -4,6 +4,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.throttles import WriteOnlyScopedThrottle
 from apps.passes.filters import VehiclePassFilter
 from apps.passes.models import VehiclePass
 from apps.passes.permissions import IsGuardOrAdmin, IsTenant
@@ -18,6 +19,12 @@ class VehiclePassListCreateAPIView(generics.ListCreateAPIView):
 
     filter_backends = [DjangoFilterBackend]
     filterset_class = VehiclePassFilter
+    # PR-8: cap *only* POSTs at 30/hour per user — GETs are issued by the
+    # badge counter on every page load and must not burn the budget.
+    # ``WriteOnlyScopedThrottle.get_cache_key`` returns ``None`` on safe
+    # methods which DRF interprets as "skip throttling for this request".
+    throttle_classes = [WriteOnlyScopedThrottle]
+    throttle_scope = "pass_create"
 
     def get_permissions(self):
         if self.request.method == "POST":

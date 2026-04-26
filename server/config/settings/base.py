@@ -311,6 +311,13 @@ REST_FRAMEWORK = {
         "user": "500/day",
         "login": "5/minute",
         "password_reset": "3/hour",
+        # Per-endpoint write caps (PR-8) — sit on top of the global
+        # ``user`` quota.  Stop a single compromised account from
+        # spamming creates faster than a real user ever would.
+        "issue_create": "20/hour",
+        "pass_create": "30/hour",
+        "post_create": "10/hour",
+        "rating_create": "30/hour",
     },
 }
 

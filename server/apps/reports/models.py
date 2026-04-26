@@ -118,3 +118,20 @@ class Report(TimeStampedModel):
         verbose_name = _("Report")
         verbose_name_plural = _("Reports")
         ordering = ["-created_at"]
+        # PR-8: admin pages list complaints by reported user and by
+        # organisation, both newest-first.  Previously every admin
+        # filter scanned the full table — fine at 10 reports, painful
+        # at 1k.  No ``status`` column exists yet (auto-ban logic uses
+        # raw counts, not a state machine), so the index is on
+        # (reported_user, -created_at) instead of (reported_user,
+        # status).  When status arrives, replace it.
+        indexes = [
+            models.Index(
+                fields=["reported_user", "-created_at"],
+                name="report_user_ts_idx",
+            ),
+            models.Index(
+                fields=["organization", "-created_at"],
+                name="report_org_ts_idx",
+            ),
+        ]

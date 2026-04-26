@@ -42,6 +42,14 @@ djangorestframework-simplejwt==5.3.1  # https://github.com/jazzband/djangorestfr
 django-cors-headers==4.3.1  # https://github.com/adamchainz/django-cors-headers
 
 
+# Observability (PR-8)
+# ------------------------------------------------------------------------------
+# JSON-formatted log records for production — pipes cleanly into Railway
+# logs / Logtail / any aggregator that expects structured input.  Dev /
+# test still get plain text via base.py's LOGGING dict.
+python-json-logger==2.0.7  # https://github.com/madzak/python-json-logger
+
+
 # Seed / demo data
 # ------------------------------------------------------------------------------
 Faker==25.8.0  # https://github.com/joke2k/faker  — used by apps/common/seed/helpers.py

@@ -139,6 +139,29 @@ curl https://apartmentos.org/api/v1/health/
 
 Endpoint не експонує внутрішню інформацію (DB version, Redis URL тощо) — лише `ok`/`fail` на check.
 
+## Security Headers (PR-8)
+
+Заголовки безпеки відправляє **Next.js** (`client/next.config.mjs`),
+не Django. Користувачі ходять через Vercel, Django admin живе за
+секретним префіксом — окремий шар CSP на бекенді не потрібен.
+
+Ввімкнено:
+
+- **Content-Security-Policy** (baseline) — `default-src 'self'`,
+  `frame-ancestors 'none'`, `object-src 'none'`. `script-src` поки
+  з `'unsafe-inline' 'unsafe-eval'` через хайдрейт Next.js / React
+  Refresh — посилення через nonces планується наступним PR.
+  `connect-src` дозволяє `api.apartmentos.org` + Railway preview
+  домени; **не видаляйте** інакше всі API-запити заблокуються.
+- **X-Frame-Options: DENY**, **X-Content-Type-Options: nosniff**
+- **Referrer-Policy: strict-origin-when-cross-origin**
+- **Permissions-Policy** — забороняє camera / microphone / geolocation
+  за замовчуванням
+
+Lock-down тест `apps/common/tests/test_security_headers.py` падає,
+якщо хтось випадково видалить `headers()` callback або зламає
+важливу директиву.
+
 ## Ліцензія
 
 BSL-1.1 — дивіться LICENSE.

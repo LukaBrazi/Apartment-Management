@@ -26,6 +26,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 # Get the logger
@@ -292,6 +293,11 @@ class PostCreateAPIView(generics.CreateAPIView):
     renderer_classes = (GenericJSONRenderer,)
     object_label = "post"
     permission_classes = (CanCreateEditPost,)
+    # PR-8: cap forum posts at 10/hour per user.  Tighter than issues
+    # because forum posts are public to the whole org, so spam has a
+    # bigger blast radius.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "post_create"
 
     # Method to perform the creation
     def perform_create(self, serializer: PostSerializer) -> None:

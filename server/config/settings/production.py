@@ -115,6 +115,71 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
+# Logging — JSON for aggregation (Railway logs, Logtail, etc.)
+# ------------------------------------------------------------------------------
+# Production-only override: dev/test/CI keep base.py's plain-text formatter
+# so terminal output stays readable.  In prod every record is one JSON
+# object per line, which is what `railway logs | jq` and any log shipper
+# expect.  Renamed fields normalise the canonical names (`timestamp`,
+# `level`, `logger`) so a future move to a different aggregator is a
+# config flip, not a parser rewrite.
+#
+# `django.request` is pinned at WARNING — Django logs every 4xx as INFO
+# by default which drowns the signal in noise once we have any traffic.
+# Anything that genuinely needs a 4xx trace can flip this back at runtime
+# via `LOGGING_OVERRIDE_*` env vars in a follow-up.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "%(asctime)s %(name)s %(levelname)s %(message)s %(module)s %(funcName)s %(lineno)d",
+            "rename_fields": {
+                "asctime": "timestamp",
+                "levelname": "level",
+                "name": "logger",
+            },
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["console"],
+    },
+    "loggers": {
+        "django": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "django.request": {
+            # Tame the 4xx noise — only log 5xx / unhandled exceptions.
+            "level": "WARNING",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "celery": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "apps": {
+            # All our code (apps.common, apps.users, …) routes through
+            # this logger via `logging.getLogger(__name__)`.
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+    },
+}
+
+
 # Email — configure your SMTP provider (SendGrid, Resend, etc.)
 # ------------------------------------------------------------------------------
 EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"

@@ -19,6 +19,7 @@ from rest_framework import filters, generics, permissions, status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 # Get the logger
@@ -175,6 +176,11 @@ class IssueCreateAPIView(generics.CreateAPIView):
     serializer_class = IssueCreateSerializer
     renderer_classes = (GenericJSONRenderer,)
     object_label = "issue"
+    # PR-8: cap creates at 20/hour per user (see settings.base
+    # DEFAULT_THROTTLE_RATES["issue_create"]).  Stops a compromised
+    # cookie from spam-creating issues even with the daily user budget.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "issue_create"
 
     # Method to create an issue
     def perform_create(self, serializer: IssueCreateSerializer) -> None:
