@@ -2,6 +2,8 @@
 
 import type { Metadata } from "next";
 import { useGetSiteSettingsQuery } from "@/lib/redux/features/siteSettings/siteSettingsApiSlice";
+import { useAppSelector } from "@/lib/redux/hooks/typedHooks";
+import FeedbackForm from "@/components/feedback/FeedbackForm";
 import Image from "next/image";
 
 /**
@@ -15,6 +17,7 @@ import Image from "next/image";
  */
 export default function ContactsPage() {
   const { data: siteSettingsData, isLoading, error } = useGetSiteSettingsQuery();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   const contacts = siteSettingsData?.contacts || [];
   const settings = siteSettingsData?.settings;
@@ -152,6 +155,21 @@ export default function ContactsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Feedback Form — visible only to authenticated users */}
+      {isAuthenticated && (
+        <section className="mt-10 rounded-2xl border border-[#F1F5F9] bg-white p-6 shadow-sm dark:border-[#2D3D4F] dark:bg-[#1C2B3A]">
+          <h2 className="mb-1 text-lg font-semibold text-[#0F172A] dark:text-white">
+            Відгук про застосунок
+          </h2>
+          <p className="mb-4 text-sm text-[#6B7280]">
+            Ця форма — для відгуків про роботу застосунку ApartmentOS: зручність інтерфейсу,
+            помилки, побажання щодо функціоналу. Для звернень до керуючої компанії або з питань
+            обслуговування будинку — скористайтесь контактами вище або розділом «Заявки».
+          </p>
+          <FeedbackForm />
+        </section>
       )}
     </div>
   );

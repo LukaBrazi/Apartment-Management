@@ -1,0 +1,26 @@
+{% extends "base_email.html" %}
+{% block title %}
+    Новий відгук про застосунок
+{% endblock title %}
+{% block content %}
+    <h2>Новий відгук про застосунок ApartmentOS</h2>
+    <p><strong>Від користувача:</strong> {{ feedback.user.email }}</p>
+    <p><strong>Дата:</strong> {{ feedback.created_at|date:"d.m.Y H:i" }}</p>
+    <hr />
+    <p><strong>Повідомлення:</strong></p>
+    <p style="white-space: pre-wrap; background: #f5f5f5; padding: 12px; border-radius: 4px;">{{ feedback.message }}</p>
+    <hr />
+    <p>
+        <a href="/admin/feedback/feedback/{{ feedback.pkid }}/change/">
+            Переглянути у Django Admin
+        </a>
+    </p>
+    <p>
+        Або перейти до <a href="/admin/feedback/feedback/">списку всіх відгуків</a>.
+    </p>
+    <p>
+        Regards,
+        <br />
+        The {{ site_name }} Team
+    </p>
+{% endblock content %}
