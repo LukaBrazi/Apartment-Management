@@ -7,9 +7,11 @@ from typing import Dict, Optional
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from djoser.views import UserViewSet
 from rest_framework import permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
@@ -574,3 +576,38 @@ class LogoutAPIView(APIView):
 
         # Return the response
         return res
+
+
+# ── Password Reset Throttle (PR-7) ────────────────────────────────────────────
+
+class ThrottledPasswordResetUserViewSet(UserViewSet):
+    """Djoser ``UserViewSet`` subclass with rate-limited password reset.
+
+    Why
+    ---
+    Djoser's stock ``UserViewSet`` ships ``reset_password`` and
+    ``reset_password_confirm`` actions with no throttle. Without a cap a
+    malicious actor can send unlimited password-reset emails to any
+    registered address (email-bombing) and also probe whether an address
+    is registered by side-channel (timing / SMTP behaviour).
+
+    ``settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["password_reset"]``
+    is set to ``"3/hour"``; this subclass binds that scope via
+    ``ScopedRateThrottle`` for the two reset actions only. All other
+    Djoser actions inherit Djoser's defaults so we don't accidentally
+    over-throttle account creation, /me lookups, etc. — those go through
+    Djoser's stock view (or in our case, are not even exposed because
+    ``urls.py`` only routes the reset actions to this subclass).
+
+    Implementation note
+    -------------------
+    ``get_throttles`` runs once per request after ``initialize_request``,
+    so setting ``self.throttle_scope`` inside it is safe; DRF reads the
+    attribute when it instantiates ``ScopedRateThrottle``.
+    """
+
+    def get_throttles(self):
+        if self.action in ("reset_password", "reset_password_confirm"):
+            self.throttle_scope = "password_reset"
+            return [ScopedRateThrottle()]
+        return super().get_throttles()

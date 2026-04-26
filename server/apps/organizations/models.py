@@ -327,6 +327,19 @@ class OrganizationMembership(TimeStampedModel):
         verbose_name_plural = _("Organization Memberships")
         unique_together = [("user", "organization")]
         ordering = ["-created_at"]
+        indexes = [
+            # PR-7: ``get_user_organizations(user)`` runs on every authenticated
+            # request via IssueListAPIView, VehiclePassListAPIView, etc. The
+            # query filters by ``user`` AND ``is_active=True`` simultaneously;
+            # without a composite index Postgres can only use one of the
+            # single-column indexes (``user_id`` FK or ``is_active``) and has
+            # to filter the rest in memory. This composite covers the hot
+            # auth-path predicate exactly.
+            models.Index(
+                fields=["user", "is_active"],
+                name="orgmem_user_active_idx",
+            ),
+        ]
 
     # String Representation
     def __str__(self) -> str:

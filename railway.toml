@@ -5,6 +5,12 @@ dockerfilePath = "Dockerfile"
 [deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+# PR-7: liveness/readiness probe. Railway hits this URL after deploy
+# and rolls back if it does not return 2xx within healthcheckTimeout.
+# The endpoint pings DB + Redis and returns 503 on either failure
+# (see server/apps/common/health.py).
+healthcheckPath = "/api/v1/health/"
+healthcheckTimeout = 30
 
 [environments.production]
 # Цей railway.toml описує основний web-сервіс (Django + Gunicorn).

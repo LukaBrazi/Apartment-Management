@@ -34,7 +34,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang="uk" suppressHydrationWarning>
 			<body className={`${inter.variable} ${robotoSlab.variable} font-inter antialiased`}>
 				<Toast />
 				<ReduxProvider>
