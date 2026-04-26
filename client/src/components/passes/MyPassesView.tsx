@@ -8,7 +8,7 @@ import { uk } from "date-fns/locale";
 import Spinner from "@/components/shared/Spinner";
 import {
 	useGetMyPassesQuery,
-	useClosePassMutation,
+	useDeletePassMutation,
 } from "@/lib/redux/features/passes/passApiSlice";
 import { VehiclePass } from "@/types";
 import { toast } from "react-toastify";
@@ -53,14 +53,15 @@ function FilterTab({
 
 function ResidentPassCard({ pass }: { pass: VehiclePass }) {
 	const isClosed = pass.status === "closed";
-	const [closePass, { isLoading }] = useClosePassMutation();
+	const [deletePass, { isLoading }] = useDeletePassMutation();
 
-	const handleClose = async () => {
+	const handleDelete = async () => {
+		if (!confirm("Видалити перепустку? Цю дію не можна скасувати.")) return;
 		try {
-			await closePass(pass.id).unwrap();
-			toast.success("Перепустку позначено як закриту.");
+			await deletePass(pass.id).unwrap();
+			toast.success("Перепустку видалено.");
 		} catch {
-			toast.error("Не вдалося закрити перепустку.");
+			toast.error("Не вдалося видалити перепустку.");
 		}
 	};
 
@@ -109,12 +110,12 @@ function ResidentPassCard({ pass }: { pass: VehiclePass }) {
 
 			{!isClosed && (
 				<button
-					onClick={handleClose}
+					onClick={handleDelete}
 					disabled={isLoading}
 					className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#C0392B] bg-[#FEE2E2] py-2 text-sm font-medium text-[#C0392B] transition-colors hover:bg-[#FECACA] disabled:opacity-50"
 				>
 					<X className="h-3.5 w-3.5" />
-					{isLoading ? "Закриваємо…" : "Закрити перепустку"}
+					{isLoading ? "Видаляємо…" : "Видалити перепустку"}
 				</button>
 			)}
 		</div>
