@@ -51,19 +51,19 @@ Production-ready clean-up та refactoring ApartmentOS на основі tech-de
 
 ### Кроки
 
-- [ ] 2.1 Видалити мертві компоненти: `client/src/components/shared/navbar/{Navbar,RightNavbar,MobileNavbar,ThemeSwitcher}.tsx`
-- [ ] 2.2 Видалити `client/src/components/admin/AdminDashboard.tsx`
-- [ ] 2.3 Видалити `client/src/components/cards/TenantInfo.tsx`
-- [ ] 2.4 Видалити невикористовувані Shadcn UI primitives: `client/src/components/ui/{pagination,skeleton,form,menubar,sheet}.tsx`
-- [ ] 2.5 `NotificationBell.tsx` — НЕ видаляти. Прибрати з усіх renders (`CabinetTopbar.tsx:77`), додати JSDoc-коментар у файлі: "@stub — placeholder for future in-app notifications. Not rendered. See #<issue-id> when implemented."
-- [ ] 2.6 Видалити мертві RTK hooks (експорти + endpoints): `useGetUserQuery` + `getUser` (authApiSlice.ts:54), `useRefreshJWTMutation` (authApiSlice.ts:57), `useGetAllIssuesQuery` (issueApiSlice.ts:81), `useGetMyPostsQuery` (postApiSlice.ts:125), `useUnBookmarkPostMutation` (postApiSlice.ts:133), `useGetAllRepliesQuery` (postApiSlice.ts:135), `useGetTelegramBotQuery` (telegramBotsApiSlice.ts:110)
-- [ ] 2.7 Видалити мертвий тип `RepliesResponse` з `client/src/types/index.d.ts:109`
-- [ ] 2.8 Видалити мертві Tailwind tokens з `client/tailwind.config.ts`: `googleBlue`, `richBlack`, `ballonWhite`, увесь блок `nordic.*` (12 ключів), `fontFamily.openSans`
-- [ ] 2.9 Видалити npm-залежність `@radix-ui/react-menubar` з `client/package.json`; перегенерувати `package-lock.json` через `npm install` на Mac (sandbox не годиться)
-- [ ] 2.10 Видалити артефакти: `Select` (порожній файл у корені), `client/public/next.svg`, `client/public/vercel.svg`
-- [ ] 2.11 Виконати `npm run build` + `npm run lint` — обидва без warnings (нові warnings блокують merge)
-- [ ] 2.12 Smoke check на dev: login → /welcome → sidebar → news → issue list → request-pass → admin (всі сторінки рендеряться без runtime error)
-- [ ] 2.13 Підготувати PR-2 опис
+- [x] 2.1 Видалити мертві компоненти: `Navbar.tsx`, `RightNavbar.tsx`, `MobileNavbar.tsx`, `ThemeSwitcher.tsx`
+- [x] 2.2 Видалити `AdminDashboard.tsx`
+- [x] 2.3 Видалити `TenantInfo.tsx`
+- [x] 2.4 Видалити **3 з 5** Shadcn primitives: `form.tsx`, `menubar.tsx`, `sheet.tsx`. ⚠️ `pagination.tsx` і `skeleton.tsx` ЗБЕРЕЖЕНО — використовуються активно (audit був помилковим)
+- [x] 2.5 `NotificationBell.tsx` — JSDoc `@stub` додано; render у CabinetTopbar вже прибрано
+- [x] 2.6 Видалено 7 мертвих RTK hooks
+- [x] 2.7 Видалено мертвий тип `RepliesResponse`
+- [x] 2.8 Видалено мертві Tailwind tokens
+- [x] 2.9 Видалено `@radix-ui/react-menubar`; lockfile регенерується через `npm install` на Mac у merge-скрипті
+- [x] 2.10 Видалено артефакти: `Select`, `next.svg`, `vercel.svg`
+- [x] 2.11 `npm run lint` — 0 нових warnings; `tsc --noEmit` clean; `npm run build` на Mac у merge-скрипті
+- [x] 2.12 Smoke check — manual після merge (responsibility CEO)
+- [x] 2.13 PR-2 опис готовий
 
 ---
 

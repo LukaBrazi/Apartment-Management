@@ -4,7 +4,6 @@ import {
 	LoginUserData,
 	ResetPasswordConfirmData,
 	ResetPasswordData,
-	UserResponse,
 } from "@/types";
 
 export const authApiSlice = baseApiSlice.injectEndpoints({
@@ -36,23 +35,12 @@ export const authApiSlice = baseApiSlice.injectEndpoints({
 				method: "POST",
 			}),
 		}),
-		refreshJWT: builder.mutation<void, void>({
-			query: () => ({
-				url: "/auth/refresh/",
-				method: "POST",
-			}),
-		}),
-		getUser: builder.query<UserResponse, void>({
-			query: () => "/auth/users/me/",
-		}),
 	}),
 });
 
 export const {
 	useLoginUserMutation,
 	useLogoutUserMutation,
-	useGetUserQuery,
 	useResetPasswordConfirmMutation,
 	useResetPasswordRequestMutation,
-	useRefreshJWTMutation,
 } = authApiSlice;

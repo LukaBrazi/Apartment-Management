@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * @stub Placeholder for future in-app notifications feature.
+ *
+ * Currently NOT rendered anywhere — kept in repo as scaffold for when
+ * backend `/api/v1/notifications/` endpoint and unread-count are
+ * implemented. Remove from this stub state by:
+ *   1. Replacing local mock state with `useGetNotificationsQuery` (RTK)
+ *   2. Re-importing in `CabinetTopbar.tsx` and `MobileHeader.tsx`
+ *   3. Adding e2e coverage in sckandi-e2e
+ *
+ * Do NOT delete — UI design + i18n labels are referenced from this file.
+ */
+
 import { Bell, Inbox } from "lucide-react";
 import {
 	DropdownMenu,

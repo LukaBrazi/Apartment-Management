@@ -106,15 +106,6 @@ export interface PostsByTagResponse {
 	};
 }
 
-export interface RepliesResponse {
-	replies: {
-		count: number;
-		next: null | string;
-		previous: null | string;
-		results: Reply[];
-	};
-}
-
 export interface BookmarkedPostsResponse {
 	bookmarked_posts: {
 		count: number;

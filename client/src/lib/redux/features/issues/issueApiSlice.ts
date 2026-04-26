@@ -24,10 +24,6 @@ export const issueApiSlice = baseApiSlice.injectEndpoints({
 			}),
 			invalidatesTags: ["Issue"],
 		}),
-		getAllIssues: builder.query<MyIssuesResponse, void>({
-			query: () => "/issues/",
-			providesTags: ["Issue"],
-		}),
 		getMyIssues: builder.query<MyIssuesResponse, void>({
 			query: () => "/issues/my-issues/",
 			providesTags: ["Issue"],
@@ -78,7 +74,6 @@ export const issueApiSlice = baseApiSlice.injectEndpoints({
 export const {
 	useReportIssueMutation,
 	useDeleteIssueMutation,
-	useGetAllIssuesQuery,
 	useGetMyIssuesQuery,
 	useGetSingleIssueQuery,
 	useGetMyAssignedIssuesQuery,

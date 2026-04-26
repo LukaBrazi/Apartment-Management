@@ -36,11 +36,6 @@ export const telegramBotsApiSlice = baseApiSlice.injectEndpoints({
 			providesTags: ["TelegramBot"],
 		}),
 
-		getTelegramBot: builder.query<OrganizationBot, string>({
-			query: (id) => `/notifications/telegram-bots/${id}/`,
-			providesTags: ["TelegramBot"],
-		}),
-
 		createTelegramBot: builder.mutation<
 			OrganizationBot,
 			OrganizationBotCreateData
@@ -107,7 +102,6 @@ export const telegramBotsApiSlice = baseApiSlice.injectEndpoints({
 export const {
 	useListTelegramBotsQuery,
 	useListBotOrganizationsQuery,
-	useGetTelegramBotQuery,
 	useCreateTelegramBotMutation,
 	useUpdateTelegramBotMutation,
 	useDeleteTelegramBotMutation,
