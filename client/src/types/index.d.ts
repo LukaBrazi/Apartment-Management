@@ -222,8 +222,8 @@ export interface IssueData {
 }
 
 /**
- * PR-4: Issue reporting is Unit-scoped now.  The backend resolves the
- * Unit from ``request.user.profile.unit`` by default, so no identifier
+ * Issue reporting is Unit-scoped.  The backend resolves the Unit from
+ * the user's primary Residency (see PR-11) by default, so no identifier
  * is required in the payload.  ``unitId`` is forwarded only when the
  * reporter is a dispatcher acting on a foreign Unit.
  */

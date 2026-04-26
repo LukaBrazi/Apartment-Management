@@ -1,11 +1,10 @@
 # Imports
 import uuid
-from typing import Optional
 
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.db import IntegrityError, models
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 # Get the user model
@@ -77,7 +76,6 @@ class ContentView(TimeStampedModel):
 
     Methods:
         __str__(): Return the string representation of the model.
-        record_view(content_object, user, viewer_ip): Record a view of the content
     """
 
     # Attributes
@@ -128,48 +126,6 @@ class ContentView(TimeStampedModel):
         return (
             f"{self.content_object} viewed by {self.user.full_name or self.viewer_ip}"
         )
-
-    # Record View Method
-    @classmethod
-    def record_view(
-        cls,
-        content_object,
-        user: Optional[User] = None,  # type: ignore
-        viewer_ip: Optional[str] = None,
-    ) -> None:
-        """Record a view of the content.
-
-        Args:
-            content_object: The content object.
-            user (Optional[User]): The user who viewed the content.
-            viewer_ip (Optional[str]): The IP address of the viewer.
-        """
-
-        # Get the content type
-        content_type = ContentType.objects.get_for_model(content_object)
-
-        # Try
-        try:
-            # Get or create the view
-            view, created = cls.objects.get_or_create(
-                content_type=content_type,
-                object_id=content_object.pk,
-                user=user,
-                defaults={"user": user, "viewer_ip": viewer_ip},
-            )
-
-            # If not created
-            if not created:
-                # Update the last viewed timestamp
-                view.last_viewed = view.last_viewed
-
-                # Save the view
-                view.save()
-
-        # If integrity error
-        except IntegrityError:
-            # Pass
-            pass
 
 
 # ── GDPR: ConsentLog ──────────────────────────────────────────────────────────

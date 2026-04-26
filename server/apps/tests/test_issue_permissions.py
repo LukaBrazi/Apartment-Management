@@ -69,7 +69,7 @@ def test_tenant_cannot_create_issue_for_other_unit():
 
 @pytest.mark.django_db
 def test_tenant_can_create_issue_via_default_path():
-    """PR-4: POST /issues/create/ resolves the Unit from profile.unit."""
+    """PR-4: POST /issues/create/ resolves the Unit from primary Residency."""
     tenant = UserFactory()
     unit = make_unit_with_tenant(tenant)
 

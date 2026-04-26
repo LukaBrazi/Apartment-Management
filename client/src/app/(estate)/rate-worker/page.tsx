@@ -65,7 +65,7 @@ function StarReadOnly({ value }: { value: number }) {
 
 // ── Issue card ───────────────────────────────────────────────────────────────
 
-function IssueCard({ issue }: { issue: ReviewableIssue }) {
+function ReviewIssueCard({ issue }: { issue: ReviewableIssue }) {
 	const [rating, setRating] = useState(0);
 	const [comment, setComment] = useState("");
 	const [reviewIssue, { isLoading }] = useReviewIssueMutation();
@@ -236,7 +236,7 @@ function RateWorkerContent() {
 						Очікують оцінки — {pending.length}
 					</h2>
 					{pending.map((issue) => (
-						<IssueCard key={issue.id} issue={issue} />
+						<ReviewIssueCard key={issue.id} issue={issue} />
 					))}
 				</section>
 			)}
@@ -248,7 +248,7 @@ function RateWorkerContent() {
 						Вже оцінено — {rated.length}
 					</h2>
 					{rated.map((issue) => (
-						<IssueCard key={issue.id} issue={issue} />
+						<ReviewIssueCard key={issue.id} issue={issue} />
 					))}
 				</section>
 			)}

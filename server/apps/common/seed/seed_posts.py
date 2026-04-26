@@ -17,7 +17,7 @@ Output per the blueprint:
 
 Signal hygiene
 --------------
-``apps.notifications.signals.on_announcement_created`` dispatches a Celery
+``apps.notifications.signals.on_announcement_saved`` dispatches a Celery
 ``notify_building_tenants_announcement`` task on every insert.  We
 disconnect it for the duration of the seed and reconnect in a ``finally``.
 

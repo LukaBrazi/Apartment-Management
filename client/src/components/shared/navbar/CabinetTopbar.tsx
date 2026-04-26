@@ -4,7 +4,7 @@
 
 import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
-import { useUserProfile } from "@/hooks/useUseProfile";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import Link from "next/link";
 
 // Route → breadcrumb label map

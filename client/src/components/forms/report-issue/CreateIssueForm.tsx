@@ -27,8 +27,7 @@ const ClientOnly = dynamic<{ children: React.ReactNode }>(
 );
 
 export default function CreateIssueForm() {
-	// PR-4: the reporter's Unit is read from their Profile.  Backend
-	// derives the target Unit from ``profile.unit`` when no id is sent.
+	// Backend resolves Unit from primary Residency (see PR-11) when no id is sent.
 	const { data: profileData } = useGetUserProfileQuery();
 	const profile = profileData?.profile;
 	const hasUnit = Boolean(profile?.unit_id);
@@ -78,7 +77,7 @@ export default function CreateIssueForm() {
 		}
 
 		try {
-			// Backend resolves the Unit from request.user.profile.unit.
+			// Backend resolves Unit from primary Residency (see PR-11).
 			await reportIssue(formValues).unwrap();
 			toast.success("Заявку подано. Підтвердження надіслано на вашу пошту.");
 			reset();

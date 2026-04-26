@@ -3,16 +3,17 @@
 /**
  * Mobile-only top header.
  *
- * Rendered below the `md` breakpoint. Above `md` the existing desktop
- * `<Navbar />` takes over (see `(estate)/layout.tsx`).
+ * Rendered below the `md` breakpoint. Above `md` the indigo
+ * `<LeftNavbar />` + `<CabinetTopbar />` cabinet layout takes over
+ * (see `(estate)/layout.tsx`).
  *
  * Structure:
- *   [ ApartmentOS logo ]                    [ 🔔 notif ] [ avatar ]
+ *   [ ApartmentOS logo ]                                    [ avatar ]
  *
- * The header deliberately omits the `MobileNavbar` hamburger — the
- * bottom tab bar replaces it. Keeping the logo tappable (links home),
- * the notification bell, and the avatar preserves the three actions a
- * tenant actually uses from the top of the screen.
+ * The header deliberately omits a hamburger — the bottom tab bar
+ * replaces it. Keeping the logo tappable (links home) and the avatar
+ * preserves the two actions a tenant actually uses from the top of
+ * the screen on mobile.
  */
 
 import Image from "next/image";

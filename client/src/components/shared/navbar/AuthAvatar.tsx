@@ -10,7 +10,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthNavigation } from "@/hooks";
-import { useUserProfile } from "@/hooks/useUseProfile";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { LogOut, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";

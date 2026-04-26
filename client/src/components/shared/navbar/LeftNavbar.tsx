@@ -5,7 +5,7 @@ import { useAuthNavigation } from "@/hooks";
 import { useGetMyIssuesQuery } from "@/lib/redux/features/issues/issueApiSlice";
 import { useGetMyPassesQuery } from "@/lib/redux/features/passes/passApiSlice";
 import { useGetNewsQuery } from "@/lib/redux/features/news/newsApiSlice";
-import { useUserProfile } from "@/hooks/useUseProfile";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { Building2, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

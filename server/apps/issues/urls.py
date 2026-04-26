@@ -19,7 +19,7 @@ urlpatterns = [
     path("assigned/", AssignedIssuesListAPIView.as_view(), name="list-assigned-issues"),
     path("my-issues/", MyIssuesListAPIView.as_view(), name="list-my-issues"),
     path("my/reviewable/", MyReviewableIssuesAPIView.as_view(), name="my-reviewable-issues"),
-    # PR-4: default path — resolves unit from request.user.profile.unit.
+    # PR-4: default path — resolves unit from primary Residency.
     path("create/", IssueCreateAPIView.as_view(), name="create-issue-default"),
     # Explicit Unit targeting (used by dispatchers reporting for a foreign unit).
     path(

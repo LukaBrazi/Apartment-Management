@@ -114,8 +114,8 @@ collectstatic:
 minio-init:
 	@echo "Створення MinIO bucket та налаштування публічного доступу до static..."
 	$(COMPOSE) exec minio mc alias set local http://localhost:9000 minioadmin minioadmin123
-	$(COMPOSE) exec minio mc mb --ignore-existing local/skandi-apartments
-	$(COMPOSE) exec minio mc anonymous set public local/skandi-apartments/static
+	$(COMPOSE) exec minio mc mb --ignore-existing local/apartmentos-local
+	$(COMPOSE) exec minio mc anonymous set public local/apartmentos-local/static
 	@echo "MinIO bucket готовий."
 
 # --- Повний перезапуск ---
@@ -153,8 +153,8 @@ fresh: docker-start
 	fi
 	@echo "🪣 [6/8] Створюємо MinIO bucket ДО старту сервера..."
 	$(COMPOSE) exec -T minio mc alias set local http://localhost:9000 minioadmin minioadmin123
-	$(COMPOSE) exec -T minio mc mb --ignore-existing local/skandi-apartments
-	$(COMPOSE) exec -T minio mc anonymous set public local/skandi-apartments/static
+	$(COMPOSE) exec -T minio mc mb --ignore-existing local/apartmentos-local
+	$(COMPOSE) exec -T minio mc anonymous set public local/apartmentos-local/static
 	@echo "🚀 [7/8] Піднімаємо сервер та інші сервіси..."
 	$(COMPOSE) up -d
 	@echo "⏳ Чекаємо готовності сервера..."
