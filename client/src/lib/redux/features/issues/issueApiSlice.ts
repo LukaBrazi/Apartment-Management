@@ -6,6 +6,7 @@ import {
 	MyAssignedIssuesResponse,
 	MyIssuesResponse,
 	ReportIssueData,
+	ReviewableIssue,
 	UpdateIssueData,
 	UpdateIssueResponse,
 } from "@/types";
@@ -67,6 +68,10 @@ export const issueApiSlice = baseApiSlice.injectEndpoints({
 			query: (issueId) => `/issues/${issueId}/reviews/`,
 			providesTags: ["Issue"],
 		}),
+		getMyReviewableIssues: builder.query<ReviewableIssue[], void>({
+			query: () => "/issues/my/reviewable/",
+			providesTags: ["Issue"],
+		}),
 	}),
 });
 
@@ -80,4 +85,5 @@ export const {
 	useUpdateIssueMutation,
 	useReviewIssueMutation,
 	useGetIssueReviewsQuery,
+	useGetMyReviewableIssuesQuery,
 } = issueApiSlice;

@@ -241,6 +241,47 @@ class IssueAdminUpdateSerializer(serializers.ModelSerializer):
         return user
 
 
+class ReviewableIssueSerializer(serializers.ModelSerializer):
+    """Read-only serializer for the tenant's "rate my worker" list.
+
+    Returns done issues that have an assigned worker, annotated with
+    ``my_review`` — the current user's review for this issue (null if
+    they haven't rated yet).  The request context is required so the
+    serializer knows which user to look up.
+    """
+
+    assigned_to_name = serializers.ReadOnlyField(source="assigned_to.get_full_name")
+    assigned_to_username = serializers.ReadOnlyField(source="assigned_to.username")
+    my_review = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Issue
+        fields = [
+            "id",
+            "title",
+            "assigned_to_name",
+            "assigned_to_username",
+            "resolved_on",
+            "created_at",
+            "my_review",
+        ]
+
+    def get_my_review(self, obj):
+        request = self.context.get("request")
+        if request is None:
+            return None
+        review = IssueReview.objects.filter(
+            issue=obj, reviewer=request.user
+        ).first()
+        if review is None:
+            return None
+        return {
+            "id": str(review.id),
+            "rating": review.rating,
+            "comment": review.comment or "",
+        }
+
+
 class IssueReviewSerializer(serializers.ModelSerializer):
     """Serializer for creating and reading IssueReview objects.
 

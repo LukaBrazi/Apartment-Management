@@ -8,7 +8,7 @@ from apps.common.renderers import GenericJSONRenderer
 from apps.issues.emails import send_issue_confirmation_email
 from apps.issues.filters import IssueFilter
 from apps.issues.models import Issue, IssueReview
-from apps.issues.serializers import IssueAdminUpdateSerializer, IssueCreateSerializer, IssueReviewSerializer, IssueSerializer, IssueStatusUpdateSerializer
+from apps.issues.serializers import IssueAdminUpdateSerializer, IssueCreateSerializer, IssueReviewSerializer, IssueSerializer, IssueStatusUpdateSerializer, ReviewableIssueSerializer
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
 from django.http import Http404
@@ -598,6 +598,34 @@ class IssueDeleteAPIView(generics.DestroyAPIView):
         return Response(
             status=status.HTTP_204_NO_CONTENT,
         )
+
+
+class MyReviewableIssuesAPIView(generics.ListAPIView):
+    """GET /issues/my/reviewable/
+
+    Returns the current user's done issues that have an assigned worker.
+    Each item includes ``my_review`` (null = not yet rated).
+    Tenants use this list to rate the worker who resolved their request.
+    """
+
+    serializer_class = ReviewableIssueSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        from apps.organizations.utils import get_user_organizations
+
+        qs = (
+            Issue.objects.filter(
+                reported_by=self.request.user,
+                status=Issue.IssueStatus.DONE,
+                assigned_to__isnull=False,
+            )
+            .select_related("assigned_to")
+            .order_by("-resolved_on", "-created_at")
+        )
+        if self.request.user.is_superuser:
+            return qs
+        return qs.filter(organization__in=get_user_organizations(self.request.user))
 
 
 class IssueReviewAPIView(APIView):

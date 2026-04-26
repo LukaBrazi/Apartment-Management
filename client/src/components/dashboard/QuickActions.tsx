@@ -49,7 +49,7 @@ const ACTIONS: Action[] = [
 		variant: "neutral",
 	},
 	{
-		href: "/add-rating",
+		href: "/rate-worker",
 		label: "Оцінити",
 		subtitle: "Роботу майстра",
 		icon: <Star className="h-5 w-5" />,
@@ -110,7 +110,7 @@ export default function QuickActions() {
 					<AlertTriangle className="h-4 w-4" />
 					Подати скаргу
 				</Link>
-				<Link href="/add-rating" className={DESKTOP_BTN_SECONDARY}>
+				<Link href="/rate-worker" className={DESKTOP_BTN_SECONDARY}>
 					<Star className="h-4 w-4" />
 					Оцінити майстра
 				</Link>

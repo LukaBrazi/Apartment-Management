@@ -488,6 +488,22 @@ export type Occupation =
 	| "owner"
 	| "guard";
 
+export interface ReviewableIssueReview {
+	id: string;
+	rating: number;
+	comment: string;
+}
+
+export interface ReviewableIssue {
+	id: string;
+	title: string;
+	assigned_to_name: string;
+	assigned_to_username: string;
+	resolved_on: string | null;
+	created_at: string;
+	my_review: ReviewableIssueReview | null;
+}
+
 export interface VehiclePass {
 	id: string;
 	tenant_name: string;
