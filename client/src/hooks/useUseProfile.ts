@@ -8,5 +8,8 @@ export function useUserProfile() {
 		skip: !isAuthenticated,
 	});
 
-	return { profile: data?.profile, isLoading, isError };
+	// When not authenticated return undefined explicitly — RTK Query keeps the
+	// last cached value even after skip=true, which would show a stale name in
+	// the topbar after logout.
+	return { profile: isAuthenticated ? data?.profile : undefined, isLoading, isError };
 }
