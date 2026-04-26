@@ -399,6 +399,7 @@ export interface Profile {
 		| "electrician"
 		| "hvac"
 		| "tenant"
+		| "owner"
 		| "guard";
 	reputation: number;
 	date_joined: string;
