@@ -1,3 +1,4 @@
+import ConsentGate from "@/components/consent/ConsentGate";
 import EstateAuthGate from "@/components/shared/EstateAuthGate";
 import BottomNav from "@/components/shared/navbar/BottomNav";
 import CabinetTopbar from "@/components/shared/navbar/CabinetTopbar";
@@ -34,7 +35,9 @@ export default function layout({ children }: LayoutProps) {
 				<div className="flex flex-1 flex-col md:overflow-hidden">
 					<CabinetTopbar />
 					<section className="flex min-h-screen flex-1 flex-col overflow-y-auto px-4 pb-20 pt-16 md:min-h-0 md:p-8 md:pt-6 md:pb-6">
-						<EstateAuthGate>{children}</EstateAuthGate>
+						<EstateAuthGate>
+							<ConsentGate>{children}</ConsentGate>
+						</EstateAuthGate>
 					</section>
 				</div>
 			</div>

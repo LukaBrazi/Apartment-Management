@@ -362,6 +362,16 @@ SIMPLE_JWT = {
 # server-side marker that could desync.
 REMEMBER_ME_REFRESH_LIFETIME = timedelta(days=14)
 
+# GDPR — PR-5 ToS / Privacy versioned consent
+# -------------------------------------------------------------------------------
+# Bumping either of these versions flips every existing user's consent
+# from "current" to "outdated", and the ConsentGate modal forces re-accept
+# on next page load.  The strings are free-form (semver, ISO date, etc.) —
+# they're stored verbatim in ConsentLog.version for the audit trail.
+TOS_VERSION = env.str("TOS_VERSION", default="1.0")
+PRIVACY_VERSION = env.str("PRIVACY_VERSION", default="1.0")
+
+
 # Telegram — PR-14 multi-tenant bots
 # -------------------------------------------------------------------------------
 # Bot tokens are Fernet-encrypted at rest (see apps/notifications/encryption.py

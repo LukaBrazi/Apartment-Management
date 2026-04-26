@@ -133,19 +133,28 @@ class ContentView(TimeStampedModel):
 class ConsentLog(models.Model):
     """ConsentLog
 
-    GDPR Art. 7 — Records each time a user gives or withdraws consent
-    for a specific purpose (e.g. marketing emails, analytics tracking).
+    GDPR Art. 7 — Records each time a user accepts a versioned legal
+    document (Terms of Service, Privacy Policy) or gives/withdraws
+    consent for a marketing/analytics purpose.
 
     Immutable: records are never updated, only appended.
 
-    Attributes:
-        user (ForeignKey): The user who gave/withdrew consent.
-        purpose (str): A short machine-readable key (e.g. "marketing", "analytics").
-        given (bool): True = consent given, False = consent withdrawn.
-        ip_address (str): IP address at time of consent action.
-        user_agent (str): Browser UA string at time of consent action.
-        timestamp (DateTimeField): When the action occurred (auto-set).
+    The model carries two parallel field sets:
+
+    *Versioned consent* (PR-5 GDPR MVP — ToS + Privacy):
+        consent_type ∈ {"tos", "privacy"} + version + accepted_at.
+        Used by /api/v1/consent/ and /api/v1/consent/me/.
+
+    *Purpose-based consent* (legacy, marketing/analytics):
+        purpose ∈ Purpose.choices + given (bool).  Kept for the existing
+        ``apps.tests.test_gdpr_fix5_audit_consent`` suite and any future
+        cookie banner.  Both sets are nullable so a single row only
+        populates the columns it needs.
     """
+
+    class ConsentType(models.TextChoices):
+        TOS = ("tos", _("Terms of Service"))
+        PRIVACY = ("privacy", _("Privacy Policy"))
 
     class Purpose(models.TextChoices):
         MARKETING = ("marketing", _("Marketing emails"))
@@ -161,16 +170,43 @@ class ConsentLog(models.Model):
         related_name="consent_logs",
         verbose_name=_("User"),
     )
+
+    # PR-5 versioned consent (ToS / Privacy)
+    consent_type = models.CharField(
+        _("Consent Type"),
+        max_length=20,
+        choices=ConsentType.choices,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    version = models.CharField(
+        _("Version"),
+        max_length=20,
+        blank=True,
+        default="",
+    )
+    accepted_at = models.DateTimeField(
+        _("Accepted At"),
+        auto_now_add=True,
+        db_index=True,
+    )
+
+    # Legacy purpose-based consent (marketing / analytics / notifications)
     purpose = models.CharField(
         _("Purpose"),
         max_length=50,
         choices=Purpose.choices,
+        blank=True,
+        default="",
         db_index=True,
     )
     given = models.BooleanField(
         _("Consent Given"),
+        default=True,
         help_text=_("True = consent given, False = consent withdrawn."),
     )
+
     ip_address = models.GenericIPAddressField(
         _("IP Address"), null=True, blank=True
     )
@@ -180,13 +216,22 @@ class ConsentLog(models.Model):
     class Meta:
         verbose_name = _("Consent Log")
         verbose_name_plural = _("Consent Logs")
-        ordering = ["-timestamp"]
+        ordering = ["-accepted_at"]
         indexes = [
             models.Index(fields=["user", "purpose"], name="consent_user_purpose_idx"),
             models.Index(fields=["purpose", "timestamp"], name="consent_purpose_ts_idx"),
+            models.Index(
+                fields=["user", "consent_type", "-accepted_at"],
+                name="consent_user_type_ts_idx",
+            ),
         ]
 
     def __str__(self) -> str:
+        if self.consent_type:
+            return (
+                f"{self.user} | {self.consent_type} v{self.version} "
+                f"@ {self.accepted_at:%Y-%m-%d}"
+            )
         action = "gave" if self.given else "withdrew"
         return f"{self.user} {action} consent for '{self.purpose}' at {self.timestamp}"
 

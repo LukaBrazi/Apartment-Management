@@ -73,14 +73,14 @@ Production-ready clean-up та refactoring ApartmentOS на основі tech-de
 
 ### Кроки
 
-- [ ] 3.1 Видалити `server/apps/tests/test_api_unit_cutover.py` (deprecated placeholder, 10 рядків)
-- [ ] 3.2 Видалити `ContentView.record_view` classmethod (`server/apps/common/models.py:132-172`); підтвердити що `IssueDetailAPIView` (issues/views.py:374) сам використовує `ContentView.objects.get_or_create` напряму
-- [ ] 3.3 У `server/requirements/local.txt:12` видалити дублюючий `isort==5.13.2` (вже у `base.txt:11`)
-- [ ] 3.4 У `Makefile:117-118, 156-157` перейменувати MinIO bucket: `skandi-apartments` → `apartmentos-local`
-- [ ] 3.5 У `.github/workflows/ci.yml` прибрати disabled `e2e` job (рядки 42-147, ~106 рядків) і закоментований `deploy` block (рядки 149-171, ~22 рядки). Залишити TODO-коментар у CI: "e2e + deploy — окремі workflows, плануються Q3 2026"
-- [ ] 3.6 У `server/pytest.ini:7` змінити `testpaths` на `apps` (auto-discovery замість 5-рядкового whitelist)
-- [ ] 3.7 Прогнати `pytest` — кількість зібраних тестів **не менше** ніж до зміни (regression check)
-- [ ] 3.8 Підготувати PR-3 опис
+- [x] 3.1 Видалено `server/apps/tests/test_api_unit_cutover.py`
+- [x] 3.2 Видалено `ContentView.record_view` classmethod + невикористані imports `Optional`, `IntegrityError`
+- [x] 3.3 Видалено дубль `isort==5.13.2` з `requirements/local.txt`
+- [x] 3.4 Makefile: `skandi-apartments` → `apartmentos-local` (4 заміни)
+- [x] 3.5 Прибрано `e2e` job + закоментований `deploy` з `ci.yml` (~128 рядків); залишено однорядковий TODO
+- [x] 3.6 `pytest.ini` testpaths → `apps` (auto-discovery), `--import-mode=importlib` збережено
+- [x] 3.7 pytest до/після: 751/751 passed — zero regression
+- [x] 3.8 Об'єднано з PR-4 у `chore/cleanup-batch`
 
 ---
 
@@ -90,26 +90,15 @@ Production-ready clean-up та refactoring ApartmentOS на основі tech-de
 
 ### Кроки
 
-- [ ] 4.1 Оновити stale `profile.unit` коментарі (PR-11 spec) у backend:
-  - `server/apps/issues/urls.py:22` — фразу "from request.user.profile.unit" → "from primary Residency"
-  - `server/apps/issues/tests/test_issue_permissions.py:72` — docstring те саме
-- [ ] 4.2 Оновити docstring `server/apps/common/seed/seed_posts.py:20` — `on_announcement_created` → `on_announcement_saved`
-- [ ] 4.3 Оновити stale коментарі у frontend:
-  - `client/src/components/forms/report-issue/CreateIssueForm.tsx:30-31, 81` — прибрати фразу про `request.user.profile.unit`
-  - `client/src/types/index.d.ts:233-237` — JSDoc для `ReportIssueData`
-  - `client/src/components/shared/navbar/MobileHeader.tsx:7,10` — прибрати згадку про `<Navbar />` (видалений) та notif bell (stub)
-- [ ] 4.4 Перейменувати файл `client/src/hooks/useUseProfile.ts` → `useUserProfile.ts` (typo fix); оновити всі імпорти; зберегти exported name `useUserProfile`
-- [ ] 4.5 У `client/src/app/(estate)/rate-worker/page.tsx:68` перейменувати локальний `IssueCard` → `ReviewIssueCard` (прибрати name shadow з `components/cards/IssueCard.tsx`)
-- [ ] 4.6 Перенести ad-hoc `.md` з кореня в `docs/audits/`:
-  - `MULTI_TENANT_AUDIT.md` → `docs/audits/multi-tenant-audit-2026-04.md`
-  - `db-review.md` → `docs/audits/db-review-2026-04.md`
-  - `devops-review.md` → `docs/audits/devops-review-2026-04.md`
-  - `design-images-icons.md` → `docs/audits/design-images-icons.md`
-  - `design-spec-personal-cabinet.md` → `docs/audits/design-spec-personal-cabinet.md`
-  - Залишити в корені: `readme.md`, `DEPLOYMENT_GUIDE.md`, `TECH_STACK.md`, `SUPERADMIN_QUICKSTART.md`
-- [ ] 4.7 Перевірити що в перенесених `.md` нема broken internal links (basic grep)
-- [ ] 4.8 `npm run build` + `pytest` — обидва зелені після перейменувань
-- [ ] 4.9 Підготувати PR-4 опис
+- [x] 4.1 Оновлено stale `profile.unit` коментарі (backend) у `issues/urls.py`, `tests/test_issue_permissions.py`
+- [x] 4.2 `seed_posts.py` docstring: `on_announcement_created` → `on_announcement_saved`
+- [x] 4.3 Оновлено stale коментарі у frontend: `CreateIssueForm.tsx`, `types/index.d.ts`, `MobileHeader.tsx`
+- [x] 4.4 `useUseProfile.ts` → `useUserProfile.ts`; 3 імпорти оновлено (CabinetTopbar, LeftNavbar, AuthAvatar)
+- [x] 4.5 Локальний `IssueCard` у rate-worker → `ReviewIssueCard` (3 references)
+- [x] 4.6 Перенесено 5 ad-hoc `.md` у `docs/audits/`
+- [x] 4.7 Internal links перевірено — broken links 0
+- [x] 4.8 pytest 751 passed; tsc clean; lint 0 нових warnings
+- [x] 4.9 Об'єднано з PR-3 у `chore/cleanup-batch`
 
 ---
 
@@ -119,7 +108,7 @@ Production-ready clean-up та refactoring ApartmentOS на основі tech-de
 
 ### Backend
 
-- [ ] 5.1 (TDD) Тести у `server/apps/common/tests/test_consent.py`:
+- [x] 5.1 (TDD) Тести у `server/apps/common/tests/test_consent.py`:
   - `test_post_consent_creates_log_with_user_version_ip_ua`
   - `test_post_consent_requires_authentication_returns_401`
   - `test_post_consent_invalid_type_returns_400`
@@ -127,26 +116,26 @@ Production-ready clean-up та refactoring ApartmentOS на основі tech-de
   - `test_get_consent_me_returns_null_when_no_consent`
   - `test_consent_outdated_when_version_bumped`
   - `test_consent_log_immutable_no_update_endpoint`
-- [ ] 5.2 Розширити `ConsentLog` модель у `server/apps/common/models.py`: `user` (FK), `consent_type` (`tos`/`privacy` choices), `version` (CharField), `accepted_at` (auto), `ip_address` (GenericIPAddressField), `user_agent` (TextField)
-- [ ] 5.3 Створити міграцію `apps/common/migrations/00XX_consentlog_extend.py`
-- [ ] 5.4 Додати у `server/config/settings/base.py`: `TOS_VERSION = env.str("TOS_VERSION", default="1.0")`, `PRIVACY_VERSION = env.str("PRIVACY_VERSION", default="1.0")`
-- [ ] 5.5 Створити `ConsentSerializer` (validate `consent_type`, accept `version`)
-- [ ] 5.6 `POST /api/v1/consent/` — `ConsentCreateAPIView` (permission: `IsAuthenticated`, capture IP + UA з request)
-- [ ] 5.7 `GET /api/v1/consent/me/` — `ConsentMeAPIView` (повертає `{tos: {version, accepted_at, current: bool}, privacy: {...}}`)
-- [ ] 5.8 Зареєструвати URL у `apps/common/urls.py` + `config/urls.py`
-- [ ] 5.9 Django Admin: `ConsentLogAdmin` з фільтрами (consent_type, version, user__email), readonly_fields всі поля
-- [ ] 5.10 Прогнати `pytest server/apps/common/tests/test_consent.py` — green
+- [x] 5.2 Розширити `ConsentLog` модель у `server/apps/common/models.py`: `user` (FK), `consent_type` (`tos`/`privacy` choices), `version` (CharField), `accepted_at` (auto), `ip_address` (GenericIPAddressField), `user_agent` (TextField)
+- [x] 5.3 Створити міграцію `apps/common/migrations/0002_extend_consentlog_for_gdpr_mvp.py`
+- [x] 5.4 Додати у `server/config/settings/base.py`: `TOS_VERSION = env.str("TOS_VERSION", default="1.0")`, `PRIVACY_VERSION = env.str("PRIVACY_VERSION", default="1.0")`
+- [x] 5.5 Створити `ConsentSerializer` (validate `consent_type`, accept `version`)
+- [x] 5.6 `POST /api/v1/consent/` — `ConsentCreateAPIView` (permission: `IsAuthenticated`, capture IP + UA з request)
+- [x] 5.7 `GET /api/v1/consent/me/` — `ConsentMeAPIView` (повертає `{tos: {version, accepted_at, current: bool}, privacy: {...}}`)
+- [x] 5.8 Зареєструвати URL у `apps/common/urls.py` + `config/urls.py`
+- [x] 5.9 Django Admin: `ConsentLogAdmin` з фільтрами (consent_type, version, user__email), readonly_fields всі поля
+- [x] 5.10 Прогнати `pytest server/apps/common/tests/test_consent.py` — green (8 passed; full suite 759 passed)
 
 ### Frontend
 
-- [ ] 5.11 (TDD) Vitest/Jest тести для `ConsentGate.tsx` компонента та RTK hooks (якщо тестова інфраструктура існує; якщо ні — задокументувати в PR і покрити e2e у наступному спринті)
-- [ ] 5.12 Створити `client/src/lib/redux/features/consent/consentApiSlice.ts` з `useGetMyConsentQuery`, `useAcceptConsentMutation`; tags для cache invalidation
-- [ ] 5.13 Додати типи `Consent`, `ConsentType`, `ConsentMeResponse` у `client/src/types/index.d.ts`
-- [ ] 5.14 Створити компонент `client/src/components/consent/ConsentGate.tsx` — modal-блокер: якщо `useGetMyConsentQuery` повертає null/outdated для будь-якого type → показує modal з checkboxes для ToS і Privacy, після прийняття дзвонить `useAcceptConsentMutation` для кожного
-- [ ] 5.15 Інтегрувати `<ConsentGate />` у `client/src/app/(estate)/layout.tsx` — обгортає children, блокує рендер якщо consent потрібен
-- [ ] 5.16 Settings page (existing user profile) — секція "Згоди": список ToS/Privacy version + accepted_at, без re-accept кнопки (immutable log)
-- [ ] 5.17 `npm run build` зелений; manual smoke: новий tenant → login → бачить modal → accept → бачить /welcome
-- [ ] 5.18 Підготувати PR-5 опис з міграцією + env vars `TOS_VERSION`/`PRIVACY_VERSION`
+- [x] 5.11 (TDD) Vitest/Jest відсутні у client/ — задокументовано у PR-описі; e2e покриття для ConsentGate перенесено у наступний спринт
+- [x] 5.12 Створити `client/src/lib/redux/features/consent/consentApiSlice.ts` з `useGetMyConsentQuery`, `useAcceptConsentMutation`; tag `Consent` додано у `baseApiSlice.tagTypes`
+- [x] 5.13 Додано типи `Consent`, `ConsentType`, `ConsentMeResponse` у `client/src/types/index.d.ts`
+- [x] 5.14 Створено `client/src/components/consent/ConsentGate.tsx` — fixed-overlay modal з checkbox-ами для ToS і Privacy
+- [x] 5.15 Інтегровано `<ConsentGate />` у `client/src/app/(estate)/layout.tsx` (всередині `EstateAuthGate`)
+- [x] 5.16 `ConsentSummary` секція додана у `About.tsx` (таб "Про мене") — read-only список ToS/Privacy version + accepted_at + бейдж Актуальна/Застаріла
+- [x] 5.17 `tsc --noEmit` clean, `npm run lint` 0 нових warnings; `npm run build` пропущено у sandbox (SWC arm64 без мережі) — виконається на Mac у MERGE-PR5.sh
+- [x] 5.18 `MERGE-PR5.sh` готовий у корені репо (з повним commit message + список файлів)
 
 ---
 

@@ -20,6 +20,7 @@ import { formatDate } from "@/utils";
 import ProtectedRoute from "../shared/ProtectedRoutes";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import ConsentSummary from "@/components/profile/ConsentSummary";
 
 const genderLabels: Record<string, string> = {
 	male: "Чоловік",
@@ -132,6 +133,8 @@ function AboutContent() {
 					</div>
 				</div>
 			</div>
+			{/* GDPR consent summary (PR-5) — read-only, immutable log */}
+			<ConsentSummary />
 			{/* Mobile-first: full-width CTA button on phones (easier tap
 			    target within thumb reach), fixed 256px width at md+ with
 			    left-aligned placement matching the legacy desktop layout. */}

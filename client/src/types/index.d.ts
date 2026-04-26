@@ -5,6 +5,20 @@ export interface UserState {
 	};
 }
 
+// ── GDPR consent (PR-5) ──────────────────────────────────────────────────────
+export type ConsentType = "tos" | "privacy";
+
+export interface Consent {
+	version: string;
+	accepted_at: string;
+	current: boolean;
+}
+
+export interface ConsentMeResponse {
+	tos: Consent | null;
+	privacy: Consent | null;
+}
+
 export interface PostState {
 	post: {
 		page: number;
