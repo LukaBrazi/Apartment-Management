@@ -9,10 +9,17 @@ import Issues from "@/components/profile/Issues";
 import AssignedIssues from "@/components/profile/AssignedIssues";
 import Reports from "@/components/profile/Reports";
 import TelegramSettings from "@/components/profile/TelegramSettings";
+import { useGetTelegramStatusQuery } from "@/lib/redux/features/telegram/telegramProfileApiSlice";
 import { useSearchParams } from "next/navigation";
 
 export default function ProfileTabs() {
 	const { isTenant, isAuthenticated } = useAuthNavigation();
+	const { data: telegramStatus, isLoading: isTelegramLoading } = useGetTelegramStatusQuery(
+		undefined,
+		{ skip: !isAuthenticated },
+	);
+	const showNotificationsTab =
+		isAuthenticated && (isTelegramLoading || telegramStatus?.feature_enabled === true);
 	const searchParams = useSearchParams();
 	const tabFromUrl = searchParams.get("tab") ?? "about";
 	const [activeTab, setActiveTab] = useState(tabFromUrl);
@@ -66,7 +73,7 @@ export default function ProfileTabs() {
 						>
 							Мої скарги
 						</TabsTrigger>
-						{isAuthenticated && (
+						{showNotificationsTab && (
 							<TabsTrigger
 								value="notifications"
 								className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
