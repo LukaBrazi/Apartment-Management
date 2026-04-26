@@ -18,7 +18,8 @@ export default function LeftNavbar() {
 	const { isAuthenticated: authState } = useAppSelector((state) => state.auth);
 
 	const { data: issuesData } = useGetMyIssuesQuery(undefined, { skip: !authState });
-	const { data: passesData } = useGetMyPassesQuery(undefined, { skip: !authState });
+	// status=pending — only active passes for the badge counter; archived (closed) are excluded.
+	const { data: passesData } = useGetMyPassesQuery({ status: "pending" }, { skip: !authState });
 	// unread_count: articles the user hasn't opened yet (server tracks via NewsRead model)
 	const { data: newsData } = useGetNewsQuery(undefined, { skip: !authState });
 

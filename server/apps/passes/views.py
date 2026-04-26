@@ -44,10 +44,15 @@ class VehiclePassListCreateAPIView(generics.ListCreateAPIView):
 
 
 class MyVehiclePassListAPIView(generics.ListAPIView):
-    """Tenant sees their own pass requests."""
+    """Tenant sees their own pass requests.
+
+    Supports ``?status=pending`` / ``?status=closed`` for badge counts.
+    """
 
     serializer_class = VehiclePassSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = VehiclePassFilter
 
     def get_queryset(self):
         """Strict multi-tenant scoping: a non-superuser without any
