@@ -106,8 +106,35 @@ make e2e         # повторно запустити E2E (стек вже жи
 /api/v1/passes/      — перепустки охорани
 /api/v1/ratings/     — рейтинги
 /api/v1/reports/     — звіти про порушення
+/api/v1/consent/     — GDPR consent (ToS + Privacy)
 /api/v1/site-settings/ — налаштування сайту
+/api/v1/health/      — health check (no auth)
 ```
+
+## Health Check
+
+`GET /api/v1/health/` — endpoint для load-balancer probes (Railway, k8s, uptime monitors).
+
+- **Без авторизації** — `permission_classes = [AllowAny]`, без throttle
+- Перевіряє: PostgreSQL (`SELECT 1`) + Redis (round-trip через cache)
+- **200** якщо всі залежності OK, **503** якщо хоч одна впала
+
+```bash
+curl https://apartmentos.org/api/v1/health/
+# {"status": "healthy", "checks": {"db": "ok", "cache": "ok"}}
+
+# При проблемі:
+# {"status": "unhealthy", "checks": {"db": "fail", "cache": "ok"}}
+```
+
+**Конфігурація Railway** (`railway.toml`):
+```toml
+[deploy]
+healthcheckPath = "/api/v1/health/"
+healthcheckTimeout = 30
+```
+
+Endpoint не експонує внутрішню інформацію (DB version, Redis URL тощо) — лише `ok`/`fail` на check.
 
 ## Ліцензія
 

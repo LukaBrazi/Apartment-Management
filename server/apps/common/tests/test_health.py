@@ -93,3 +93,46 @@ class TestHealthCheck:
         # Values are constrained tokens, not free text.
         for v in body["checks"].values():
             assert v in ("ok", "fail"), v
+
+    def test_production_settings_exempts_health_from_ssl_redirect(self):
+        """Regression: Railway healthcheck probes the container directly via
+        plain HTTP. With SECURE_SSL_REDIRECT=True and no exempt, Django's
+        SecurityMiddleware redirects to https://, Railway sees a 301 and
+        marks the deploy as 'service unavailable'.
+
+        Lock down that ``SECURE_REDIRECT_EXEMPT`` in production.py whitelists
+        the health endpoint without requiring us to import production.py
+        (which fails in test env because of env-required settings like
+        DJANGO_SECRET_KEY, DATABASE_URL, REDIS_URL).
+        """
+        import re
+        from pathlib import Path
+
+        prod_path = (
+            Path(__file__).resolve().parents[3]
+            / "config"
+            / "settings"
+            / "production.py"
+        )
+        src = prod_path.read_text()
+
+        # Extract the SECURE_REDIRECT_EXEMPT list literal.
+        match = re.search(
+            r"SECURE_REDIRECT_EXEMPT\s*=\s*(\[[^\]]*\])",
+            src,
+            flags=re.DOTALL,
+        )
+        assert match, (
+            "SECURE_REDIRECT_EXEMPT not configured in production.py — "
+            "Railway healthcheck will fail."
+        )
+
+        # eval is safe: source comes from our own settings file.
+        exempt: list[str] = eval(match.group(1))  # noqa: S307
+        assert isinstance(exempt, list) and exempt, "exempt list empty"
+
+        # The path Django gives SecurityMiddleware has no leading slash.
+        assert any(re.search(p, "api/v1/health/") for p in exempt), (
+            f"Health path 'api/v1/health/' not exempt from SSL redirect. "
+            f"Current SECURE_REDIRECT_EXEMPT: {exempt}"
+        )

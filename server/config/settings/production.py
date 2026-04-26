@@ -39,6 +39,14 @@ CELERY_RESULT_BACKEND = REDIS_URL
 # Security
 # ------------------------------------------------------------------------------
 SECURE_SSL_REDIRECT = True
+# Railway's internal healthcheck probe hits the container directly via
+# plain HTTP (no X-Forwarded-Proto: https header). Without an exempt,
+# Django's SecurityMiddleware would respond with a 301 to https:// and
+# Railway would mark the deploy as "service unavailable" (non-2xx).
+# Exempt the health endpoint so the probe gets 200/503 from our view.
+# Note: the value is a list of UNANCHORED REGEX patterns matched against
+# the path WITHOUT the leading slash.
+SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/?$"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
