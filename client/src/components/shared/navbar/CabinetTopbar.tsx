@@ -5,7 +5,6 @@
 import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUseProfile";
-import NotificationBell from "./NotificationBell";
 import Link from "next/link";
 
 // Route → breadcrumb label map
@@ -75,7 +74,7 @@ export default function CabinetTopbar() {
 
 			{/* Right: bell + user */}
 			<div className="flex items-center gap-3">
-				<NotificationBell />
+				{/* NotificationBell hidden — in-app notifications not yet implemented */}
 				<Link
 					href="/profile"
 					className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-[#F1F5F9]"
