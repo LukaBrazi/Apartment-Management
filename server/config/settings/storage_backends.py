@@ -3,21 +3,19 @@ from django.conf import settings
 from storages.backends.s3boto3 import S3Boto3Storage
 
 
-# Custom storage backend for S3
-class CustomS3Boto3Storage(S3Boto3Storage):
-    """Custom S3 Boto3 Storage
+class LocalMinioS3Storage(S3Boto3Storage):
+    """⚠️ DEV-ONLY: Custom S3 storage для local MinIO без TLS.
 
-    CustomS3Boto3Storage class is used to create a custom storage backend for S3.
+    Метод ``url()`` робить ``https → http`` downgrade — це навмисно для
+    local MinIO, який слухає ``http://localhost:8080`` без TLS. Без цього
+    downgrade ``S3Boto3Storage`` згенерує ``https://`` URL, який браузер не
+    зможе завантажити.
 
-    Extends:
-        S3Boto3Storage
-
-    Attributes:
-        endpoint_url (str): The endpoint URL of the S3 bucket.
-        custom_domain (str): The custom domain of the S3 bucket.
-
-    Methods:
-        url: Get the URL of the file.
+    **НЕ використовувати у staging/production.** У production
+    ``config/settings/production.py`` імпортує
+    ``storages.backends.s3boto3.S3Boto3Storage`` напряму через
+    ``STORAGES["default"]["BACKEND"]`` — TLS обов'язковий, custom_domain
+    приходить з R2 (Cloudflare R2 завжди https).
     """
 
     # Constructor
@@ -31,42 +29,25 @@ class CustomS3Boto3Storage(S3Boto3Storage):
 
     # Method to return the URL of the file
     def url(self, name, parameters=None, expire=None):
-        """Get the URL of the file.
+        """Return the URL of the file with an https→http downgrade.
 
-        Args:
-            name (str): The name of the file.
-            parameters (dict): The parameters for the URL.
-            expire (int): The expiration time for the URL.
-
-        Returns:
-            str: The URL of the file.
+        Local MinIO has no TLS, so we strip ``https://`` → ``http://`` to
+        let the browser fetch the file. This downgrade is the entire reason
+        this subclass exists; in production we use the upstream
+        ``S3Boto3Storage`` directly.
         """
-
-        # Get the URL
         url = super().url(name, parameters, expire)
-
-        # If the urls starts with https
         if url.startswith("https"):
-            # Replace https with http
             url = "http" + url[5:]
-
-        # Return the URL
         return url
 
 
-# Custom storage backend for static files
-class StaticStorage(CustomS3Boto3Storage):
-    """Custom Static Storage
+class StaticStorage(LocalMinioS3Storage):
+    """⚠️ DEV-ONLY static-files storage backend (MinIO).
 
-    CustomStaticStorage class is used to create a custom storage backend for static files.
-
-    Extends:
-        CustomS3Boto3Storage
-
-    Attributes:
-        location (str): The location of the static files.
-        default_acl (str): The default ACL for the static files.
-        file_overwrite (bool): Whether to overwrite the file if it already exists.
+    Public ACL because static files (JS/CSS/images) are served to anonymous
+    visitors. ``file_overwrite=False`` keeps deterministic URLs across
+    redeploys for the same content hash.
     """
 
     # Attributes
@@ -76,19 +57,12 @@ class StaticStorage(CustomS3Boto3Storage):
     file_overwrite = False
 
 
-# Custom storage backend for media files
-class MediaStorage(CustomS3Boto3Storage):
-    """Custom Media Storage
+class MediaStorage(LocalMinioS3Storage):
+    """⚠️ DEV-ONLY media-files storage backend (MinIO).
 
-    CustomMediaStorage class is used to create a custom storage backend for media files.
-
-    Extends:
-        CustomS3Boto3Storage
-
-    Attributes:
-        location (str): The location of the media files.
-        default_acl (str): The default ACL for the media files.
-        file_overwrite (bool): Whether to overwrite the file if it already exists.
+    Private ACL — user uploads (avatars, issue attachments) require signed
+    URLs to read. ``file_overwrite=False`` prevents accidental clobbering
+    of an existing user's avatar by another upload with the same filename.
     """
 
     # Attributes

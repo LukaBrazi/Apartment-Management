@@ -1,4 +1,4 @@
-# Skandi Apartments — Client (Next.js) Context
+# ApartmentOS — Client (Next.js) Context
 
 > Context for developers and AI agents working in `client/`.
 > Last updated: **2026-04-18** — after the `seed_demo` rewrite.

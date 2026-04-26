@@ -1,29 +1,12 @@
-from rest_framework.permissions import BasePermission
+"""Re-export shared permission classes from ``apps.common.permissions``.
 
+PR-1 (fix/critical-security) consolidated all permission classes into
+``apps.common.permissions`` and removed the silent ``except Exception:
+pass`` pattern. This module is kept as a thin re-export so existing
+imports (``from apps.passes.permissions import IsGuardOrAdmin, IsTenant``)
+keep working.
+"""
 
-class IsGuardOrAdmin(BasePermission):
-    """Guards (occupation=guard) and staff/admin."""
+from apps.common.permissions import IsGuardOrAdmin, IsTenant
 
-    def has_permission(self, request, view):
-        user = request.user
-        if not user.is_authenticated:
-            return False
-        if user.is_staff or user.is_superuser:
-            return True
-        try:
-            return user.profile.occupation == "guard"
-        except Exception:
-            return False
-
-
-class IsTenant(BasePermission):
-    """Tenants only (occupation=tenant)."""
-
-    def has_permission(self, request, view):
-        user = request.user
-        if not user.is_authenticated:
-            return False
-        try:
-            return user.profile.occupation == "tenant"
-        except Exception:
-            return False
+__all__ = ["IsGuardOrAdmin", "IsTenant"]

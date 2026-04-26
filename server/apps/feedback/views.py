@@ -5,6 +5,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
 from apps.feedback.serializers import FeedbackSerializer
+from apps.feedback.tasks import send_feedback_notification_task
 from apps.feedback.throttles import FeedbackRateThrottle
 
 # Get the logger
@@ -31,7 +32,5 @@ class FeedbackCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         """Save feedback with the current user and trigger notification task."""
-        from apps.feedback.tasks import send_feedback_notification_task
-
         feedback = serializer.save(user=self.request.user)
         send_feedback_notification_task.delay(feedback.pkid)

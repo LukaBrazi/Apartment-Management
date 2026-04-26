@@ -43,7 +43,6 @@ node_modules/
 client/.next/
 client/tsconfig.tsbuildinfo
 client/yarn-error.log
-client/package-lock.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

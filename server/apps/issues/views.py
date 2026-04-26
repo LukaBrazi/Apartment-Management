@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from apps.apartments.models import Unit
 from apps.common.models import ContentView
+from apps.common.permissions import IsStaffOrSuperUser
 from apps.common.renderers import GenericJSONRenderer
 from apps.issues.emails import send_issue_confirmation_email
 from apps.issues.filters import IssueFilter
@@ -36,53 +37,9 @@ def _issue_base_qs():
     )
 
 
-# Custom permission class to check if the user is staff or superuser
-class IsStaffOrSuperUser(permissions.BasePermission):
-    """Custom permission class to check if the user is staff or superuser.
-
-    Extends:
-        permissions.BasePermission
-
-    Attributes:
-        message (str): The message attribute.
-
-    Methods:
-        has_permission: Method to check if the user is staff or superuser.
-    """
-
-    # Attributes
-    def __init__(self) -> None:
-        self.message = None
-
-    # Method to check if the user is staff or superuser
-    def has_permission(self, request: Request, view: Any) -> bool:
-        """Method to check if the user is staff, superuser, or guard.
-
-        Args:
-            request (Request): The request object.
-            view (Any): The view object.
-
-        Returns:
-            bool: The boolean value.
-        """
-
-        if not (request.user and request.user.is_authenticated):
-            self.message = "Access to this information is restricted to staff and admin users only."
-            return False
-
-        # Staff and superusers always have access
-        if request.user.is_staff or request.user.is_superuser:
-            return True
-
-        # Guards can view issues (read-only for awareness)
-        try:
-            if request.user.profile.occupation == "guard":
-                return True
-        except Exception:
-            pass
-
-        self.message = "Access to this information is restricted to staff and admin users only."
-        return False
+# ``IsStaffOrSuperUser`` is now provided by ``apps.common.permissions`` —
+# the local copy was removed in PR-1 (fix/critical-security) along with
+# its silent ``except Exception: pass`` profile-lookup branch.
 
 
 # IssueListAPIView Class

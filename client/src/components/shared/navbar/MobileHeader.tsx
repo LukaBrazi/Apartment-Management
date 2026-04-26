@@ -40,7 +40,7 @@ export default function MobileHeader() {
 				) : (
 					<>
 						<Image
-							src="/assets/logos/skandi-logo-full.svg"
+							src="/assets/logos/apartmentos-logo-full.svg"
 							alt="ApartmentOS"
 							width={112}
 							height={32}
@@ -48,7 +48,7 @@ export default function MobileHeader() {
 							priority
 						/>
 						<Image
-							src="/assets/logos/skandi-logo-full-dark.svg"
+							src="/assets/logos/apartmentos-logo-full-dark.svg"
 							alt="ApartmentOS"
 							width={112}
 							height={32}

@@ -51,7 +51,7 @@ def worker(db, org):
 def building(db, org):
     from apps.apartments.models import Building, Entrance, Unit
     b = Building.objects.create(name="RV Building", organization=org)
-    e = Entrance.objects.create(building=b, entrance_number=1, organization=org)
+    e = Entrance.objects.create(building=b, name="1", organization=org)
     u = Unit.objects.create(entrance=e, number="10", organization=org)
     return b
 

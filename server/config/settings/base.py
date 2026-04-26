@@ -331,8 +331,15 @@ SPECTACULAR_SETTINGS = {
 
 # Django Simple JWT
 # -------------------------------------------------------------------------------
+# ``SIGNING_KEY`` is intentionally read lazily via ``LazySettings`` — each tier
+# defines ``SECRET_KEY`` (local/test/ci have explicit dev keys; production uses
+# ``env("DJANGO_SECRET_KEY")`` *without* a default, so a missing env var fails
+# the boot loud).  Reusing ``SECRET_KEY`` here removes the previous insecure
+# fallback ``"test-signing-key-change-in-production"`` that would silently sign
+# JWTs with a public placeholder if the env var was unset.
 SIMPLE_JWT = {
-    "SIGNING_KEY": env.str("DJANGO_SECRET_KEY", default="test-signing-key-change-in-production"),
+    # Resolved at import-time via LazyObject — Django's settings system fills
+    # this in after each tier-specific module sets SECRET_KEY.
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,

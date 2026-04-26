@@ -42,7 +42,7 @@ export default function Navbar() {
 					<>
 						{/* Light mode logo */}
 						<Image
-							src="/assets/logos/skandi-logo-full.svg"
+							src="/assets/logos/apartmentos-logo-full.svg"
 							alt="ApartmentOS"
 							width={140}
 							height={40}
@@ -51,7 +51,7 @@ export default function Navbar() {
 						/>
 						{/* Dark mode logo */}
 						<Image
-							src="/assets/logos/skandi-logo-full-dark.svg"
+							src="/assets/logos/apartmentos-logo-full-dark.svg"
 							alt="ApartmentOS"
 							width={140}
 							height={40}
