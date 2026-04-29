@@ -18,6 +18,15 @@ Notes
 - Errors from dependency probes are caught broadly (``Exception``)
   because we don't care which specific exception fired — what matters
   is that the dependency is reporting unhealthy.
+
+PR-10 refactor
+--------------
+The DB+cache probe logic was extracted into :func:`run_health_checks`
+so scheduled monitoring tasks (``apps.common.tasks.daily_health_status_task``
+and ``hourly_health_monitor_task``) reuse the EXACT same checks the
+load balancer probe runs. One source of truth for "what does healthy
+mean" — when we add a new dependency probe, both the HTTP endpoint
+AND the Telegram health pings pick it up automatically.
 """
 from __future__ import annotations
 
@@ -32,6 +41,38 @@ from rest_framework.views import APIView
 logger = logging.getLogger(__name__)
 
 
+def run_health_checks() -> dict[str, str]:
+    """Run DB + cache pings. Returns ``{"db": "ok"|"fail", "cache": "ok"|"fail"}``.
+
+    Reusable by both the HTTP health endpoint (Railway probe) and
+    scheduled health monitoring tasks (Telegram pings). Never raises —
+    failures are logged and surface as ``"fail"`` in the returned dict.
+    """
+    checks: dict[str, str] = {}
+
+    # ── DB ping ──────────────────────────────────────────────────────────
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        checks["db"] = "ok"
+    except Exception as exc:  # noqa: BLE001 — broad catch is intentional
+        logger.error("Health check DB failure: %s", exc)
+        checks["db"] = "fail"
+
+    # ── Cache (Redis) round-trip ────────────────────────────────────────
+    try:
+        cache.set("_healthcheck", "ok", 5)
+        if cache.get("_healthcheck") != "ok":
+            raise RuntimeError("cache miss after write")
+        checks["cache"] = "ok"
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Health check cache failure: %s", exc)
+        checks["cache"] = "fail"
+
+    return checks
+
+
 class HealthCheckAPIView(APIView):
     """GET /api/v1/health/ — load balancer liveness/readiness probe."""
 
@@ -40,31 +81,8 @@ class HealthCheckAPIView(APIView):
     throttle_classes: list = []
 
     def get(self, request, *args, **kwargs) -> Response:
-        checks: dict[str, str] = {}
-        all_ok = True
-
-        # ── DB ping ───────────────────────────────────────────────────
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
-                cursor.fetchone()
-            checks["db"] = "ok"
-        except Exception as exc:  # noqa: BLE001 — broad catch is intentional
-            logger.error("Health check DB failure: %s", exc)
-            checks["db"] = "fail"
-            all_ok = False
-
-        # ── Cache (Redis) round-trip ─────────────────────────────────
-        try:
-            cache.set("_healthcheck", "ok", 5)
-            if cache.get("_healthcheck") != "ok":
-                raise RuntimeError("cache miss after write")
-            checks["cache"] = "ok"
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Health check cache failure: %s", exc)
-            checks["cache"] = "fail"
-            all_ok = False
-
+        checks = run_health_checks()
+        all_ok = all(v == "ok" for v in checks.values())
         return Response(
             {
                 "status": "healthy" if all_ok else "unhealthy",

@@ -152,6 +152,18 @@ Production 5xx помилки автоматично йдуть у приват�
 
 Setup: див. [docs/ERROR_ALERTS_SETUP.md](docs/ERROR_ALERTS_SETUP.md).
 
+**Health monitoring (PR-10):** окрім error trace, у той же бот приходять:
+- 09:00 і 21:00 Europe/Kyiv — щоденний health ping (🟢 OK / 🟡 проблеми) —
+  ALWAYS sends, щоб тиша на каналі сама була сигналом ("моніторинг живий")
+- Щогодини у :00 — тихий моніторинг, alert тільки якщо `db` чи `cache` зламались
+
+Працює через Celery Beat. Schedule entries у `CELERY_BEAT_SCHEDULE`
+(`server/config/settings/base.py`), tasks у `apps.common.tasks`. Дедуплікація
+по hour-bucket: Beat restart всередині однієї години не дублює alerts, але
+кожна нова година може re-alert якщо проблема не пішла. Всі checks ділять
+ту саму `run_health_checks()` функцію що `/api/v1/health/` — один source of
+truth для "що значить healthy".
+
 ## Security Headers (PR-8)
 
 Заголовки безпеки відправляє **Next.js** (`client/next.config.mjs`),

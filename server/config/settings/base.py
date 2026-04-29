@@ -268,6 +268,24 @@ CELERY_BEAT_SCHEDULE = {
         "task": "seed_demo_reset",
         "schedule": crontab(hour=23, minute=0),
     },
+    # ── Scheduled health monitoring (PR-10) ─────────────────────────────
+    # Two daily pings (09:00 + 21:00 Europe/Kyiv) ALWAYS fire so a silent
+    # channel is itself a signal. The hourly probe runs at :00 every hour
+    # but only sends a message when run_health_checks() reports a failure.
+    # CELERY_TIMEZONE = Europe/Kyiv (DST-safe via Celery), so crontab hours
+    # below are local wall-clock time.
+    "daily-health-status-morning": {
+        "task": "apps.common.tasks.daily_health_status_task",
+        "schedule": crontab(hour=9, minute=0),  # 09:00 Europe/Kyiv
+    },
+    "daily-health-status-evening": {
+        "task": "apps.common.tasks.daily_health_status_task",
+        "schedule": crontab(hour=21, minute=0),  # 21:00 Europe/Kyiv
+    },
+    "hourly-health-monitor": {
+        "task": "apps.common.tasks.hourly_health_monitor_task",
+        "schedule": crontab(minute=0),  # every hour at :00
+    },
 }
 
 

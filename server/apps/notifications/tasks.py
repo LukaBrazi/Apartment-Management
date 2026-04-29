@@ -483,3 +483,44 @@ def send_telegram_error_alert_task(self, text: str) -> None:
         timeout=5,
     )
     response.raise_for_status()
+
+
+# ── Health monitoring (PR-10) ──────────────────────────────────────────────
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=10,
+    autoretry_for=(requests.RequestException,),
+)
+def send_telegram_message_task(self, text: str) -> None:
+    """Generic Telegram channel message dispatch (PR-10).
+
+    Used by scheduled health monitoring tasks. Same TG channel as
+    ``send_telegram_error_alert_task`` (shared TOKEN/CHAT_ID env vars
+    set up in PR-9), but a SEPARATE task name so Celery monitoring
+    shows distinct counts per use case — one row for "errors", one for
+    "scheduled health pings".
+
+    If the env vars went away between dispatch and execution (rare —
+    config flip on the worker mid-run), drop the message quietly. We
+    do NOT want a failing task here to feed back into any alerts
+    pipeline and cause a cascade.
+    """
+    token = getattr(settings, "ERROR_ALERTS_TG_BOT_TOKEN", "") or ""
+    chat_id = getattr(settings, "ERROR_ALERTS_TG_CHAT_ID", "") or ""
+    if not token or not chat_id:
+        return
+
+    response = requests.post(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        json={
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+        },
+        timeout=5,
+    )
+    response.raise_for_status()

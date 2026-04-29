@@ -119,6 +119,19 @@ Replicas:             1
 - **Healthcheck Timeout: ⚠️ ЗАЛИШ ПОРОЖНІМ**
 - **Replicas: рівно 1** (більше — schedule дублюватиметься)
 
+> **PR-10 — scheduled health monitoring через Beat**
+>
+> Після першого запуску Beat синхронізує `CELERY_BEAT_SCHEDULE` із settings
+> у DB (`django_celery_beat.PeriodicTask`). Зокрема, ці запуски з PR-10:
+> - `daily-health-status-morning` (09:00 Europe/Kyiv) — завжди шле статус
+> - `daily-health-status-evening` (21:00 Europe/Kyiv) — завжди шле статус
+> - `hourly-health-monitor` (щогодини у :00) — шле тільки у разі проблем
+>
+> Усі ходять через TG бот налаштований у `ERROR_ALERTS_TG_BOT_TOKEN` /
+> `ERROR_ALERTS_TG_CHAT_ID` env vars (той самий канал що і error alerts
+> з PR-9). Ops перевірка: чи приходить ранковий ping о 09:00 — якщо ні,
+> моніторинг сам зламаний (а не "тиша = все ок").
+
 ### Крок 5 — Перший міграційний прогон
 
 Після першого успішного деплою:
