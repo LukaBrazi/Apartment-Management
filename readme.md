@@ -202,6 +202,32 @@ Permission gates:
 - `server/apps/organizations/admin.py` — `generate_org_report_email` action
 - `server/apps/organizations/tests/test_org_report.py` — 22 TDD тести
 
+## Email Backend (PR-12)
+
+Транзакційні емейли йдуть через **Resend HTTP API** (`api.resend.com/emails`)
+за допомогою кастомного backend `apps.common.email_backends.ResendEmailBackend`,
+який сидить на офіційному [`resend`](https://github.com/resend/resend-python)
+Python SDK. Дзвінки SMTP скасовано — Railway egress блокує
+`smtp.resend.com:587` і `:465` (TCP handshake висне).
+
+Flow:
+- `email.send()` у Django код → `djcelery_email` кладе message на Celery queue
+- Worker дістає task → `ResendEmailBackend` мапить `EmailMessage` у JSON-payload
+  і POST'ить у Resend через офіційний SDK
+- request thread ніколи не блокується
+
+Чому власний backend, а не `django-anymail`: один файл (~120 LOC), повний
+контроль над payload-мапінгом і нульовий зайвий depend-шар. Деталі — у
+docstring `server/apps/common/email_backends.py`.
+
+Feature flag: коли `RESEND_API_KEY` env var не задано → fallback на SMTP backend
+(для local dev / CI / migration windows).
+
+Setup на Railway — див. [docs/RAILWAY_SETUP.md](docs/RAILWAY_SETUP.md#resend-setup--email-через-http-api-pr-12).
+Тести у `apps/common/tests/test_email_backend.py` покривають як lock-down
+ланцюжка settings/requirements, так і unit-перевірки самого backend
+(payload mapping, attachments, error handling).
+
 ## Security Headers (PR-8)
 
 Заголовки безпеки відправляє **Next.js** (`client/next.config.mjs`),
