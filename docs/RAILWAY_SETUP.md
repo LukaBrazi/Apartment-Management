@@ -68,6 +68,11 @@ DEFAULT_FROM_EMAIL=noreply@apartmentos.org
 # GDPR (PR-5) — за замовчуванням 1.0
 TOS_VERSION=1.0
 PRIVACY_VERSION=1.0
+
+# Error alerts (PR-9) — опційно, без них handler no-op
+# Покрокова інструкція — docs/ERROR_ALERTS_SETUP.md
+ERROR_ALERTS_TG_BOT_TOKEN=<token from @BotFather>
+ERROR_ALERTS_TG_CHAT_ID=<channel chat_id зі знаком -, напр. -1001234567890>
 ```
 
 #### 2.2. Settings → Deploy
@@ -90,7 +95,9 @@ Healthcheck Timeout: 30
 1. У тому ж Railway проекті → **+ New** → **GitHub Repo** → **Empty Service** → обери **той самий репо**
 2. Назви сервіс: `celery-worker`
 3. Settings → Source → Branch: `main`
-4. Settings → Variables → **скопіюй ВСІ env vars з Web сервісу** (можна через `Raw Editor` для масового вставлення)
+4. Settings → Variables → **скопіюй ВСІ env vars з Web сервісу** (можна через `Raw Editor` для масового вставлення).
+   Особливо важливі для PR-9: `ERROR_ALERTS_TG_BOT_TOKEN` + `ERROR_ALERTS_TG_CHAT_ID`
+   — Worker виконує `send_telegram_error_alert_task`, без них алерти не дійдуть.
 5. Settings → Deploy:
 
 ```

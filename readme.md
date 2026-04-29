@@ -139,6 +139,19 @@ curl https://apartmentos.org/api/v1/health/
 
 Endpoint не експонує внутрішню інформацію (DB version, Redis URL тощо) — лише `ok`/`fail` на check.
 
+## Error Alerts (PR-9)
+
+Production 5xx помилки автоматично йдуть у приватний Telegram канал
+з трейсбеком. Це cheap-tier заміна Sentry для startup-стадії.
+
+- **Async** через Celery — request thread не блокується на TG API
+- **Dedup** 5 хв per error fingerprint — flood-захист під час інцидентів
+- **GDPR-safe** — тільки `user.id`, без email / body / headers / querystring
+- **Опційне** — без env vars handler no-op (dev/CI чисті)
+- **Тільки 5xx** — handler-level=ERROR, 4xx warnings не доходять у канал
+
+Setup: див. [docs/ERROR_ALERTS_SETUP.md](docs/ERROR_ALERTS_SETUP.md).
+
 ## Security Headers (PR-8)
 
 Заголовки безпеки відправляє **Next.js** (`client/next.config.mjs`),

@@ -147,6 +147,15 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
+        # PR-9: Telegram error alerts. Handler-level=ERROR means 4xx
+        # (logged at WARNING by django.request) is filtered out — only
+        # genuine 5xx / unhandled exceptions reach the channel. The
+        # handler itself no-ops if the bot token / chat_id env vars are
+        # blank, so this LOGGING block is safe to leave on by default.
+        "telegram_alerts": {
+            "()": "apps.notifications.error_alerts.TelegramErrorHandler",
+            "level": "ERROR",
+        },
     },
     "root": {
         "level": "INFO",
@@ -161,7 +170,10 @@ LOGGING = {
         "django.request": {
             # Tame the 4xx noise — only log 5xx / unhandled exceptions.
             "level": "WARNING",
-            "handlers": ["console"],
+            # telegram_alerts attached only here (NOT to django/celery/apps)
+            # so a stray ERROR-level log from random app code doesn't ping
+            # the channel — only Django's own request-pipeline 5xx do.
+            "handlers": ["console", "telegram_alerts"],
             "propagate": False,
         },
         "celery": {

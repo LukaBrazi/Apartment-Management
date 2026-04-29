@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 
+import requests
 from celery import shared_task
 from django.conf import settings
 
@@ -443,3 +444,42 @@ def notify_tenant_pass_status(self, pass_id: str, new_status: str) -> None:
             )
             return
         raise self.retry(exc=exc)
+
+
+# ── Error alerts (PR-9) ────────────────────────────────────────────────────
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=10,
+    autoretry_for=(requests.RequestException,),
+)
+def send_telegram_error_alert_task(self, text: str) -> None:
+    """Send a pre-formatted error alert to Telegram (PR-9).
+
+    The handler in ``apps.notifications.error_alerts`` has already
+    formatted, deduped, and PII-sanitized the text. This task only does
+    the HTTP call — kept thin so retries are cheap.
+
+    If the env vars went away between dispatch and execution (rare —
+    config flip on the worker mid-run), drop the message quietly. We do
+    NOT want a failing task here to feed back into the alerts pipeline
+    and cause a cascade.
+    """
+    token = getattr(settings, "ERROR_ALERTS_TG_BOT_TOKEN", "") or ""
+    chat_id = getattr(settings, "ERROR_ALERTS_TG_CHAT_ID", "") or ""
+    if not token or not chat_id:
+        return
+
+    response = requests.post(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        json={
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
+        },
+        timeout=5,
+    )
+    response.raise_for_status()

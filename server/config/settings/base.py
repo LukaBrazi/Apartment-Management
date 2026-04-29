@@ -379,6 +379,15 @@ TOS_VERSION = env.str("TOS_VERSION", default="1.0")
 PRIVACY_VERSION = env.str("PRIVACY_VERSION", default="1.0")
 
 
+# Error alerts via Telegram (PR-9) — cheap-tier Sentry replacement
+# -------------------------------------------------------------------------------
+# Both blank → ``TelegramErrorHandler.emit`` is a no-op, so dev/CI need no
+# config. Set both on Web AND Celery Worker on Railway to enable. See
+# ``apps/notifications/error_alerts.py`` and ``docs/ERROR_ALERTS_SETUP.md``.
+ERROR_ALERTS_TG_BOT_TOKEN = env.str("ERROR_ALERTS_TG_BOT_TOKEN", default="")
+ERROR_ALERTS_TG_CHAT_ID = env.str("ERROR_ALERTS_TG_CHAT_ID", default="")
+
+
 # Telegram — PR-14 multi-tenant bots
 # -------------------------------------------------------------------------------
 # Bot tokens are Fernet-encrypted at rest (see apps/notifications/encryption.py
