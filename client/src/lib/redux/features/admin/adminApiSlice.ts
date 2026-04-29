@@ -1,6 +1,11 @@
 import { baseApiSlice } from "../api/baseApiSlice";
 import {
 	AdminCreateUserData,
+	AdminEntrance,
+	AdminEntranceCreatePayload,
+	AdminEntranceGrowPayload,
+	AdminEntrancesResponse,
+	AdminEntranceUpdatePayload,
 	AdminIssueUpdateData,
 	AdminIssuesResponse,
 	AdminProfilesResponse,
@@ -122,7 +127,7 @@ export const adminApiSlice = baseApiSlice.injectEndpoints({
 		}),
 		adminCreateBuilding: builder.mutation<{ building: Building }, BuildingCreateData>({
 			query: (data) => ({ url: "/apartments/buildings/create/", method: "POST", body: data }),
-			invalidatesTags: ["AdminBuildings", "Apartment"],
+			invalidatesTags: ["AdminBuildings", "AdminEntrances", "Apartment"],
 		}),
 		adminUpdateBuilding: builder.mutation<{ building: Building }, BuildingUpdateData>({
 			query: ({ pkid, ...data }) => ({ url: `/apartments/buildings/${pkid}/`, method: "PATCH", body: data }),
@@ -130,7 +135,45 @@ export const adminApiSlice = baseApiSlice.injectEndpoints({
 		}),
 		adminDeleteBuilding: builder.mutation<void, number>({
 			query: (pkid) => ({ url: `/apartments/buildings/${pkid}/`, method: "DELETE" }),
-			invalidatesTags: ["AdminBuildings", "Apartment"],
+			invalidatesTags: ["AdminBuildings", "AdminEntrances", "Apartment"],
+		}),
+
+		// ── PR-14: admin entrance CRUD ──────────────────────────────────
+		getBuildingEntrances: builder.query<AdminEntrancesResponse, number>({
+			query: (buildingPkid) =>
+				`/apartments/buildings/${buildingPkid}/entrances/admin/`,
+			providesTags: ["AdminEntrances"],
+		}),
+		adminCreateEntrance: builder.mutation<AdminEntrance, AdminEntranceCreatePayload>({
+			query: ({ buildingPkid, ...body }) => ({
+				url: `/apartments/buildings/${buildingPkid}/entrances/admin/`,
+				method: "POST",
+				body,
+			}),
+			invalidatesTags: ["AdminEntrances", "AdminBuildings", "Apartment"],
+		}),
+		adminUpdateEntrance: builder.mutation<AdminEntrance, AdminEntranceUpdatePayload>({
+			query: ({ id, ...body }) => ({
+				url: `/apartments/entrances/${id}/`,
+				method: "PATCH",
+				body,
+			}),
+			invalidatesTags: ["AdminEntrances", "AdminBuildings"],
+		}),
+		adminDeleteEntrance: builder.mutation<void, string>({
+			query: (id) => ({
+				url: `/apartments/entrances/${id}/`,
+				method: "DELETE",
+			}),
+			invalidatesTags: ["AdminEntrances", "AdminBuildings", "Apartment"],
+		}),
+		adminGrowEntrance: builder.mutation<AdminEntrance, AdminEntranceGrowPayload>({
+			query: ({ id, delta }) => ({
+				url: `/apartments/entrances/${id}/grow/`,
+				method: "POST",
+				body: { delta },
+			}),
+			invalidatesTags: ["AdminEntrances", "AdminBuildings", "Apartment"],
 		}),
 	}),
 });
@@ -152,4 +195,10 @@ export const {
 	useAdminCreateBuildingMutation,
 	useAdminUpdateBuildingMutation,
 	useAdminDeleteBuildingMutation,
+	// PR-14 admin entrances
+	useGetBuildingEntrancesQuery,
+	useAdminCreateEntranceMutation,
+	useAdminUpdateEntranceMutation,
+	useAdminDeleteEntranceMutation,
+	useAdminGrowEntranceMutation,
 } = adminApiSlice;

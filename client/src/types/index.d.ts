@@ -619,15 +619,56 @@ export interface AdminCreateUserData {
 	unit_id?: string | null;
 }
 
+export interface EntranceCreatePayload {
+	name: string;
+	apartments_count: number;
+}
+
 export interface BuildingCreateData {
 	name: string;
 	address: string;
 	city: string;
 	is_active: boolean;
+	/**
+	 * PR-14: optional nested entrance + unit seed data.  When present
+	 * the backend creates the full Building → Entrance → Unit hierarchy
+	 * in a single atomic transaction.
+	 */
+	entrances?: EntranceCreatePayload[];
 }
 
-export interface BuildingUpdateData extends Partial<BuildingCreateData> {
+export interface BuildingUpdateData extends Partial<Omit<BuildingCreateData, "entrances">> {
 	pkid: number;
+}
+
+// ── PR-14: admin entrance management ─────────────────────────────────────
+export interface AdminEntrance {
+	id: string;
+	building: number | string;
+	building_name: string;
+	name: string;
+	units_count: number;
+	created_at: string;
+}
+
+export interface AdminEntrancesResponse {
+	entrances: AdminEntrance[];
+}
+
+export interface AdminEntranceCreatePayload {
+	buildingPkid: number;
+	name: string;
+	apartments_count: number;
+}
+
+export interface AdminEntranceUpdatePayload {
+	id: string;
+	name?: string;
+}
+
+export interface AdminEntranceGrowPayload {
+	id: string;
+	delta: number;
 }
 
 export interface NewsCategory {

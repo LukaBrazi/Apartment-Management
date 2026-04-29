@@ -1,6 +1,9 @@
 # Imports
 from apps.apartments.views import (
     AdminBuildingListCreateAPIView,
+    AdminEntranceGrowAPIView,
+    AdminEntranceListCreateAPIView,
+    AdminEntranceUpdateDestroyAPIView,
     BuildingCreateAPIView,
     BuildingListAPIView,
     BuildingUpdateDestroyAPIView,
@@ -45,5 +48,21 @@ urlpatterns = [
         "buildings/<uuid:building_id>/units/",
         UnitsByBuildingListAPIView.as_view(),
         name="list-units-by-building",
+    ),
+    # ── PR-14 admin entrance CRUD ──
+    path(
+        "buildings/<int:building_pkid>/entrances/admin/",
+        AdminEntranceListCreateAPIView.as_view(),
+        name="admin-list-create-entrances",
+    ),
+    path(
+        "entrances/<uuid:id>/",
+        AdminEntranceUpdateDestroyAPIView.as_view(),
+        name="admin-entrance-detail",
+    ),
+    path(
+        "entrances/<uuid:id>/grow/",
+        AdminEntranceGrowAPIView.as_view(),
+        name="admin-entrance-grow",
     ),
 ]

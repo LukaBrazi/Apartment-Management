@@ -6,10 +6,15 @@ import {
 	useGetIssueReviewsQuery,
 	useReviewIssueMutation,
 } from "@/lib/redux/features/issues/issueApiSlice";
+import {
+	useAdminUpdateIssueMutation,
+	useGetAdminWorkersQuery,
+} from "@/lib/redux/features/admin/adminApiSlice";
 import { useGetUserProfileQuery } from "@/lib/redux/features/users/usersApiSlice";
 import { extractErrorMessage } from "@/utils";
+import { occupationOptions } from "@/constants";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import {
 	Card,
@@ -19,11 +24,31 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../ui/dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../ui/select";
 import { AuthFormHeader } from "../forms/auth";
-import { CheckCheck, CircleDot, EyeIcon, Hotel, Star } from "lucide-react";
+import { CheckCheck, CircleDot, EyeIcon, Hotel, Pencil, Star } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import StatusBadge from "../admin/StatusBadge";
+
+const NO_ASSIGNEE = "__none__";
+
+const OCCUPATION_LABELS: Record<string, string> = Object.fromEntries(
+	occupationOptions.map((o) => [o.value, o.label]),
+);
 
 interface IssueDetailsProps {
 	params: {
@@ -95,6 +120,50 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 	const [reviewIssue, { isLoading: isReviewing }] = useReviewIssueMutation();
 
 	const [deleteIssue] = useDeleteIssueMutation();
+
+	// ── Admin edit dialog ─────────────────────────────────────────────────
+	const [editOpen, setEditOpen] = useState(false);
+	const [editStatus, setEditStatus] = useState<string>("");
+	const [editPriority, setEditPriority] = useState<string>("");
+	const [editAssignee, setEditAssignee] = useState<string>(NO_ASSIGNEE);
+
+	const { data: workersData } = useGetAdminWorkersQuery(undefined, {
+		skip: !isStaff,
+	});
+	const workers = workersData?.non_tenant_profiles?.results ?? [];
+
+	const [updateIssueAdmin, { isLoading: isUpdatingAdmin }] =
+		useAdminUpdateIssueMutation();
+
+	// Hydrate the form from the loaded issue ONCE per id.  We deliberately
+	// depend on the id (not the full issue object) — RTK Query refetches
+	// the issue on focus, and re-running this effect would clobber the
+	// user's in-flight selections inside an open dialog.
+	useEffect(() => {
+		if (issue) {
+			setEditStatus(issue.status);
+			setEditPriority(issue.priority);
+			setEditAssignee(issue.assigned_to ?? NO_ASSIGNEE);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [issue?.id]);
+
+	const handleAdminUpdate = async () => {
+		if (!issue) return;
+		try {
+			await updateIssueAdmin({
+				issueId: issue.id,
+				status: editStatus,
+				priority: editPriority,
+				assigned_to_username:
+					editAssignee === NO_ASSIGNEE ? null : editAssignee,
+			}).unwrap();
+			toast.success("Заявку оновлено");
+			setEditOpen(false);
+		} catch (e) {
+			toast.error(extractErrorMessage(e) || "Помилка оновлення");
+		}
+	};
 
 	const handleDeleteIssue = async () => {
 		if (issue?.id) {
@@ -172,8 +241,20 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 				{/* Action buttons: stacked full-width on mobile, compact
 				    top-right on desktop. `flex-row` at mobile lets both
 				    buttons sit side-by-side when both are visible. */}
-				{(canUpdate || canDelete) && (
-					<div className="flex flex-row gap-3 md:flex-col md:gap-y-3">
+				{(canUpdate || canDelete || isStaff) && (
+					<div className="flex flex-row flex-wrap gap-3 md:flex-col md:gap-y-3">
+						{isStaff && (
+							<Button
+								onClick={() => setEditOpen(true)}
+								className="tap h-10 flex-1 bg-[#3D7A8A] text-white md:ml-auto md:max-w-[300px] md:flex-none dark:bg-[#5BA3B5] dark:text-white"
+								size="sm"
+								variant="outline"
+							>
+								<Pencil className="mr-1 h-4 w-4" />
+								Редагувати
+							</Button>
+						)}
+
 						{canUpdate && (
 							<Link
 								href={`/issue/update-issue/${id}`}
@@ -184,7 +265,7 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 									size="sm"
 									variant="outline"
 								>
-									Update Issue
+									Оновити заявку
 								</Button>
 							</Link>
 						)}
@@ -196,7 +277,7 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 								size="sm"
 								variant="outline"
 							>
-								Delete Issue
+								Видалити заявку
 							</Button>
 						)}
 					</div>
@@ -302,6 +383,105 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 					)}
 				</div>
 			)}
+
+			{/* ── Admin edit dialog (status / priority / assignee) ───────── */}
+			<Dialog open={editOpen} onOpenChange={setEditOpen}>
+				<DialogContent className="max-w-md border-[#E2E5E8] bg-white dark:border-[#2D3D4F] dark:bg-[#162032]">
+					<DialogHeader>
+						<DialogTitle className="text-[#1C2B3A] dark:text-white">
+							Редагувати заявку
+						</DialogTitle>
+					</DialogHeader>
+
+					{issue && (
+						<p className="-mt-2 truncate text-sm text-[#6B7F8C]">
+							{issue.title}
+						</p>
+					)}
+
+					<div className="mt-2 space-y-4">
+						{/* Status */}
+						<div className="space-y-1">
+							<label className="text-xs font-medium text-[#6B7F8C]">
+								Статус
+							</label>
+							<Select value={editStatus} onValueChange={setEditStatus}>
+								<SelectTrigger className="border-[#E2E5E8] bg-[#F7F6F2] dark:border-[#2D3D4F] dark:bg-[#1C2B3A]">
+									<SelectValue placeholder="Оберіть статус" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="reported">Подано</SelectItem>
+									<SelectItem value="accepted">Прийнято</SelectItem>
+									<SelectItem value="in_progress">В роботі</SelectItem>
+									<SelectItem value="done">Виконано</SelectItem>
+									<SelectItem value="rejected">Відхилено</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Priority */}
+						<div className="space-y-1">
+							<label className="text-xs font-medium text-[#6B7F8C]">
+								Пріоритет
+							</label>
+							<Select value={editPriority} onValueChange={setEditPriority}>
+								<SelectTrigger className="border-[#E2E5E8] bg-[#F7F6F2] dark:border-[#2D3D4F] dark:bg-[#1C2B3A]">
+									<SelectValue placeholder="Оберіть пріоритет" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="low">Низький</SelectItem>
+									<SelectItem value="medium">Середній</SelectItem>
+									<SelectItem value="high">Високий</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Assignee */}
+						<div className="space-y-1">
+							<label className="text-xs font-medium text-[#6B7F8C]">
+								Виконавець
+							</label>
+							<Select value={editAssignee} onValueChange={setEditAssignee}>
+								<SelectTrigger className="border-[#E2E5E8] bg-[#F7F6F2] dark:border-[#2D3D4F] dark:bg-[#1C2B3A]">
+									<SelectValue placeholder="Оберіть виконавця" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value={NO_ASSIGNEE}>
+										— Не призначено —
+									</SelectItem>
+									{workers.map((w) => (
+										<SelectItem key={w.username} value={w.username}>
+											{w.full_name || w.username}
+											<span className="ml-1 text-xs text-[#6B7F8C]">
+												{OCCUPATION_LABELS[w.occupation] ?? w.occupation}
+											</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+
+					<DialogFooter className="pt-2">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setEditOpen(false)}
+							className="border-[#E2E5E8] dark:border-[#2D3D4F]"
+						>
+							Скасувати
+						</Button>
+						<Button
+							type="button"
+							onClick={handleAdminUpdate}
+							disabled={isUpdatingAdmin}
+							className="bg-[#3D7A8A] text-white hover:bg-[#336678]"
+						>
+							{isUpdatingAdmin ? "Збереження..." : "Зберегти"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</Card>
 	);
 }
