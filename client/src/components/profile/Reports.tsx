@@ -27,7 +27,7 @@ export default function Reports() {
 	return (
 		<TabsContent value="my-reports">
 			<h2 className="h2-semibold flex-center font-robotoSlab dark:text-pumpkin text-xl">
-				Total: ({myReport?.count})
+				Всього: ({myReport?.count})
 			</h2>
 			<div className="mt-4 grid cursor-pointer grid-cols-1 gap-4 p-1.5 md:grid-cols-2 lg:grid-cols-3">
 				{myReport && myReport.results.length > 0 ? (
