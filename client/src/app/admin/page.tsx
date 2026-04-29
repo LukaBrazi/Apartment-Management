@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/admin/DataTable";
 import StatusBadge from "@/components/admin/StatusBadge";
@@ -45,6 +46,7 @@ const recentIssueColumns: ColumnDef<Issue, unknown>[] = [
 ];
 
 export default function AdminDashboardPage() {
+	const router = useRouter();
 	const { data: profilesData, isLoading: profilesLoading } =
 		useGetAdminAllProfilesQuery();
 	const { data: issuesData, isLoading: issuesLoading } =
@@ -147,6 +149,9 @@ export default function AdminDashboardPage() {
 					<CardTitle className="text-base font-semibold text-[#1C2B3A] dark:text-white">
 						Останні заявки
 					</CardTitle>
+					<p className="text-xs text-[#6B7F8C] mt-1">
+						Клік по рядку відкриває заявку для перегляду та редагування.
+					</p>
 				</CardHeader>
 				<CardContent>
 					<DataTable
@@ -154,6 +159,7 @@ export default function AdminDashboardPage() {
 						data={recentIssues}
 						isLoading={issuesLoading}
 						searchPlaceholder="Пошук заявок..."
+						onRowClick={(issue) => router.push(`/issue/${issue.id}`)}
 					/>
 				</CardContent>
 			</Card>
