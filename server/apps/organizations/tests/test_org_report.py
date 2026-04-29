@@ -390,9 +390,9 @@ class TestSendReportTask:
         # Occupancy percentage rendered as a string token.
         # Django L10N for ``uk`` locale formats 50.0 as ``50,0`` — accept either.
         assert "50.0%" in html or "50,0%" in html
-        # Subscription / trial placeholder visible
-        assert "TODO PR-12" in html
-        assert "TODO PR-13" in html
+        # PR-13a: TODO placeholders are gone — replaced with live billing data.
+        assert "TODO PR-12" not in html
+        assert "TODO PR-13" not in html
 
     def test_missing_org_logs_warning_no_email(self, db, settings, caplog):
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
@@ -477,3 +477,141 @@ class TestEmailTemplate:
         assert "display: flex" not in html.lower()
         assert "display:grid" not in html.lower()
         assert "display: grid" not in html.lower()
+
+
+# ── PR-13a: Billing block in the report ──────────────────────────────────────
+
+
+@pytest.fixture
+def starter_plan_for_report(db):
+    """Local Starter plan fixture — pulled in only by the PR-13a tests
+    so the rest of the suite still hits the legacy "no subscription"
+    path (TODO placeholders → empty-state copy).
+    """
+    from decimal import Decimal as _D
+    from apps.billing.models import SubscriptionPlan
+    return SubscriptionPlan.objects.create(
+        code="starter",
+        name="Starter",
+        monthly_price_uah=_D("5900.00"),
+        max_apartments=150,
+        max_users=300,
+    )
+
+
+@pytest.mark.django_db
+class TestOrgReportBillingPR13a:
+    def test_data_includes_subscription_when_present(
+        self, director_user, starter_plan_for_report,
+    ):
+        """When org has a subscription (signal-created on Org create),
+        ``_gather_org_report_data`` returns the new billing keys."""
+        from decimal import Decimal as _D
+        from apps.organizations.tasks import _gather_org_report_data
+
+        org = Organization.objects.create(
+            name="Billing org PR-13a",
+            type="housing_complex",
+            owner=director_user,
+        )
+        data = _gather_org_report_data(org.id)
+        assert data["subscription_plan_name"] == "Starter"
+        assert data["subscription_plan_price"] == _D("5900.00")
+        assert data["billing_period"] == "Monthly"
+        assert data["is_in_trial"] is True
+        # 60-day trial fresh out of signal — at least 59 left (test runs fast).
+        assert data["trial_days_remaining"] >= 59
+        assert data["mrr_uah"] == _D("5900.00")
+        assert data["active_addons"] == []
+
+    def test_data_mrr_includes_recurring_addons(
+        self, director_user, starter_plan_for_report,
+    ):
+        from datetime import date
+        from decimal import Decimal as _D
+        from apps.billing.models import AddOn, OrganizationAddOn
+        from apps.organizations.tasks import _gather_org_report_data
+
+        org = Organization.objects.create(
+            name="Mrr org",
+            type="housing_complex",
+            owner=director_user,
+        )
+        sms_addon = AddOn.objects.create(
+            code="sms_subscription",
+            name_uk="SMS-підписка",
+            price_uah=_D("1200.00"),
+            billing_type=AddOn.BILLING_RECURRING,
+        )
+        OrganizationAddOn.objects.create(
+            organization=org,
+            addon=sms_addon,
+            activated_at=date.today(),
+        )
+        data = _gather_org_report_data(org.id)
+        # 5900 base + 1200 SMS
+        assert data["mrr_uah"] == _D("7100.00")
+        assert len(data["active_addons"]) == 1
+        assert data["active_addons"][0]["name"] == "SMS-підписка"
+        assert data["active_addons"][0]["is_recurring"] is True
+
+    def test_data_returns_empty_billing_when_no_subscription(
+        self, director_user,
+    ):
+        """No Starter plan seeded → trial signal exits silently → no sub.
+
+        ``_gather_org_report_data`` must still return a usable payload.
+        """
+        from decimal import Decimal as _D
+        from apps.organizations.tasks import _gather_org_report_data
+
+        org = Organization.objects.create(
+            name="No-sub org",
+            type="housing_complex",
+            owner=director_user,
+        )
+        data = _gather_org_report_data(org.id)
+        assert data["subscription_plan_name"] is None
+        assert data["mrr_uah"] == _D("0.00")
+        assert data["active_addons"] == []
+        assert data["is_in_trial"] is False
+
+    def test_html_renders_subscription_block_in_trial(
+        self, director_user, starter_plan_for_report,
+    ):
+        from apps.organizations.tasks import _gather_org_report_data
+
+        org = Organization.objects.create(
+            name="Trial render org",
+            type="housing_complex",
+            owner=director_user,
+        )
+        ctx = _gather_org_report_data(org.id)
+        ctx["recipient_email"] = "x@x.com"
+        html = render_to_string("organizations/email/org_report.html", ctx)
+        assert "Trial" in html
+        assert "Starter" in html
+        assert "MRR" in html
+
+    def test_html_renders_subscription_block_post_trial(
+        self, director_user, starter_plan_for_report,
+    ):
+        from datetime import date, timedelta
+        from apps.organizations.tasks import _gather_org_report_data
+
+        org = Organization.objects.create(
+            name="Post-trial org",
+            type="housing_complex",
+            owner=director_user,
+        )
+        # Push trial into the past.
+        sub = org.subscription
+        sub.trial_ends_at = date.today() - timedelta(days=1)
+        sub.save(update_fields=["trial_ends_at"])
+
+        ctx = _gather_org_report_data(org.id)
+        ctx["recipient_email"] = "x@x.com"
+        html = render_to_string("organizations/email/org_report.html", ctx)
+        assert "MRR" in html
+        # Ensure the empty-state copy isn't shown when sub is present.
+        assert "Без активної підписки" not in html

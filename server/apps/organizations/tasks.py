@@ -17,6 +17,7 @@ Celery worker doesn't loop on a doomed job.
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 from smtplib import SMTPException
 
 from celery import shared_task
@@ -157,6 +158,68 @@ def _gather_org_report_data(org_id) -> dict:
     bar_filled = max(0, min(20, int(pct // 5)))
     ascii_bar = ("█" * bar_filled) + ("░" * (20 - bar_filled))
 
+    # ── PR-13a billing block ────────────────────────────────────────────
+    # ``Organization.subscription`` is the OneToOne reverse from
+    # OrganizationSubscription. ``getattr(...,None)`` handles orgs that
+    # were created before the signal hook (e.g. fixtures from old tests).
+    sub = getattr(org, "subscription", None)
+    subscription_plan_name: str | None = None
+    subscription_plan_price = Decimal("0.00")
+    billing_period_label = ""
+    is_in_trial = False
+    trial_days_remaining = 0
+    mrr_uah = Decimal("0.00")
+    active_addons: list[dict] = []
+    # Legacy keys retained for backward-compat with old tests / templates.
+    subscription_plan_text = "—"
+    trial_status_text = "—"
+
+    if sub is not None and sub.plan is not None:
+        from apps.billing.models import OrganizationAddOn  # local import — keep
+        subscription_plan_name = sub.plan.name
+        subscription_plan_price = sub.plan.monthly_price_uah
+        billing_period_label = sub.get_billing_period_display()
+        is_in_trial = sub.is_in_trial
+
+        if sub.trial_ends_at is not None:
+            trial_days_remaining = max(
+                0,
+                (sub.trial_ends_at - dj_timezone.now().date()).days,
+            )
+
+        org_addons = list(
+            org.addons
+            .filter(is_active=True)
+            .select_related("addon")
+        )
+        recurring_total = Decimal("0.00")
+        for a in org_addons:
+            if a.is_recurring:
+                recurring_total += a.effective_price
+            active_addons.append({
+                "name": a.effective_name,
+                "price": a.effective_price,
+                "is_recurring": a.is_recurring,
+            })
+
+        # MRR = base monthly price + sum of recurring add-on prices.
+        # Annual billing still has the same MRR for the dashboard;
+        # the 15% discount is reflected on the invoice, not the
+        # baseline monthly run-rate.
+        mrr_uah = sub.plan.monthly_price_uah + recurring_total
+
+        # Human-readable strings that legacy template variables consume.
+        subscription_plan_text = (
+            f"{sub.plan.name} — {sub.plan.monthly_price_uah} UAH/міс"
+            f" ({billing_period_label})"
+        )
+        if is_in_trial:
+            trial_status_text = f"Trial: ще {trial_days_remaining} днів"
+        elif sub.trial_ends_at is not None:
+            trial_status_text = "Trial завершено"
+        else:
+            trial_status_text = "Без trial"
+
     return {
         "org_name": org.name,
         "org_slug": org.slug,
@@ -169,8 +232,17 @@ def _gather_org_report_data(org_id) -> dict:
         "occupancy_pct_px": pct_px,
         "occupancy_ascii": ascii_bar,
         "active_features": _list_active_features(org),
-        "subscription_plan_text": "Не реалізовано (TODO PR-12)",
-        "trial_status_text": "Не реалізовано (TODO PR-13)",
+        # PR-13a billing keys
+        "subscription_plan_name": subscription_plan_name,
+        "subscription_plan_price": subscription_plan_price,
+        "billing_period": billing_period_label,
+        "is_in_trial": is_in_trial,
+        "trial_days_remaining": trial_days_remaining,
+        "mrr_uah": mrr_uah,
+        "active_addons": active_addons,
+        # Legacy keys (kept for template + existing tests)
+        "subscription_plan_text": subscription_plan_text,
+        "trial_status_text": trial_status_text,
         "generated_at": dj_timezone.localtime(),
     }
 

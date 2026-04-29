@@ -1,0 +1,114 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Invoice {{ invoice.invoice_number }} — {{ invoice.organization.name }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#FAFAFA;font-family:Arial,Helvetica,sans-serif;color:#0F172A;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FAFAFA;padding:24px 0;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#1E2761;padding:24px 32px;border-radius:8px 8px 0 0;">
+            <div style="color:#FFFFFF;font-size:20px;font-weight:bold;">ApartmentOS — Invoice</div>
+            <div style="color:#C7D2FE;font-size:13px;padding-top:6px;">
+              {{ invoice.invoice_number }} &middot; {{ invoice.issued_at|date:"Y-m-d" }}
+            </div>
+          </td>
+        </tr>
+
+        <!-- Org -->
+        <tr>
+          <td style="padding:20px 32px 8px 32px;">
+            <div style="font-size:18px;font-weight:bold;">{{ invoice.organization.name }}</div>
+            <div style="font-size:13px;color:#64748B;padding-top:4px;">
+              {% trans "Період" %}: {{ invoice.period_start|date:"Y-m-d" }} — {{ invoice.period_end|date:"Y-m-d" }}
+            </div>
+            <div style="font-size:13px;color:#64748B;">
+              {% trans "Термін сплати" %}: {{ invoice.due_at|date:"Y-m-d" }}
+            </div>
+          </td>
+        </tr>
+
+        <!-- Line items -->
+        <tr>
+          <td style="padding:16px 32px;">
+            <table role="presentation" width="100%" cellpadding="6" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <thead>
+                <tr style="background-color:#F1F5F9;">
+                  <th align="left" style="font-size:12px;color:#64748B;text-transform:uppercase;border-bottom:1px solid #E2E8F0;">{% trans "Опис" %}</th>
+                  <th align="right" style="font-size:12px;color:#64748B;text-transform:uppercase;border-bottom:1px solid #E2E8F0;">{% trans "Кільк." %}</th>
+                  <th align="right" style="font-size:12px;color:#64748B;text-transform:uppercase;border-bottom:1px solid #E2E8F0;">{% trans "Ціна" %}</th>
+                  <th align="right" style="font-size:12px;color:#64748B;text-transform:uppercase;border-bottom:1px solid #E2E8F0;">{% trans "Сума" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for line in invoice.line_items.all %}
+                <tr>
+                  <td style="font-size:14px;border-bottom:1px solid #F1F5F9;">{{ line.description }}</td>
+                  <td align="right" style="font-size:14px;border-bottom:1px solid #F1F5F9;">{{ line.quantity }}</td>
+                  <td align="right" style="font-size:14px;border-bottom:1px solid #F1F5F9;">{{ line.unit_price_uah }}</td>
+                  <td align="right" style="font-size:14px;border-bottom:1px solid #F1F5F9;">{{ line.total_uah }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Totals -->
+        <tr>
+          <td style="padding:8px 32px 24px 32px;">
+            <table role="presentation" width="100%" cellpadding="4" cellspacing="0" border="0">
+              <tr>
+                <td align="right" style="font-size:14px;color:#64748B;">{% trans "Підсумок" %}:</td>
+                <td align="right" width="120" style="font-size:14px;">{{ invoice.subtotal_uah }} UAH</td>
+              </tr>
+              {% if invoice.discount_uah %}
+              <tr>
+                <td align="right" style="font-size:14px;color:#64748B;">{% trans "Знижка" %}:</td>
+                <td align="right" style="font-size:14px;color:#10B981;">-{{ invoice.discount_uah }} UAH</td>
+              </tr>
+              {% endif %}
+              <tr>
+                <td align="right" style="font-size:18px;font-weight:bold;border-top:1px solid #E2E8F0;padding-top:8px;">{% trans "Всього" %}:</td>
+                <td align="right" style="font-size:18px;font-weight:bold;border-top:1px solid #E2E8F0;padding-top:8px;">{{ invoice.total_uah }} UAH</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- FOP payer snapshot -->
+        {% if invoice.payer_name_snapshot %}
+        <tr>
+          <td style="padding:0 32px 24px 32px;">
+            <div style="background-color:#F1F5F9;border-left:4px solid #1E2761;padding:12px 16px;font-size:13px;color:#0F172A;line-height:1.6;">
+              <strong>{% trans "Реквізити одержувача" %}:</strong><br>
+              {{ invoice.payer_name_snapshot }}<br>
+              {% if invoice.payer_tax_id_snapshot %}{% trans "ЄДРПОУ/ІПН" %}: {{ invoice.payer_tax_id_snapshot }}<br>{% endif %}
+              {% if invoice.payer_iban_snapshot %}IBAN: <span style="font-family:Consolas,Menlo,monospace;">{{ invoice.payer_iban_snapshot }}</span><br>{% endif %}
+              {% if invoice.payer_bank_snapshot %}{% trans "Банк" %}: {{ invoice.payer_bank_snapshot }}<br>{% endif %}
+              {% if invoice.payer_tax_note_snapshot %}<em>{{ invoice.payer_tax_note_snapshot }}</em>{% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+
+        <!-- Footer -->
+        <tr>
+          <td align="center" style="padding:16px 32px 24px 32px;font-size:12px;color:#94A3B8;">
+            {% trans "Автоматичне повідомлення від ApartmentOS" %}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

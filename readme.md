@@ -251,6 +251,98 @@ Lock-down тест `apps/common/tests/test_security_headers.py` падає,
 якщо хтось випадково видалить `headers()` callback або зламає
 важливу директиву.
 
+## Billing (PR-13a)
+
+Облік підписок, тарифних планів, add-ons і генерація invoices
+для організацій. **Ядро без PDF / auto-billing / payment gateway** —
+це фази PR-13b/c/d.
+
+### Моделі (`apps/billing/`)
+
+- **SubscriptionPlan** — каталог тарифів (Starter 5900, Business 14900,
+  Professional 29900, Enterprise 59900). Поля `max_apartments` /
+  `max_users` як `null` означають "без ліміту".
+- **AddOn** — каталог add-ons (one_time або recurring_monthly).
+- **OrganizationSubscription** — OneToOne на Organization. Сигнал
+  `post_save` на створення Organization автоматично додає 60-денний
+  trial на план Starter (якщо такий є у БД).
+- **OrganizationAddOn** — активований add-on. Або FK на каталог AddOn,
+  або кастомний модуль (`addon=null` + `custom_name` + `custom_price`).
+  CheckConstraint унеможливлює "обидва порожні".
+- **Invoice** — header. Поля `payer_*_snapshot` фіксують FOP-реквізити
+  у момент створення (GAAP-style auditability — старі інвойси
+  не змінюються при зміні settings). `invoice_number` авто-генерується
+  у форматі `INV-YYYY-NNNNNN`.
+- **InvoiceLineItem** — лінія з типом (`base_subscription`,
+  `addon_recurring`, `addon_one_time`, `custom_module`,
+  `proration_credit`/`charge`, `annual_discount`, `trial_credit`).
+
+### Calculator service (`apps/billing/services/calculator.py`)
+
+Три функції, всі повертають структури з `Decimal`:
+
+- `calculate_recurring_invoice(org, period_start, period_end)` —
+  base + recurring add-ons − 15% annual discount. Trial → all zeros +
+  `trial_credit` line.
+- `calculate_onboarding_invoice(org, addon_codes)` — сума one-time
+  add-ons по списку catalog кодів.
+- `calculate_proration_on_plan_change(org, new_plan, change_date)` —
+  refund of unused old plan + prorated charge of new plan від
+  change_date через `next_billing_at`.
+
+### Admin actions
+
+На `Organization` admin:
+- **💰 Згенерувати monthly invoice (draft)** — створює draft Invoice
+  + LineItems для кожної selected org з підпискою.
+- **🔍 Preview next invoice** — dry-run, показує totals у messages.
+- **🆕 Створити onboarding invoice…** — інтермедіат сторінка з
+  checkbox-ами one-time add-ons.
+
+На `Invoice` admin:
+- **✅ Approve & email superuser** — переводить draft → approved і
+  надсилає HTML body на `request.user.email` (superuser-only).
+  **Ніколи** на email клієнта — інвойси перевіряє CEO вручну.
+
+### Soft-warn limits
+
+`apps/billing/signals.py` слухає `post_save` на:
+- `apartments.Unit` → перевіряє `plan.max_apartments`
+- `organizations.OrganizationMembership` → перевіряє `plan.max_users`
+
+Якщо ліміт перевищено — Telegram message через
+`send_telegram_message_task`. **Без hard block** — лише попередження.
+
+### Org Report integration (PR-11 → PR-13a)
+
+`_gather_org_report_data` тепер повертає реальні keys:
+`subscription_plan_name`, `mrr_uah`, `is_in_trial`,
+`trial_days_remaining`, `active_addons`. Шаблон `org_report.html`
+відображає Trial yellow-block якщо trial активний, інакше — MRR
+у великому шрифті + список активних add-ons.
+
+### Manual ops після deploy
+
+```bash
+python manage.py migrate billing
+python manage.py loaddata billing_initial   # 4 plans + 8 addons
+```
+
+Railway env vars (Web AND Celery Worker):
+
+```
+INVOICE_PAYER_LEGAL_NAME=ФОП Андрієнко Дмитро Володимирович
+INVOICE_PAYER_TAX_ID=<ІПН або ЄДРПОУ>
+INVOICE_PAYER_IBAN=UA...
+INVOICE_PAYER_BANK_NAME=
+INVOICE_PAYER_TAX_NOTE=Без ПДВ. Спрощена система оподаткування, 3 група, 5%.
+INVOICE_DUE_DAYS=10
+```
+
+Lock-down regex тести (`apps/billing/tests/test_seed_lockdown.py`)
+стережуть, щоб ціни у `billing_initial.json` не мутували випадково
+під час rebase.
+
 ## Ліцензія
 
 BSL-1.1 — дивіться LICENSE.

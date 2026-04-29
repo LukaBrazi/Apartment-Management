@@ -197,9 +197,10 @@
           </td>
         </tr>
 
-        <!-- ── SUBSCRIPTION & TRIAL (placeholder, yellow bg) ── -->
+        <!-- ── SUBSCRIPTION & TRIAL (PR-13a — live billing data) ── -->
         <tr>
           <td style="padding:24px 0 0 0;">
+            {% if is_in_trial %}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FEF3C7;border:1px solid #FBBF24;border-radius:8px;">
               <tr>
                 <td style="padding:20px 32px;">
@@ -207,14 +208,60 @@
                     &#128179; {% trans "Тариф і Trial" %}
                   </div>
                   <div style="font-family:Arial,Helvetica,sans-serif;color:#78350F;font-size:14px;padding:4px 0;">
-                    &#128679; <strong>{% trans "Тариф" %}:</strong> {{ subscription_plan_text }}
+                    <strong>{% trans "Тариф" %}:</strong> {{ subscription_plan_text }}
                   </div>
                   <div style="font-family:Arial,Helvetica,sans-serif;color:#78350F;font-size:14px;padding:4px 0;">
-                    &#128679; <strong>Trial:</strong> {{ trial_status_text }}
+                    <strong>Trial:</strong> ще {{ trial_days_remaining }} {% trans "днів" %}
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#78350F;font-size:14px;padding:4px 0;">
+                    <strong>MRR:</strong> {{ mrr_uah }} UAH/{% trans "міс" %}
                   </div>
                 </td>
               </tr>
             </table>
+            {% else %}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+              <tr>
+                <td style="padding:20px 32px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:14px;font-weight:bold;padding-bottom:14px;">
+                    &#128179; {% trans "Тариф і MRR" %}
+                  </div>
+                  {% if subscription_plan_name %}
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:14px;padding:4px 0;">
+                    <strong>{% trans "Тариф" %}:</strong> {{ subscription_plan_text }}
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#10B981;font-size:24px;font-weight:bold;padding-top:8px;">
+                    MRR: {{ mrr_uah }} UAH/{% trans "міс" %}
+                  </div>
+                  {% if active_addons %}
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#64748B;font-size:12px;font-weight:bold;padding-top:14px;text-transform:uppercase;letter-spacing:0.8px;">
+                    {% trans "Активні add-ons" %}
+                  </div>
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px;">
+                    {% for addon in active_addons %}
+                    <tr>
+                      <td style="padding:4px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#0F172A;">
+                        {{ addon.name }}
+                        <span style="color:#94A3B8;">
+                          ({% if addon.is_recurring %}{% trans "щомісячно" %}{% else %}{% trans "одноразово" %}{% endif %})
+                        </span>
+                      </td>
+                      <td align="right" style="font-family:Consolas,Menlo,monospace;font-size:13px;color:#0F172A;">
+                        {{ addon.price }} UAH
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </table>
+                  {% endif %}
+                  {% else %}
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#64748B;font-size:14px;font-style:italic;">
+                    {% trans "Без активної підписки" %}
+                  </div>
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
+            {% endif %}
           </td>
         </tr>
 

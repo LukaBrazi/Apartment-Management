@@ -1,0 +1,150 @@
+[
+  {
+    "model": "billing.subscriptionplan",
+    "pk": 1,
+    "fields": {
+      "code": "starter",
+      "name": "Starter",
+      "monthly_price_uah": "5900.00",
+      "max_apartments": 150,
+      "max_users": 300,
+      "description_uk": "Базовий тариф для невеликих ЖК. До 150 квартир, до 300 користувачів.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.subscriptionplan",
+    "pk": 2,
+    "fields": {
+      "code": "business",
+      "name": "Business",
+      "monthly_price_uah": "14900.00",
+      "max_apartments": 500,
+      "max_users": 1000,
+      "description_uk": "Бізнес тариф. До 500 квартир, до 1000 користувачів.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.subscriptionplan",
+    "pk": 3,
+    "fields": {
+      "code": "professional",
+      "name": "Professional",
+      "monthly_price_uah": "29900.00",
+      "max_apartments": 1500,
+      "max_users": 3000,
+      "description_uk": "Професійний тариф для управляючих компаній.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.subscriptionplan",
+    "pk": 4,
+    "fields": {
+      "code": "enterprise",
+      "name": "Enterprise",
+      "monthly_price_uah": "59900.00",
+      "max_apartments": null,
+      "max_users": null,
+      "description_uk": "Без лімітів. Підтримка 24/7, on-premise опція.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 1,
+    "fields": {
+      "code": "custom_domain",
+      "name_uk": "Власний домен",
+      "price_uah": "2500.00",
+      "billing_type": "one_time",
+      "description_uk": "Підключення власного доменного імені до кабінету.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 2,
+    "fields": {
+      "code": "extended_branding",
+      "name_uk": "Розширений брендинг",
+      "price_uah": "8500.00",
+      "billing_type": "one_time",
+      "description_uk": "Кастомізація кольорів, логотипів, email-шаблонів.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 3,
+    "fields": {
+      "code": "sms_setup",
+      "name_uk": "SMS-сповіщення — підключення",
+      "price_uah": "4500.00",
+      "billing_type": "one_time",
+      "description_uk": "Одноразова активація SMS-каналу нотифікацій.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 4,
+    "fields": {
+      "code": "residents_import",
+      "name_uk": "Імпорт мешканців",
+      "price_uah": "4500.00",
+      "billing_type": "one_time",
+      "description_uk": "Імпорт реєстру мешканців з Excel/CSV.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 5,
+    "fields": {
+      "code": "payment_integration",
+      "name_uk": "Інтеграція платіжного шлюзу",
+      "price_uah": "35000.00",
+      "billing_type": "one_time",
+      "description_uk": "Підключення Stripe / LiqPay / FondyPro.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 6,
+    "fields": {
+      "code": "admin_training",
+      "name_uk": "Тренінг адміністраторів",
+      "price_uah": "2200.00",
+      "billing_type": "one_time",
+      "description_uk": "Онлайн-сесія навчання для адмінів ЖК.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 7,
+    "fields": {
+      "code": "sms_subscription",
+      "name_uk": "SMS-підписка (щомісячна)",
+      "price_uah": "1200.00",
+      "billing_type": "recurring_monthly",
+      "description_uk": "Щомісячна оплата SMS-каналу.",
+      "is_active": true
+    }
+  },
+  {
+    "model": "billing.addon",
+    "pk": 8,
+    "fields": {
+      "code": "priority_support_24_7",
+      "name_uk": "Підтримка 24/7",
+      "price_uah": "4900.00",
+      "billing_type": "recurring_monthly",
+      "description_uk": "Цілодобова пріоритетна підтримка з SLA 1 година.",
+      "is_active": true
+    }
+  }
+]

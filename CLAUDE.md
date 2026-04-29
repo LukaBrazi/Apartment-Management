@@ -36,7 +36,34 @@ ApartmentOS на Railway = 3 окремих сервіси (Web, Celery Worker, 
 ламає Celery deploys ("service unavailable"). Lock-down тест
 `apps/tests/test_railway_config.py` стереже це правило.
 
+**Per-service env vars (gotcha з 2026-04-29):** Web і Celery Worker — окремі
+сервіси, кожен має СВІЙ набір env vars. Якщо змінна потрібна на обох
+(наприклад `RESEND_API_KEY`, `ERROR_ALERTS_TG_*`, `TOS_VERSION`) — додавай
+на ОБИДВА. Альтернативно, можна використати Railway shared variable
+reference `${{<source-service>.VAR_NAME}}` щоб не дублювати значення.
+
 Покрокова інструкція deploy/troubleshoot — `docs/RAILWAY_SETUP.md`.
+
+### Email backend — Resend HTTP API only (без SMTP)
+
+**Railway egress блокує/затримує SMTP** (підтверджено експериментально:
+`smtp.resend.com:587` і `:465` обидва timeout-ять). Тому використовуємо
+**Resend HTTP API** через custom backend `apps.common.email_backends.ResendEmailBackend`.
+
+Архітектура (PR-12):
+- `EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"` — top-level
+  (Django writer) — кладе на Celery queue
+- `CELERY_EMAIL_BACKEND = "apps.common.email_backends.ResendEmailBackend"` —
+  worker-side, дзвонить `resend.Emails.send(payload)` через офіційний
+  Python SDK (без anymail обгортки)
+- Conditional у `production.py`: якщо `RESEND_API_KEY` порожній → SMTP
+  fallback (для dev/CI/staging без Resend)
+
+Setup: `RESEND_API_KEY` env var має бути на ОБОХ Web і Celery Worker
+сервісах. Без нього на Worker — fallback до SMTP → timeout.
+
+Verified domain: `apartmentos.org` у Resend → `noreply@apartmentos.org`
+як `DEFAULT_FROM_EMAIL`. Для тестів `onboarding@resend.dev` теж працює.
 
 ### Git з Linux sandbox (важливо)
 
@@ -44,6 +71,51 @@ ApartmentOS на Railway = 3 окремих сервіси (Web, Celery Worker, 
 - **Ніколи не запускати `git add` / `git commit` / `git push` зі sandbox** — залишається index.lock і наступні команди падають.
 - Натомість: підготувати список файлів і команди → передати Dmytro для виконання з Mac терміналу.
 - Якщо index.lock завис: `rm ~/PycharmProjects/Django-Apartment-Management/.git/index.lock`
+
+### Merge-script gotchas (lessons learned 2026-04-29)
+
+При написанні `MERGE-PR{N}.sh` direct-merge скриптів:
+
+- **❌ НЕ використовуй heredoc у subshell для commit messages:**
+  ```bash
+  git commit -m "..." -m "$(cat <<'EOF' ... EOF)"  # ламається на апострофах!
+  ```
+  `<<'EOF'` всередині `$()` re-парситься bash'ем. Якщо у тілі є `won't`,
+  `Telegram's`, `dedup'd` — bash шукає закриваючий `'`, не знаходить,
+  падає `unexpected EOF while looking for matching '`. Воспроизведено двічі
+  (PR-1, PR-9).
+
+- **✅ Використовуй temp file pattern:**
+  ```bash
+  COMMIT_MSG_FILE="$(mktemp -t pr-msg)"
+  trap 'rm -f "$COMMIT_MSG_FILE"' EXIT
+  cat > "$COMMIT_MSG_FILE" <<COMMIT_END
+  Implements: ...
+  Будь-які 'апострофи', cron-таблиці, всякі дрібниці — без проблем.
+  COMMIT_END
+  git commit -F "$COMMIT_MSG_FILE"
+  ```
+
+- **Multi-path pytest fallback** — на Mac за замовчуванням нема `python`,
+  тільки `python3`. Скрипт має пробувати `.venv/bin/pytest`, потім
+  `~/.local/bin/pytest`, потім `command -v pytest`, потім
+  `python3 -m pytest`. Якщо нічого нема — попередити, не падати.
+
+- **Stale `__pycache__` після major refactor** — Python інколи не
+  інвалідує `.pyc` після швидких послідовних правок (mtime collision).
+  Симптом: `ModuleNotFoundError` для модуля що вже видалений з settings.
+  Fix у скрипті:
+  ```bash
+  find "$REPO_ROOT/server" -type d -name __pycache__ -exec rm -rf {} +
+  ```
+
+- **Self-exclude скрипту** — додай у скрипт:
+  ```bash
+  git add -A
+  git reset HEAD MERGE-PR{N}.sh 2>/dev/null || true
+  git reset HEAD DEV_PLAN.md 2>/dev/null || true
+  ```
+  Інакше скрипт сам потрапляє у commit (було у PR-1, прибирали окремо).
 
 ## Project Structure
 

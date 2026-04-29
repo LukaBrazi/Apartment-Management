@@ -1,8 +1,8 @@
 # ApartmentOS — Client (Next.js) Context
 
 > Context for developers and AI agents working in `client/`.
-> Last updated: **2026-04-26** — after PR-1..PR-8 + 3 hotfixes batch (tech-debt,
-> GDPR consent, production hardening).
+> Last updated: **2026-04-29** — after PR-9..PR-12 batch (Telegram alerts,
+> health monitoring, org reports, Resend HTTP API).
 
 ## 🚨 Package manager policy: npm ONLY
 
@@ -263,6 +263,73 @@ Lock-down тест `apps/common/tests/test_security_headers.py` падає, як
 - Local `IssueCard` у `rate-worker/page.tsx` → `ReviewIssueCard` (no shadow з `components/cards/IssueCard.tsx`)
 
 ## 📅 Changelog of infra decisions
+
+- **2026-04-29 (PR-9..PR-12 + hotfixes — observability, monitoring, email infra)**:
+
+  **Backend (PR-9, PR-10):**
+  - **Telegram error alerts** — `apps.notifications.error_alerts.TelegramErrorHandler`
+    логує 5xx помилки з `django.request` у приватний TG канал. Handler
+    рівень ERROR (4xx WARN ігнорує), GDPR-safe (тільки `user.id`, без
+    email/body/headers/querystring), HTML-escaped, fingerprint dedup
+    через Redis (5-хв TTL), traceback truncate ≤4096 chars. Async
+    через Celery — request thread не блокується.
+  - **Scheduled health monitoring** — `apps.common.tasks.daily_health_status_task`
+    (9:00 + 21:00 Europe/Kyiv, ALWAYS sends — "тиша = моніторинг здох")
+    + `hourly_health_monitor_task` (silent OK, 🚨 only on degraded,
+    hour-bucket dedup). Через Celery Beat. Reuse `run_health_checks()`
+    helper з `/api/v1/health/`.
+  - **Generic TG sender** — `send_telegram_message_task` у
+    `apps/notifications/tasks.py` для health pings та інших
+    operational notifications.
+
+  **Backend (PR-11):**
+  - **Org Report admin action** — superuser обирає org(s) у Django
+    Admin → action **"📧 Згенерувати звіт..."** → за 1-2 хв на email
+    приходить HTML звіт з KPI cards (буд/квартири/мешканці/заселені),
+    SVG progress bar заселеності + ASCII fallback, список активних
+    `_default_features()`, placeholder Тариф/Trial з yellow background.
+    Async через Celery, multi-select = N окремих листів.
+  - Permission gates: `is_superuser` only, requires non-empty
+    `request.user.email`. Email — HTML-only через `EmailMultiAlternatives`,
+    inline CSS, table-based layout, max-width 600px.
+
+  **Backend (PR-12):**
+  - **Email infra: SMTP → Resend HTTP API.** Custom backend
+    `apps.common.email_backends.ResendEmailBackend` через офіційний
+    `resend` Python SDK (без django-anymail wrapper). Conditional
+    у `production.py`: якщо `RESEND_API_KEY` set → Resend HTTP, else
+    SMTP fallback. Top-level `EMAIL_BACKEND=djcelery_email...` лишається
+    (async dispatch), міняється тільки `CELERY_EMAIL_BACKEND`.
+  - **Чому міграція:** Railway egress блокує SMTP — `smtp.resend.com:587`
+    і `:465` обидва timeout-ять (TCP can't establish). HTTP API на
+    порту 443 нормально проходить.
+  - **Чому direct SDK не django-anymail:** один файл ~120 LOC, повний
+    контроль над payload mapping, менший surface для security review,
+    no extra dependency layer.
+
+  **Hotfixes:**
+  - **MERGE-PR9.sh heredoc apostrophe trap** — `<<'EOF'` всередині
+    `$(cat ...)"` падає на `Telegram's`/`won't`/`dedup'd`. Виправлено
+    через temp file pattern (`mktemp` + `git commit -F`).
+  - **PR-12 stale .pyc** — Python не інвалідував `base.cpython-312.pyc`
+    після видалення anymail з settings → `ModuleNotFoundError`. Fix:
+    `find -name __pycache__ -exec rm -rf` у скрипті перед pytest.
+  - **PR-12 wrong commit message** — git commit якимось чином узяв
+    template з parable-web-wdio (chromedriver). Fix: `FIX-PR12-COMMIT.sh`
+    з soft reset + правильний message через temp file.
+
+  **Tests:** 853 → 878 passed (+25 нових: 23 Telegram alerts/health
+  monitoring + 22 org report + 25 email backend).
+
+  **Manual ops (Railway env vars):**
+  - `ERROR_ALERTS_TG_BOT_TOKEN`, `ERROR_ALERTS_TG_CHAT_ID` — на ОБОХ
+    Web + Worker сервісах
+  - `RESEND_API_KEY=re_...`, `DEFAULT_FROM_EMAIL=noreply@apartmentos.org` —
+    ТЕЖ на ОБОХ. Без `RESEND_API_KEY` на Worker — fallback до SMTP →
+    timeout. Це важливий gotcha — кожен Railway сервіс має свій
+    набір env vars.
+  - Resend domain `apartmentos.org` верифіковано (SPF+DKIM+DMARC у
+    Cloudflare DNS) — `noreply@apartmentos.org` працює як from-адреса.
 
 - **2026-04-18**: `make e2e-full` failed at `ci-up` with
   `npm ERR! Missing: yaml@2.8.3 from lock file`. Root cause: stale

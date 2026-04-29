@@ -80,7 +80,22 @@ PRIVACY_VERSION=1.0
 # Покрокова інструкція — docs/ERROR_ALERTS_SETUP.md
 ERROR_ALERTS_TG_BOT_TOKEN=<token from @BotFather>
 ERROR_ALERTS_TG_CHAT_ID=<channel chat_id зі знаком -, напр. -1001234567890>
+
+# Billing (PR-13a) — FOP реквізити, що знапшотяться у кожен Invoice.
+# Можна лишити порожніми поки що — invoice створюватиметься без
+# реквізитів у footer'i HTML (admin-side review only).
+INVOICE_PAYER_LEGAL_NAME=ФОП Андрієнко Дмитро Володимирович
+INVOICE_PAYER_TAX_ID=<ІПН або ЄДРПОУ>
+INVOICE_PAYER_IBAN=UA000000000000000000000000
+INVOICE_PAYER_BANK_NAME=
+INVOICE_PAYER_TAX_NOTE=Без ПДВ. Спрощена система оподаткування, 3 група, 5%.
+INVOICE_DUE_DAYS=10
 ```
+
+⚠️ **Per-service env vars** — INVOICE_PAYER_* потрібні і на Web (admin
+form preview), і на Celery Worker (snapshot під час async invoice
+creation). Якщо PDF rendering у PR-13b піде через Worker — без env
+vars на Worker'i invoice створиться без реквізитів.
 
 #### 2.2. Settings → Deploy
 
@@ -138,6 +153,20 @@ Replicas:             1
 > `ERROR_ALERTS_TG_CHAT_ID` env vars (той самий канал що і error alerts
 > з PR-9). Ops перевірка: чи приходить ранковий ping о 09:00 — якщо ні,
 > моніторинг сам зламаний (а не "тиша = все ок").
+
+### Крок 4.5 — Billing seed (PR-13a)
+
+Після першого деплою з PR-13a, на Web сервісі через Railway shell:
+
+```bash
+python manage.py loaddata billing_initial
+```
+
+Ця команда створить 4 SubscriptionPlan (Starter / Business /
+Professional / Enterprise) і 8 AddOn'ів. Без неї trial signal
+не зможе підв'язати план до новоствореної організації — кожна
+нова org опиниться без `subscription` і admin actions показуватимуть
+"Пропущено: org без підписки".
 
 ### Крок 5 — Перший міграційний прогон
 

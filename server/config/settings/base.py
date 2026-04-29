@@ -121,6 +121,7 @@ LOCAL_APPS = [
     "apps.notifications",
     "apps.organizations",
     "apps.feedback",
+    "apps.billing",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -203,6 +204,22 @@ EMAIL_BACKEND = env(
     default="django.core.mail.backends.smtp.EmailBackend",
 )
 EMAIL_TIMEOUT = 5
+
+# Billing — invoice payer (FOP) details, snapshot into each Invoice (PR-13a)
+# ------------------------------------------------------------------------------
+# Empty defaults so dev / CI / test boots cleanly without these env vars.
+# Production should set them on Web AND Celery Worker (Invoice rows snapshot
+# the values at the moment of generation — see Invoice.payer_*_snapshot).
+INVOICE_PAYER_LEGAL_NAME = env.str("INVOICE_PAYER_LEGAL_NAME", default="")
+INVOICE_PAYER_TAX_ID = env.str("INVOICE_PAYER_TAX_ID", default="")
+INVOICE_PAYER_IBAN = env.str("INVOICE_PAYER_IBAN", default="")
+INVOICE_PAYER_BANK_NAME = env.str("INVOICE_PAYER_BANK_NAME", default="")
+INVOICE_PAYER_TAX_NOTE = env.str(
+    "INVOICE_PAYER_TAX_NOTE",
+    default="Без ПДВ. Спрощена система оподаткування, 3 група, 5%.",
+)
+INVOICE_DUE_DAYS = env.int("INVOICE_DUE_DAYS", default=10)
+
 
 # Resend HTTP API (PR-12) — direct Python SDK, no anymail wrapper
 # ------------------------------------------------------------------------------
