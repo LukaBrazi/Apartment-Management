@@ -1,5 +1,5 @@
 # Imports
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 
 from apps.organizations.models import Organization, OrganizationMembership
@@ -96,6 +96,56 @@ class OrganizationAdmin(admin.ModelAdmin):
         ),
     )
     ordering = ["-created_at"]
+    actions = ["generate_org_report_email"]
+
+    # ── Admin actions (PR-11) ─────────────────────────────────────────────
+
+    @admin.action(description="📧 Згенерувати звіт і надіслати на пошту")
+    def generate_org_report_email(self, request, queryset):
+        """Dispatch one ``send_organization_report_task`` per selected org.
+
+        Permission gates:
+            * ``request.user`` must be a superuser — non-superusers see an
+              error message and the queryset is left untouched.
+            * ``request.user.email`` must be set — we send the report to
+              the requesting admin, so an empty email means "ask the user
+              to fix their profile first".
+
+        Each org gets its own task / email — there is no batching. This
+        keeps failure isolation per-org and keeps Celery retry semantics
+        meaningful (one bad org doesn't poison the rest).
+        """
+        if not request.user.is_superuser:
+            self.message_user(
+                request,
+                "Тільки superuser може генерувати звіти організацій.",
+                level=messages.ERROR,
+            )
+            return
+
+        if not request.user.email:
+            self.message_user(
+                request,
+                "У вашого профілю не задана email-адреса. "
+                "Додайте її через User Admin перш ніж генерувати звіти.",
+                level=messages.ERROR,
+            )
+            return
+
+        # Local import — keep admin module light at import time and
+        # avoid a circular dep between admin ↔ tasks ↔ apps registry.
+        from apps.organizations.tasks import send_organization_report_task
+
+        n = queryset.count()
+        for org in queryset:
+            send_organization_report_task.delay(org.id, request.user.email)
+
+        self.message_user(
+            request,
+            f"Запит на {n} звіт(и) поставлений у чергу. "
+            f"Звіт прийде на {request.user.email} за 1-2 хвилини.",
+            level=messages.SUCCESS,
+        )
 
 
 # ── Organization Membership Admin ──────────────────────────────────────────────

@@ -164,6 +164,44 @@ Setup: див. [docs/ERROR_ALERTS_SETUP.md](docs/ERROR_ALERTS_SETUP.md).
 ту саму `run_health_checks()` функцію що `/api/v1/health/` — один source of
 truth для "що значить healthy".
 
+## Org Reports (PR-11)
+
+Superuser може згенерувати HTML звіт по організації прямо з Django Admin
+і отримати на email:
+
+1. Зайти в `/django-admin/organizations/organization/`
+2. Обрати одну або кілька організацій (checkbox-и)
+3. Action dropdown → **📧 Згенерувати звіт і надіслати на пошту**
+4. За 1-2 хв звіт прийде на email superuser-а (`request.user.email`).
+   Multi-select = N окремих листів, по одному на org.
+
+Звіт містить:
+- KPI картки: будинки, квартири, мешканці, заселені квартири
+- SVG progress bar заселеності (з ASCII fallback для текстових клієнтів)
+- Список активних модулів (з default features `_default_features()`)
+- Тариф / Trial — placeholder з yellow background до реалізації PR-12 / PR-13
+
+Permission gates:
+- Тільки `is_superuser` — інакше action віддає ERROR message
+- Якщо у superuser `email=""` — action блокується з повідомленням
+  "Додайте email через User Admin"
+
+Технічно:
+- Email рендериться як **тільки HTML** (`EmailMultiAlternatives` з одним
+  HTML alternative). Plain-text fallback — коротка фраза "не підтримує HTML".
+- Email-template — full inline CSS, table-based layout, max-width 600px,
+  inline SVG для progress bar, без external resources (Gmail strips `<style>`,
+  Outlook ламає flexbox)
+- Celery task `send_organization_report_task` retry 3× з 30s delay на
+  `SMTPException`/`OSError`. Missing org → log warning, no retry.
+
+Файли:
+- `server/apps/organizations/tasks.py` — `_gather_org_report_data`,
+  `_list_active_features`, `send_organization_report_task`
+- `server/apps/organizations/templates/organizations/email/org_report.html`
+- `server/apps/organizations/admin.py` — `generate_org_report_email` action
+- `server/apps/organizations/tests/test_org_report.py` — 22 TDD тести
+
 ## Security Headers (PR-8)
 
 Заголовки безпеки відправляє **Next.js** (`client/next.config.mjs`),

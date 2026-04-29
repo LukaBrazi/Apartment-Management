@@ -1,0 +1,241 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{% blocktrans with name=org_name %}Звіт організації — {{ name }}{% endblocktrans %}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#FAFAFA;font-family:Arial,Helvetica,sans-serif;color:#0F172A;-webkit-font-smoothing:antialiased;">
+
+<!-- Outer wrapper table — full width, centers content -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FAFAFA;padding:24px 0;">
+  <tr>
+    <td align="center" style="padding:0;">
+
+      <!-- Main container — max-width 600px -->
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FAFAFA;">
+
+        <!-- ── HERO BAR ─────────────────────────────────────── -->
+        <tr>
+          <td style="background-color:#1E2761;padding:28px 32px;border-radius:8px 8px 0 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-family:Arial,Helvetica,sans-serif;color:#FFFFFF;font-size:22px;font-weight:bold;letter-spacing:0.5px;">
+                  ApartmentOS
+                </td>
+              </tr>
+              <tr>
+                <td style="font-family:Arial,Helvetica,sans-serif;color:#C7D2FE;font-size:13px;padding-top:6px;">
+                  {% trans "Звіт організації" %} &middot; {{ generated_at|date:"Y-m-d H:i" }}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── ORG IDENTITY CARD ────────────────────────────── -->
+        <tr>
+          <td style="padding:24px 0 0 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+              <tr>
+                <td style="padding:24px 32px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:24px;font-weight:bold;line-height:1.3;">
+                    {{ org_name }}
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#64748B;font-size:13px;padding-top:8px;">
+                    slug: <span style="color:#0F172A;font-family:Consolas,Menlo,monospace;">{{ org_slug }}</span>
+                    &middot;
+                    {% if org_is_active %}
+                      <span style="color:#10B981;font-weight:bold;">&#9989; {% trans "Активна" %}</span>
+                    {% else %}
+                      <span style="color:#EF4444;font-weight:bold;">&#10060; {% trans "Неактивна" %}</span>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── KPI GRID (2x2) ──────────────────────────────── -->
+        <tr>
+          <td style="padding:24px 0 0 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <!-- Row 1: Buildings + Apartments -->
+              <tr>
+                <td width="50%" style="padding:0 8px 16px 0;vertical-align:top;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+                    <tr>
+                      <td style="padding:20px 24px;">
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#64748B;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.8px;">
+                          &#127970; {% trans "Будинки" %}
+                        </div>
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:36px;font-weight:bold;padding-top:8px;line-height:1;">
+                          {{ n_buildings }}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td width="50%" style="padding:0 0 16px 8px;vertical-align:top;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+                    <tr>
+                      <td style="padding:20px 24px;">
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#64748B;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.8px;">
+                          &#127968; {% trans "Квартири" %}
+                        </div>
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:36px;font-weight:bold;padding-top:8px;line-height:1;">
+                          {{ n_units }}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <!-- Row 2: Residents + Occupancy -->
+              <tr>
+                <td width="50%" style="padding:0 8px 0 0;vertical-align:top;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+                    <tr>
+                      <td style="padding:20px 24px;">
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#64748B;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.8px;">
+                          &#128101; {% trans "Мешканці" %}
+                        </div>
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:36px;font-weight:bold;padding-top:8px;line-height:1;">
+                          {{ n_residents }}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td width="50%" style="padding:0 0 0 8px;vertical-align:top;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+                    <tr>
+                      <td style="padding:20px 24px;">
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#64748B;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.8px;">
+                          &#128202; {% trans "Заселеність" %}
+                        </div>
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:28px;font-weight:bold;padding-top:8px;line-height:1;">
+                          {{ n_occupied }}<span style="color:#64748B;font-size:18px;font-weight:normal;"> / {{ n_units }}</span>
+                        </div>
+                        <div style="font-family:Arial,Helvetica,sans-serif;color:#10B981;font-size:14px;font-weight:bold;padding-top:6px;">
+                          {{ occupancy_pct }}%
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── OCCUPANCY PROGRESS BAR (Inline SVG + ASCII fallback) ── -->
+        <tr>
+          <td style="padding:24px 0 0 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+              <tr>
+                <td style="padding:24px 32px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:14px;font-weight:bold;padding-bottom:12px;">
+                    {% trans "Заселеність квартир" %}
+                  </div>
+
+                  <!-- Inline SVG progress bar — works in modern email clients -->
+                  <div style="line-height:0;">
+                    <svg width="100%" height="24" viewBox="0 0 500 24" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="display:block;">
+                      <rect x="0" y="0" width="500" height="24" rx="12" ry="12" fill="#E2E8F0"></rect>
+                      <rect x="0" y="0" width="{{ occupancy_pct_px }}" height="24" rx="12" ry="12" fill="#10B981"></rect>
+                      <text x="250" y="16" text-anchor="middle" fill="#0F172A" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="bold">{{ occupancy_pct }}%</text>
+                    </svg>
+                  </div>
+
+                  <!-- ASCII fallback — always renders, even when SVG is stripped -->
+                  <div style="font-family:Consolas,Menlo,'Courier New',monospace;font-size:13px;color:#64748B;padding-top:12px;letter-spacing:1px;">
+                    {{ occupancy_ascii }}&nbsp;&nbsp;{{ occupancy_pct }}%
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── ACTIVE FEATURES ──────────────────────────────── -->
+        <tr>
+          <td style="padding:24px 0 0 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;">
+              <tr>
+                <td style="padding:24px 32px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#0F172A;font-size:14px;font-weight:bold;padding-bottom:14px;">
+                    &#9881;&#65039; {% trans "Активні модулі" %}
+                  </div>
+
+                  {% if active_features %}
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      {% for feature in active_features %}
+                        <tr>
+                          <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0F172A;">
+                            {% if feature.active %}
+                              <span style="color:#10B981;font-weight:bold;">&#9989;</span>
+                              <span style="color:#0F172A;">{{ feature.label }}</span>
+                            {% else %}
+                              <span style="color:#EF4444;font-weight:bold;">&#10060;</span>
+                              <span style="color:#64748B;text-decoration:line-through;">{{ feature.label }}</span>
+                              <span style="color:#94A3B8;font-size:12px;">&nbsp;({% trans "вимкнено" %})</span>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </table>
+                  {% else %}
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#64748B;font-style:italic;">
+                      {% trans "Лише базові функції" %}
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── SUBSCRIPTION & TRIAL (placeholder, yellow bg) ── -->
+        <tr>
+          <td style="padding:24px 0 0 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FEF3C7;border:1px solid #FBBF24;border-radius:8px;">
+              <tr>
+                <td style="padding:20px 32px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#78350F;font-size:14px;font-weight:bold;padding-bottom:10px;">
+                    &#128179; {% trans "Тариф і Trial" %}
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#78350F;font-size:14px;padding:4px 0;">
+                    &#128679; <strong>{% trans "Тариф" %}:</strong> {{ subscription_plan_text }}
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#78350F;font-size:14px;padding:4px 0;">
+                    &#128679; <strong>Trial:</strong> {{ trial_status_text }}
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── FOOTER ──────────────────────────────────────── -->
+        <tr>
+          <td style="padding:32px 16px 16px 16px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" style="font-family:Arial,Helvetica,sans-serif;color:#94A3B8;font-size:12px;line-height:1.6;">
+                  {% blocktrans with ts=generated_at|date:"Y-m-d H:i" rcpt=recipient_email %}Звіт згенеровано {{ ts }} для {{ rcpt }}{% endblocktrans %}<br>
+                  {% trans "Автоматичний email від ApartmentOS" %}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
