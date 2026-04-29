@@ -204,6 +204,18 @@ EMAIL_BACKEND = env(
 )
 EMAIL_TIMEOUT = 5
 
+# Resend HTTP API (PR-12) — direct Python SDK, no anymail wrapper
+# ------------------------------------------------------------------------------
+# When ``RESEND_API_KEY`` env var is set, ``production.py`` switches
+# ``CELERY_EMAIL_BACKEND`` to ``apps.common.email_backends.ResendEmailBackend``
+# which POSTs to https://api.resend.com/emails via the official ``resend``
+# Python SDK.  This avoids the SMTP egress timeout we hit on Railway
+# (smtp.resend.com:587 / :465 both stall the TCP handshake).  An empty
+# default keeps dev / CI / test clean — the backend is never instantiated
+# when the key is blank, since production.py picks the SMTP fallback in
+# that case.
+RESEND_API_KEY = env.str("RESEND_API_KEY", default="")
+
 
 # Admin
 # ------------------------------------------------------------------------------

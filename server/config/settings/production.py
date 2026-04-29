@@ -192,12 +192,47 @@ LOGGING = {
 }
 
 
-# Email — configure your SMTP provider (SendGrid, Resend, etc.)
+# Email — Resend HTTP API direct (PR-12) with SMTP fallback
 # ------------------------------------------------------------------------------
+# Top-level ``EMAIL_BACKEND`` stays on djcelery_email — every send goes
+# through the Celery queue so the request thread never blocks on the
+# upstream provider.  The worker then resolves ``CELERY_EMAIL_BACKEND``
+# (below) to actually deliver.
+#
+# Why we swapped: Railway egress can't establish a clean TCP handshake
+# to ``smtp.resend.com:587`` (or :465) — every send timed out.  Resend's
+# HTTP API (``POST https://api.resend.com/emails``) doesn't share that
+# pathway and works first try.
+#
+# Why direct SDK instead of django-anymail: see the docstring of
+# ``apps/common/email_backends.py``.  TL;DR: one file (~120 LOC) of
+# fully-tested mapping code is a smaller dependency surface than the
+# anymail wrapper — and we never used the multi-provider abstraction
+# anymail offers.
+#
+# When ``RESEND_API_KEY`` env var is set on the Worker (and Web, for
+# consistency) → our custom ResendEmailBackend handles the send.  When
+# it's blank → we fall back to the legacy SMTP env vars so a half-
+# deployed environment (e.g. CEO ships PR-12, then sets the key minutes
+# later in Railway dashboard) keeps booting and just queues mail until
+# the key lands.
 EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+RESEND_API_KEY = env.str("RESEND_API_KEY", default="")
+
+if RESEND_API_KEY:
+    # Direct Resend SDK via custom backend in apps.common.email_backends.
+    # djcelery_email continues to provide async dispatch via Celery —
+    # only the underlying backend changes.
+    CELERY_EMAIL_BACKEND = "apps.common.email_backends.ResendEmailBackend"
+else:
+    # Legacy SMTP fallback — kept so a missing env var doesn't fail
+    # boot.  All four EMAIL_HOST / USER / PASSWORD / PORT vars are
+    # required when this branch is taken.
+    CELERY_EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = env("EMAIL_HOST")
+    EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+    EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+    EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@apartmentos.org")

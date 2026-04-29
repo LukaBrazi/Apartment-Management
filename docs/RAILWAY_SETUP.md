@@ -60,10 +60,17 @@ ENVIRONMENT=production
 DJANGO_ADMIN_URL=secret-admin-path/    # пройди генератор для шляху
 DEMO_PASSWORD=<згенеруй пароль>
 TELEGRAM_BOT_ENCRYPTION_KEYS=<Fernet key — generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())">
-EMAIL_HOST=<твій SMTP>
-EMAIL_HOST_USER=<>
-EMAIL_HOST_PASSWORD=<>
-DEFAULT_FROM_EMAIL=noreply@apartmentos.org
+# Email — Resend HTTP API (PR-12, рекомендовано).
+# Без RESEND_API_KEY production падає на SMTP fallback, який таймаутить
+# через Railway egress (smtp.resend.com:587 і :465 однаково висять).
+RESEND_API_KEY=re_<API key з https://resend.com/api-keys>
+DEFAULT_FROM_EMAIL=onboarding@resend.dev   # тимчасово, поки домен не верифіковано
+
+# Старі SMTP env vars — тримаються як SMTP fallback (коли RESEND_API_KEY
+# порожній). Якщо ставиш RESEND_API_KEY — їх можна не задавати взагалі.
+# EMAIL_HOST=<твій SMTP>
+# EMAIL_HOST_USER=<>
+# EMAIL_HOST_PASSWORD=<>
 
 # GDPR (PR-5) — за замовчуванням 1.0
 TOS_VERSION=1.0
@@ -287,6 +294,99 @@ railway logs | jq -r '.message'
 
 `django.request` логер виставлений у `WARNING` — INFO-логи 4xx
 запитів задушені, 5xx і unhandled exceptions залишаються видимими.
+
+---
+
+## Resend setup — email через HTTP API (PR-12)
+
+ApartmentOS використовує Resend HTTP API для transactional emails замість SMTP.
+Railway egress блокує / затримує outbound SMTP (`smtp.resend.com:587` і `:465`
+однаково висять на TCP handshake), а HTTP API (`POST api.resend.com/emails`)
+проходить без проблем.
+
+Архітектура: `email.send()` → `djcelery_email` кладе на Celery queue → Worker
+дістає task → `apps.common.email_backends.ResendEmailBackend` (PR-12, кастомний
+backend на офіційному `resend` Python SDK) POST'ить у Resend. Тобто request
+thread не блокується, а SMTP-шар повністю обходиться.
+
+Чому власний backend замість `django-anymail`: один файл (~120 LOC) з повним
+контролем над payload-мапінгом і нульовим зайвим depend-шаром. Деталі — у
+docstring `server/apps/common/email_backends.py`.
+
+### Швидкий setup (5 хв)
+
+1. Зареєструйся на https://resend.com (free tier 3000 emails/міс, 100/день).
+2. **API Keys** → **Create API Key** → ім'я: `ApartmentOS Production`.
+   Скопіюй ключ — починається з `re_`. Покажуть тільки раз.
+3. Railway → **Web** сервіс → **Settings → Variables** → **Raw Editor**:
+   ```
+   RESEND_API_KEY=re_xxxxxxxxxxxxx
+   DEFAULT_FROM_EMAIL=onboarding@resend.dev
+   ```
+4. **Те саме на Celery Worker** (саме він шле email — без ключа на Worker
+   нічого не зміниться, бо send-логіка живе у воркері, не у Web).
+5. Save → Railway автоматично redeployne.
+6. Smoke test: Django Admin → Organizations → action **Згенерувати звіт і
+   надіслати на пошту**. За 1-2 хв лист має прийти. Worker logs — без
+   `TimeoutError`, з `Org report sent` INFO рядком.
+
+### Production: верифікація домену
+
+Без верифікації from-адреса буде `onboarding@resend.dev` — це працює, але:
+- Юзер бачить `From: onboarding@resend.dev` (не виглядає професійно)
+- Gmail / Outlook частіше відправляють у спам
+
+Щоб надсилати від `noreply@apartmentos.org`:
+
+1. Resend → **Domains** → **Add Domain** → `apartmentos.org`
+2. Resend покаже DNS записи: SPF (`TXT`), DKIM (3× `TXT`), DMARC (`TXT`)
+3. Cloudflare DNS → додай ці records → wait ~10 хв до verify
+4. Railway → змінити env: `DEFAULT_FROM_EMAIL=noreply@apartmentos.org`
+5. Redeploy → готово
+
+### SMTP fallback (як працює)
+
+`production.py` має такий switch:
+
+```python
+if RESEND_API_KEY:
+    CELERY_EMAIL_BACKEND = "apps.common.email_backends.ResendEmailBackend"
+else:
+    CELERY_EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = env("EMAIL_HOST")
+    # ... решта SMTP env vars
+```
+
+Тобто якщо `RESEND_API_KEY` не задано — production вимагає `EMAIL_HOST` /
+`EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` як раніше. Це для:
+- **Migration window** — між merge PR-12 і додаванням ключа на Railway
+  не падати з ImproperlyConfigured.
+- **Local dev** — `local.py` не використовує цей switch (там console
+  backend), тому це чисто prod-fallback.
+
+Lock-down тести у `apps/common/tests/test_email_backend.py` стережуть
+обидва шляхи, щоб ні один випадково не відрізали.
+
+### Troubleshooting
+
+**"Domain not verified"** при send → see "верифікація домену" вище.
+Тимчасово використовуй `onboarding@resend.dev`.
+
+**"Rate limit exceeded"** → Resend free tier 3000/міс, 100/день.
+Дивись Resend dashboard → Usage.
+
+**Все ще SMTP timeout** після ставлення `RESEND_API_KEY`:
+1. Перевір що ключ дійсно встановлений на **Celery Worker** (не тільки
+   Web — Worker виконує send).
+2. Перевір що значення не порожнє (`echo $RESEND_API_KEY` у Railway shell).
+3. Worker logs не повинні містити `smtp` рядків при send'і — натомість
+   успішні виклики через `apps.common.email_backends.ResendEmailBackend`.
+
+**`401 Unauthorized` у Worker logs** → API ключ некоректний або
+прострочений. Згенеруй новий у Resend dashboard → API Keys.
+
+**`422 Unprocessable Entity`** → from-адреса з не-верифікованого
+домену. Тимчасово `DEFAULT_FROM_EMAIL=onboarding@resend.dev`.
 
 ---
 
