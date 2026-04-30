@@ -112,10 +112,21 @@ const GUARD_TABS: TabItem[] = [
 	{ href: "/profile",      label: "Профіль",    icon: <IconProfile /> },
 ];
 
-// STAFF (worker / dispatcher) — workers rarely report their own issues,
-// they receive assignments. So the second tab is the assignments page
-// instead of /profile?tab=my-issues. Badge surfaces accepted-but-not-
-// started count from /api/v1/issues/assigned/stats/ (PR-16).
+// WORKER (mason / plumber / electrician / painter etc.) — receives
+// assignments but is NOT Django-staff (`is_staff=False`).  Mirrors the
+// dispatcher set minus the admin tab.
+const WORKER_TABS: TabItem[] = [
+	{ href: "/welcome",                   label: "Головна",    icon: <IconHome /> },
+	{ href: "/assigned-issues",           label: "Призначені", icon: <IconIssue /> },
+	{ href: "/request-pass",              label: "Перепустки", icon: <IconPass /> },
+	{ href: "/news",                      label: "Новини",     icon: <IconNews /> },
+	{ href: "/profile",                   label: "Профіль",    icon: <IconProfile /> },
+];
+
+// STAFF (Django `is_staff=True` — dispatcher / super-admin) — has admin
+// panel access in place of the Profile tab.  Workers rarely report their
+// own issues, they receive assignments.  Badge surfaces accepted-but-
+// not-started count from /api/v1/issues/assigned/stats/ (PR-16).
 const STAFF_TABS: TabItem[] = [
 	{ href: "/welcome",                   label: "Головна",    icon: <IconHome /> },
 	{ href: "/assigned-issues",           label: "Призначені", icon: <IconIssue /> },
@@ -125,19 +136,31 @@ const STAFF_TABS: TabItem[] = [
 ];
 
 function pickTabs(opts: {
+	isTenant: boolean;
 	isStaff: boolean;
 	isGuard: boolean;
 	acceptedAssignedCount: number;
 }): TabItem[] {
+	// Guard has its own portal flow (no assignments).
 	if (opts.isGuard) return GUARD_TABS;
-	if (opts.isStaff) {
-		// Inject the accepted-issues badge into the "Призначені" tab.
-		return STAFF_TABS.map((t) =>
+
+	// Inject the accepted-issues badge into "Призначені" for any role
+	// that can be assigned issues (staff dispatchers + workers).
+	const withBadge = (tabs: TabItem[]) =>
+		tabs.map((t) =>
 			t.href === "/assigned-issues"
 				? { ...t, badge: opts.acceptedAssignedCount }
 				: t,
 		);
-	}
+
+	// Django-staff (dispatcher / super-admin) — admin tab.
+	if (opts.isStaff) return withBadge(STAFF_TABS);
+
+	// Worker = authenticated, non-tenant, non-guard, non-Django-staff
+	// (occupation is plumber / mason / electrician / etc.).  Receives
+	// assignments but no admin access.
+	if (!opts.isTenant) return withBadge(WORKER_TABS);
+
 	return TENANT_TABS;
 }
 
@@ -148,14 +171,15 @@ function hrefPath(href: string): string {
 
 export default function BottomNav() {
 	const pathname = usePathname() || "/";
-	const { isAuthenticated, isStaff, isGuard } = useAuthNavigation();
+	const { isAuthenticated, isTenant, isStaff, isGuard } = useAuthNavigation();
 	const { isAuthenticated: authState } = useAppSelector((state) => state.auth);
 
-	// PR-16: assigned-issues badge (only fetched for staff; tenant gets
-	// `accepted: 0` from server but we skip the request entirely to save
-	// bandwidth and reduce noise on the read receipts side).
+	// PR-16/17: assigned-issues badge — fetched for any role that can be
+	// assigned issues (Django-staff + workers).  Tenant + guard skip to
+	// save bandwidth.
+	const canBeAssigned = !isTenant && !isGuard;
 	const { data: assignedStatsData } = useGetMyAssignedStatsQuery(undefined, {
-		skip: !authState || !isStaff,
+		skip: !authState || !canBeAssigned,
 	});
 	const acceptedAssignedCount = assignedStatsData?.stats?.accepted ?? 0;
 
@@ -164,7 +188,7 @@ export default function BottomNav() {
 	// here so the bar never flashes during redirect.
 	if (!isAuthenticated) return null;
 
-	const tabs = pickTabs({ isStaff, isGuard, acceptedAssignedCount });
+	const tabs = pickTabs({ isTenant, isStaff, isGuard, acceptedAssignedCount });
 
 	return (
 		<nav

@@ -478,7 +478,60 @@ function TelegramBotAdmin() {
 						Ще немає жодного бота. Натисніть «Додати бота» щоб почати.
 					</div>
 				) : (
-					<div className="overflow-x-auto">
+					<>
+					{/* Mobile cards (< md) — PR-17: super_admin-only page,
+					    minimal card layout (org + status + edit/delete) so
+					    the page is at least scrollable without horizontal
+					    overflow on a phone. Full controls remain on the
+					    desktop table. */}
+					<div className="md:hidden space-y-3 p-4">
+						{bots.map((bot) => (
+							<div
+								key={bot.id}
+								className="rounded-lg border border-[#E2E5E8] dark:border-[#2D3D4F] p-3 space-y-2"
+							>
+								<div className="flex items-start justify-between gap-2">
+									<div className="min-w-0">
+										<div className="font-medium text-sm text-[#1C2B3A] dark:text-white truncate">
+											{bot.organization_name}
+										</div>
+										<div className="font-mono text-xs text-[#6B7F8C] truncate">
+											@{bot.bot_username}
+										</div>
+									</div>
+									<StatusChip
+										configured={bot.is_configured}
+										ok={bot.last_test_ok}
+									/>
+								</div>
+								<div className="flex flex-wrap gap-2 pt-2 border-t border-[#E2E5E8] dark:border-[#2D3D4F]">
+									<button
+										onClick={() => handleTest(bot)}
+										className={btnGhostCls}
+										title="Перевірити (getMe)"
+									>
+										<LinkIcon className="h-3.5 w-3.5" />
+										Перевірити
+									</button>
+									<button
+										onClick={() => openEdit(bot)}
+										className={btnGhostCls}
+									>
+										<Pencil className="h-3.5 w-3.5" />
+										Редагувати
+									</button>
+									<button
+										onClick={() => setDeletingId(bot.id)}
+										className="inline-flex items-center gap-1 rounded-lg border border-red-200 dark:border-red-900 px-2 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+									>
+										<Trash2 className="h-3.5 w-3.5" />
+									</button>
+								</div>
+							</div>
+						))}
+					</div>
+
+					<div className="hidden md:block overflow-x-auto">
 						<table className="w-full text-sm">
 							<thead className="bg-[#F7F6F2] dark:bg-[#1C2B3A] text-left text-xs text-[#6B7F8C] uppercase">
 								<tr>
@@ -678,6 +731,7 @@ function TelegramBotAdmin() {
 							</tbody>
 						</table>
 					</div>
+					</>
 				)}
 			</div>
 

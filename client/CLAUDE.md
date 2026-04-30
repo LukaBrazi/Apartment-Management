@@ -72,6 +72,49 @@ Since we now only have `package-lock.json`, the `elif` branch for `npm ci` is
 always taken. If `npm ci` fails, nothing below it runs — no server, no nginx,
 no Playwright. **Always** fix client build failures before blaming e2e.
 
+## 📱 Mobile-first responsive pattern (PR-17)
+
+Принцип: на 375px viewport (iPhone SE) і вужче — **жодного horizontal
+scroll**.  Якщо обираємо між горизонтальним і вертикальним layout —
+завжди вертикальний.
+
+### DataTable (`components/admin/DataTable.tsx`) — card / table dual-render
+
+- `< lg` (≤1023px): stacked card list.  Default — auto-render всі
+  колонки як label/value pairs (label = column header, value = cell).
+  Cells з порожнім header (`""`) — типово actions column — збираються
+  у footer-блок з `border-t`, щоб кнопки отримали повну ширину.
+- `>= lg`: existing horizontal `<table>` з `overflow-x-auto`.
+- Optional `mobileRender?: (row: TData) => ReactNode` prop — коли
+  page хоче тісніший layout (наприклад avatar + 1 рядок).
+
+### ProfileTabs
+
+`components/profile/ProfileTabs.tsx` використовує `flex flex-wrap gap-1`
+замість `overflow-x-auto scrollbar-none`.  4-5 укр табів wrap у 2 ряди
+на 375px.  `whitespace-nowrap` лишається на `TabsTrigger` щоб назва
+таба не розбивалась всередині.
+
+### TenantCard
+
+`components/cards/TenantCard.tsx` теж dual-render: avatar + name + role
+chip зверху, unit + country у 2-колонковій сітці, дата реєстрації внизу
+картки.  Desktop layout не зачіпається.
+
+### Whitelisted `overflow-x-auto`
+
+Допускається тільки тут (всі — desktop blocks `hidden md/lg:block` або
+ui primitives):
+- `components/admin/DataTable.tsx` — desktop table block
+- `components/cards/TenantCard.tsx` — desktop table block
+- `app/admin/telegram-bot/page.tsx` — desktop table block
+- `components/profile/ProfileTabs.tsx` — раніше було, видалено у PR-17
+- `components/dashboard/QuickActions.tsx` — desktop overflow fallback
+- `components/ui/tabs.tsx` — shadcn primitive (rare cases)
+
+При додаванні нової admin таблиці — використовуй `DataTable` (отримаєш
+mobile cards безкоштовно), а не голий `<table>`.
+
 ## 📋 Stack reminders (quick reference)
 
 - **Next.js 14** (App Router), TypeScript

@@ -21,6 +21,16 @@ interface DataTableProps<TData> {
 	isLoading?: boolean;
 	searchPlaceholder?: string;
 	onRowClick?: (row: TData) => void;
+	/**
+	 * Optional custom mobile card renderer.  When omitted the table
+	 * auto-stacks all columns as label/value pairs (label = column header,
+	 * value = column cell).  Cells whose ``header`` is an empty string
+	 * (typically the actions column) are collected into a footer block at
+	 * the bottom of the card so action buttons get full width.  Provide
+	 * this prop when the page wants a tighter card layout (e.g. avatar +
+	 * single line of text).
+	 */
+	mobileRender?: (row: TData) => React.ReactNode;
 }
 
 export function DataTable<TData>({
@@ -29,6 +39,7 @@ export function DataTable<TData>({
 	isLoading,
 	searchPlaceholder = "Пошук...",
 	onRowClick,
+	mobileRender,
 }: DataTableProps<TData>) {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
@@ -46,6 +57,8 @@ export function DataTable<TData>({
 		initialState: { pagination: { pageSize: 10 } },
 	});
 
+	const rows = table.getRowModel().rows;
+
 	return (
 		<div className="space-y-4">
 			{/* Search */}
@@ -59,8 +72,96 @@ export function DataTable<TData>({
 				/>
 			</div>
 
-			{/* Table */}
-			<div className="overflow-x-auto rounded-lg border border-[#E2E5E8] dark:border-[#2D3D4F]">
+			{/* Mobile cards (< lg) ─────────────────────────────────────────
+			    PR-17 mobile-first: replace horizontal table scroll with a
+			    stacked card list on narrow viewports.  Cards auto-render
+			    label/value pairs from the same columns, or use a custom
+			    `mobileRender` if the page wants a tighter layout. */}
+			<div className="lg:hidden space-y-3">
+				{isLoading ? (
+					Array.from({ length: 5 }).map((_, i) => (
+						<div
+							key={i}
+							className="rounded-lg border border-[#E2E5E8] dark:border-[#2D3D4F] bg-white dark:bg-[#162032] p-4 space-y-2 animate-pulse"
+						>
+							<div className="h-4 bg-[#E2E5E8] dark:bg-[#2D3D4F] rounded w-3/4" />
+							<div className="h-3 bg-[#E2E5E8] dark:bg-[#2D3D4F] rounded w-1/2" />
+							<div className="h-3 bg-[#E2E5E8] dark:bg-[#2D3D4F] rounded w-2/3" />
+						</div>
+					))
+				) : rows.length === 0 ? (
+					<p className="text-center py-8 text-[#6B7F8C]">Дані відсутні</p>
+				) : (
+					rows.map((row) => {
+						const visibleCells = row.getVisibleCells();
+						// Collect "actions" cells — columns where header is an
+						// empty string.  We render those in a dedicated footer
+						// block so action buttons can take full width without
+						// fighting label/value alignment.
+						const actionCells = visibleCells.filter((c) => {
+							const h = c.column.columnDef.header;
+							return typeof h === "string" ? h.trim() === "" : false;
+						});
+						const labelCells = visibleCells.filter((c) => {
+							const h = c.column.columnDef.header;
+							return typeof h === "string" ? h.trim() !== "" : true;
+						});
+						return (
+							<div
+								key={row.id}
+								onClick={() => onRowClick?.(row.original)}
+								className={`rounded-lg border border-[#E2E5E8] dark:border-[#2D3D4F] bg-white dark:bg-[#162032] p-4 space-y-2${onRowClick ? " cursor-pointer hover:border-[#3D7A8A] transition-colors" : ""}`}
+							>
+								{mobileRender ? (
+									mobileRender(row.original)
+								) : (
+									<>
+										{labelCells.map((cell) => {
+											const headerNode = cell.column.columnDef.header;
+											const headerStr =
+												typeof headerNode === "string" ? headerNode : "";
+											return (
+												<div
+													key={cell.id}
+													className="flex items-start justify-between gap-3"
+												>
+													<span className="text-xs font-semibold uppercase tracking-wider text-[#6B7F8C] shrink-0">
+														{headerStr}
+													</span>
+													<span className="text-sm text-right text-[#1C2B3A] dark:text-[#D1DCE5] min-w-0 break-words">
+														{flexRender(
+															cell.column.columnDef.cell,
+															cell.getContext(),
+														)}
+													</span>
+												</div>
+											);
+										})}
+										{actionCells.length > 0 && (
+											<div
+												className="pt-2 mt-2 border-t border-[#E2E5E8] dark:border-[#2D3D4F]"
+												onClick={(e) => e.stopPropagation()}
+											>
+												{actionCells.map((cell) => (
+													<div key={cell.id}>
+														{flexRender(
+															cell.column.columnDef.cell,
+															cell.getContext(),
+														)}
+													</div>
+												))}
+											</div>
+										)}
+									</>
+								)}
+							</div>
+						);
+					})
+				)}
+			</div>
+
+			{/* Desktop table (>= lg) */}
+			<div className="hidden lg:block overflow-x-auto rounded-lg border border-[#E2E5E8] dark:border-[#2D3D4F]">
 				<table className="w-full text-sm">
 					<thead>
 						{table.getHeaderGroups().map((headerGroup) => (
@@ -112,7 +213,7 @@ export function DataTable<TData>({
 									))}
 								</tr>
 							))
-						) : table.getRowModel().rows.length === 0 ? (
+						) : rows.length === 0 ? (
 							<tr>
 								<td
 									colSpan={columns.length}
@@ -122,7 +223,7 @@ export function DataTable<TData>({
 								</td>
 							</tr>
 						) : (
-							table.getRowModel().rows.map((row) => (
+							rows.map((row) => (
 								<tr
 									key={row.id}
 									onClick={() => onRowClick?.(row.original)}

@@ -55,12 +55,11 @@ export default function ProfileTabs() {
 				value={activeTab}
 				onValueChange={setActiveTab}
 			>
-				{/* Mobile-first: horizontal scroll when 4-5 Ukrainian tab labels
-				    overflow a 375px viewport. `-webkit-overflow-scrolling:touch`
-				    is handled by modern mobile browsers by default. Desktop
-				    keeps the space-x-4 flex layout, no scroll needed. */}
-				<div className="overflow-x-auto scrollbar-none">
-					<TabsList className="flex w-max gap-1 bg-[#F8FAFC] p-1 md:w-full dark:bg-[#1A2B3C]">
+				{/* PR-17 mobile-first: tabs wrap to a 2nd row on narrow
+				    viewports instead of horizontal scrolling.  `whitespace-nowrap`
+				    on each TabsTrigger keeps the label intact within a tab. */}
+				<div>
+					<TabsList className="flex flex-wrap gap-1 bg-[#F8FAFC] p-1 md:w-full dark:bg-[#1A2B3C]">
 						<TabsTrigger
 							value="about"
 							className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
