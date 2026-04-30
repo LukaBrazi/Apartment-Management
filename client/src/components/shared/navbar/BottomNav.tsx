@@ -21,6 +21,8 @@
  */
 
 import { useAuthNavigation } from "@/hooks";
+import { useGetMyAssignedStatsQuery } from "@/lib/redux/features/issues/issueApiSlice";
+import { useAppSelector } from "@/lib/redux/hooks/typedHooks";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -35,6 +37,10 @@ type TabItem = {
 	 *  back to prefix matching against `href`'s pathname portion. */
 	match?: (pathname: string) => boolean;
 	icon: React.ReactNode;
+	/** Badge counter — non-zero number renders a small red pill over
+	 *  the icon. Use for tabs that surface "needs your attention" state
+	 *  (e.g. accepted-but-not-started assignments for workers). */
+	badge?: number;
 };
 
 // ── Icons (inline SVGs to keep this component zero-dep + tree-shakeable) ──
@@ -106,9 +112,13 @@ const GUARD_TABS: TabItem[] = [
 	{ href: "/profile",      label: "Профіль",    icon: <IconProfile /> },
 ];
 
+// STAFF (worker / dispatcher) — workers rarely report their own issues,
+// they receive assignments. So the second tab is the assignments page
+// instead of /profile?tab=my-issues. Badge surfaces accepted-but-not-
+// started count from /api/v1/issues/assigned/stats/ (PR-16).
 const STAFF_TABS: TabItem[] = [
 	{ href: "/welcome",                   label: "Головна",    icon: <IconHome /> },
-	{ href: "/profile?tab=my-issues",     label: "Заявки",     icon: <IconIssue /> },
+	{ href: "/assigned-issues",           label: "Призначені", icon: <IconIssue /> },
 	{ href: "/request-pass",              label: "Перепустки", icon: <IconPass /> },
 	{ href: "/news",                      label: "Новини",     icon: <IconNews /> },
 	{ href: "/admin",                     label: "Адмін",      icon: <IconAdmin /> },
@@ -117,9 +127,17 @@ const STAFF_TABS: TabItem[] = [
 function pickTabs(opts: {
 	isStaff: boolean;
 	isGuard: boolean;
+	acceptedAssignedCount: number;
 }): TabItem[] {
 	if (opts.isGuard) return GUARD_TABS;
-	if (opts.isStaff) return STAFF_TABS;
+	if (opts.isStaff) {
+		// Inject the accepted-issues badge into the "Призначені" tab.
+		return STAFF_TABS.map((t) =>
+			t.href === "/assigned-issues"
+				? { ...t, badge: opts.acceptedAssignedCount }
+				: t,
+		);
+	}
 	return TENANT_TABS;
 }
 
@@ -131,13 +149,22 @@ function hrefPath(href: string): string {
 export default function BottomNav() {
 	const pathname = usePathname() || "/";
 	const { isAuthenticated, isStaff, isGuard } = useAuthNavigation();
+	const { isAuthenticated: authState } = useAppSelector((state) => state.auth);
+
+	// PR-16: assigned-issues badge (only fetched for staff; tenant gets
+	// `accepted: 0` from server but we skip the request entirely to save
+	// bandwidth and reduce noise on the read receipts side).
+	const { data: assignedStatsData } = useGetMyAssignedStatsQuery(undefined, {
+		skip: !authState || !isStaff,
+	});
+	const acceptedAssignedCount = assignedStatsData?.stats?.accepted ?? 0;
 
 	// Login / auth screens should not show the tab bar — the ProtectedRoute
 	// wrapper kicks unauthenticated users to /login anyway, but double-check
 	// here so the bar never flashes during redirect.
 	if (!isAuthenticated) return null;
 
-	const tabs = pickTabs({ isStaff, isGuard });
+	const tabs = pickTabs({ isStaff, isGuard, acceptedAssignedCount });
 
 	return (
 		<nav
@@ -156,14 +183,28 @@ export default function BottomNav() {
 							<Link
 								href={tab.href}
 								aria-current={isActive ? "page" : undefined}
-								aria-label={tab.label}
+								aria-label={
+									tab.badge && tab.badge > 0
+										? `${tab.label} (${tab.badge} нових)`
+										: tab.label
+								}
 								className={`tap flex flex-col items-center justify-center gap-1 py-2 transition-colors motion-reduce:transition-none ${
 									isActive
 										? "text-primary"
 										: "text-saas-muted hover:text-saas-text"
 								}`}
 							>
-								{tab.icon}
+								<span className="relative inline-flex">
+									{tab.icon}
+									{tab.badge !== undefined && tab.badge > 0 && (
+										<span
+											className="absolute -right-2 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold leading-none text-white"
+											aria-hidden
+										>
+											{tab.badge > 99 ? "99+" : tab.badge}
+										</span>
+									)}
+								</span>
 								<span className="text-[10px] font-medium leading-none">{tab.label}</span>
 							</Link>
 						</li>
