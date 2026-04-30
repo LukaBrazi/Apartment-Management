@@ -11,6 +11,7 @@ import {
 	Car,
 	Newspaper,
 	Building2,
+	BookUser,
 	ExternalLink,
 	Bot,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const adminNavLinks = [
 	{ path: "/admin/issues", label: "Заявки", icon: ClipboardList },
 	{ path: "/admin/passes", label: "Перепустки", icon: Car },
 	{ path: "/admin/buildings", label: "Будинки", icon: Building2 },
+	{ path: "/admin/contacts", label: "Контакти", icon: BookUser },
 	{ path: "/admin/posts", label: "Новини", icon: Newspaper },
 	{ path: "/admin/news", label: "Новини (портал)", icon: Newspaper },
 ];

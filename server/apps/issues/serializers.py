@@ -43,6 +43,13 @@ class IssueSerializer(serializers.ModelSerializer):
     unit_number = serializers.ReadOnlyField(source="unit.number")
     unit_id = serializers.UUIDField(source="unit.id", read_only=True)
     building_name = serializers.ReadOnlyField(source="unit.entrance.building.name")
+    # PR-15: ``building_address`` + ``city`` are exposed only to the
+    # reporter, the assignee, and staff.  Other same-org tenants (if
+    # they manage to retrieve the issue) get ``None`` so the exact
+    # apartment address isn't broadcast.  ``building_name`` is
+    # considered low-sensitivity and stays public within the org.
+    building_address = serializers.SerializerMethodField()
+    city = serializers.SerializerMethodField()
     reported_by = serializers.ReadOnlyField(source="reported_by.full_name")
     assigned_to = serializers.ReadOnlyField(source="assigned_to.full_name")
     category_name = serializers.ReadOnlyField(source="category.name")
@@ -58,6 +65,8 @@ class IssueSerializer(serializers.ModelSerializer):
             "unit_id",
             "unit_number",
             "building_name",
+            "building_address",
+            "city",
             "reported_by",
             "assigned_to",
             "title",
@@ -69,6 +78,32 @@ class IssueSerializer(serializers.ModelSerializer):
             "is_overdue",
             "view_count",
         ]
+
+    def _can_see_address(self, obj: Issue) -> bool:
+        """Reporter / assignee / staff are allowed to see the full address."""
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if user is None or not getattr(user, "is_authenticated", False):
+            return False
+        if user.is_staff or user.is_superuser:
+            return True
+        return user == obj.reported_by or user == obj.assigned_to
+
+    def get_building_address(self, obj: Issue):
+        if not self._can_see_address(obj):
+            return None
+        unit = getattr(obj, "unit", None)
+        entrance = getattr(unit, "entrance", None) if unit else None
+        building = getattr(entrance, "building", None) if entrance else None
+        return getattr(building, "address", None)
+
+    def get_city(self, obj: Issue):
+        if not self._can_see_address(obj):
+            return None
+        unit = getattr(obj, "unit", None)
+        entrance = getattr(unit, "entrance", None) if unit else None
+        building = getattr(entrance, "building", None) if entrance else None
+        return getattr(building, "city", None)
 
     def get_is_overdue(self, obj):
         return obj.is_overdue
@@ -124,7 +159,24 @@ class IssueCreateSerializer(serializers.ModelSerializer):
         if request and not validated_data.get("organization"):
             from apps.organizations.utils import get_user_primary_organization
             org = get_user_primary_organization(request.user)
-            if org:  # only set if user has an org
+            # PR-15 fallback: superusers and other edge-case reporters
+            # without a direct membership still produce issues that need
+            # an org pin (otherwise tenants don't see them in their list,
+            # see Bug 1 in PR-14).  Derive the org from the resolved
+            # ``unit`` chain when membership lookup returns None.
+            if not org:
+                unit = validated_data.get("unit")
+                if unit is not None:
+                    org = (
+                        getattr(unit, "organization", None)
+                        or getattr(getattr(unit, "entrance", None), "organization", None)
+                        or getattr(
+                            getattr(getattr(unit, "entrance", None), "building", None),
+                            "organization",
+                            None,
+                        )
+                    )
+            if org:  # only set if we resolved an org
                 validated_data["organization"] = org
         return super().create(validated_data)
 

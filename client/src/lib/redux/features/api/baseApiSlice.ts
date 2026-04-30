@@ -115,7 +115,7 @@ const baseQueryWithReauth: BaseQueryFn<
 export const baseApiSlice = createApi({
 	reducerPath: "api",
 	baseQuery: baseQueryWithReauth,
-	tagTypes: ["User", "Apartment", "Issue", "Report", "Post", "VehiclePass", "Announcement", "AdminProfiles", "AdminWorkers", "AdminBuildings", "AdminEntrances", "News", "SiteSettings", "TelegramBot", "TelegramProfile", "Consent"],
+	tagTypes: ["User", "Apartment", "Issue", "Report", "Post", "VehiclePass", "Announcement", "AdminProfiles", "AdminWorkers", "AdminBuildings", "AdminEntrances", "AdminContacts", "News", "SiteSettings", "TelegramBot", "TelegramProfile", "Consent"],
 	refetchOnFocus: true,
 	refetchOnMountOrArgChange: true,
 	endpoints: (builder) => ({}),

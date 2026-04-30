@@ -64,6 +64,33 @@ export interface SiteSettingsResponse {
 }
 
 /**
+ * Admin-side ContactPerson row.  Mirrors ``AdminContactPersonSerializer``
+ * on the backend — note ``organization`` is intentionally absent (pinned
+ * server-side, see PR-15).
+ */
+export interface AdminContactPerson extends ContactPerson {
+  is_active: boolean;
+}
+
+export interface AdminContactCreateData {
+  name: string;
+  role: AdminContactPerson["role"];
+  position?: string;
+  phone?: string;
+  email?: string;
+  telegram?: string;
+  is_emergency?: boolean;
+  working_hours?: string;
+  order?: number;
+  is_active?: boolean;
+}
+
+export interface AdminContactUpdateData
+  extends Partial<AdminContactCreateData> {
+  id: number;
+}
+
+/**
  * RTK Query endpoints for site settings and contacts.
  */
 export const siteSettingsApiSlice = baseApiSlice.injectEndpoints({
@@ -80,7 +107,53 @@ export const siteSettingsApiSlice = baseApiSlice.injectEndpoints({
         raw.site_settings ?? raw,
       providesTags: ["SiteSettings"],
     }),
+
+    // ── PR-15: admin contact CRUD ─────────────────────────────────────────
+    getAdminContacts: builder.query<AdminContactPerson[], void>({
+      query: () => "/site-settings/contacts/admin/",
+      // GenericJSONRenderer wraps the list under "admin_contacts".  Tolerate
+      // both that and a bare array so the slice survives a backend renderer
+      // tweak without churn.
+      transformResponse: (raw: any): AdminContactPerson[] => {
+        if (Array.isArray(raw)) return raw;
+        if (raw && Array.isArray(raw.admin_contacts)) return raw.admin_contacts;
+        if (raw && raw.admin_contacts && Array.isArray(raw.admin_contacts.results)) {
+          return raw.admin_contacts.results;
+        }
+        return [];
+      },
+      providesTags: ["AdminContacts"],
+    }),
+    adminCreateContact: builder.mutation<AdminContactPerson, AdminContactCreateData>({
+      query: (body) => ({
+        url: "/site-settings/contacts/admin/",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["AdminContacts", "SiteSettings"],
+    }),
+    adminUpdateContact: builder.mutation<AdminContactPerson, AdminContactUpdateData>({
+      query: ({ id, ...body }) => ({
+        url: `/site-settings/contacts/admin/${id}/`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["AdminContacts", "SiteSettings"],
+    }),
+    adminDeleteContact: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/site-settings/contacts/admin/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["AdminContacts", "SiteSettings"],
+    }),
   }),
 });
 
-export const { useGetSiteSettingsQuery } = siteSettingsApiSlice;
+export const {
+  useGetSiteSettingsQuery,
+  useGetAdminContactsQuery,
+  useAdminCreateContactMutation,
+  useAdminUpdateContactMutation,
+  useAdminDeleteContactMutation,
+} = siteSettingsApiSlice;

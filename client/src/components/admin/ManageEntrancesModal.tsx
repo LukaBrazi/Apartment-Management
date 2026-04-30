@@ -135,7 +135,7 @@ export default function ManageEntrancesModal({ building, open, onOpenChange }: P
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-2xl">
+			<DialogContent className="max-w-2xl bg-white dark:bg-[#1C2B3A]">
 				<DialogHeader>
 					<DialogTitle>Підʼїзди — {building?.name}</DialogTitle>
 					<DialogDescription>

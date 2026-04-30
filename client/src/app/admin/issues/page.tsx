@@ -101,18 +101,31 @@ export default function AdminIssuesPage() {
 		{
 			accessorKey: "title",
 			header: "Назва",
-			cell: ({ row }) => (
-				<div className="max-w-[240px]">
-					<span className="block truncate font-medium text-[#1C2B3A] dark:text-white">
-						{row.original.title}
-					</span>
-					{row.original.unit_number && (
-						<span className="text-xs text-[#6B7F8C]">
-							кв. {row.original.unit_number}
+			cell: ({ row }) => {
+				// PR-15: backend returns ``building_address`` + ``city`` for
+				// staff (and reporter/assignee).  Admin staff see the full
+				// address in the subtitle; non-party tenants would see
+				// ``null`` here so the fallback is the bare unit_number.
+				const { unit_number, building_address, city } = row.original;
+				const addressLine =
+					building_address
+						? `${building_address}${unit_number ? `, кв. ${unit_number}` : ""}${city ? ` · ${city}` : ""}`
+						: unit_number
+						? `кв. ${unit_number}`
+						: null;
+				return (
+					<div className="max-w-[240px]">
+						<span className="block truncate font-medium text-[#1C2B3A] dark:text-white">
+							{row.original.title}
 						</span>
-					)}
-				</div>
-			),
+						{addressLine && (
+							<span className="block truncate text-xs text-[#6B7F8C]">
+								{addressLine}
+							</span>
+						)}
+					</div>
+				);
+			},
 		},
 		{
 			accessorKey: "reported_by",

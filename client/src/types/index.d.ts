@@ -254,6 +254,15 @@ export interface Issue {
 	unit_number: string | null;
 	unit_id: string | null;
 	building_name: string | null;
+	/**
+	 * PR-15: full street address.  Backend returns it ONLY for the
+	 * reporter, the assignee, and staff — other readers get ``null``
+	 * even if they are in the same org.
+	 */
+	building_address?: string | null;
+	/** PR-15: city of the building.  Same visibility rules as
+	 * ``building_address`` — null for non-party readers. */
+	city?: string | null;
 	reported_by: string;
 	title: string;
 	description: string;

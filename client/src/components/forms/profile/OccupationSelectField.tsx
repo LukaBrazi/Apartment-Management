@@ -70,7 +70,7 @@ export default function OccupationSelectField({
 			<div className="mt-1 flex items-center space-x-3">
 				<Briefcase className="dark:text-babyPowder size-8" />
 				{isResident ? (
-					// Residents can switch between "Орендар" and "Власник" only.
+					// Residents can switch between "Мешканець" and "Власник" only.
 					<ClientOnly>
 						<Controller
 							control={control}

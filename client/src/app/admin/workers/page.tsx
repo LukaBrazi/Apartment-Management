@@ -22,7 +22,7 @@ const occupationLabels: Record<Occupation, string> = {
 	painter: "Маляр",
 	electrician: "Електрик",
 	hvac: "Вентиляція/Кліматизація",
-	tenant: "Орендар",
+	tenant: "Мешканець",
 	owner: "Власник",
 	guard: "Охоронець",
 };

@@ -34,7 +34,7 @@ export default function CabinetTopbar() {
 		[profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Мешканець";
 	const role =
 		profile?.occupation === "tenant"
-			? "Орендар"
+			? "Мешканець"
 			: profile?.occupation === "owner"
 			? "Власник"
 			: profile?.occupation === "guard"

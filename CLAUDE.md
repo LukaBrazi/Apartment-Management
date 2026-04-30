@@ -44,6 +44,46 @@ reference `${{<source-service>.VAR_NAME}}` щоб не дублювати зна
 
 Покрокова інструкція deploy/troubleshoot — `docs/RAILWAY_SETUP.md`.
 
+### Railway deploy debugging (lessons learned 2026-04-29 wave 2)
+
+При застряглих deploys пам'ятай в такому порядку:
+
+1. **`status.railway.app` — ПЕРШИЙ крок** діагностики stuck deploys >5 хв.
+   2026-04-29 ввечері Railway мав incident "Image Registry (Metal) — Investigating",
+   через що 4 сервіси висіли у `Queued (Processing deployment...)` з усіма
+   sub-stages "Not started". Не наш код, не наш CI — їх інфра. Чекаємо
+   resolved status замість того щоб гадати на код.
+
+2. **"Redeploy" ≠ "deploy latest commit".** Натиснення Redeploy на ACTIVE
+   deploy redeployить **той самий commit**, що зараз active, не новіший
+   commit з main. Воспроизведено: натиснули Redeploy очікуючи що PR-14
+   піднімется → Railway re-deployив PR-13a era code, PR-14 не задеплоївся.
+
+3. **Force redeploy від latest main = empty commit pattern:**
+   ```bash
+   git commit --allow-empty -m "ci: force Railway redeploy"
+   git push origin main
+   ```
+   Railway отримує webhook на новий commit hash → робить fresh build з усім
+   останнім main кодом. Працює коли redeploy зависає або підхоплює старий
+   commit.
+
+4. **Webhook іноді не доходить.** Якщо після push на main у Railway
+   Deployments tab не з'являється новий entry за 30 секунд — webhook
+   пропустився (буває). Empty commit + push зазвичай вирішує (різний hash —
+   точно triggerне новий webhook).
+
+5. **Concurrent build cap.** На малих планах Railway паралельні builds
+   обмежені. Якщо у Deployments tab бачиш кілька QUEUED одного сервісу —
+   Cancel старі (`⋮ → Cancel`) щоб не блокували slot для свіжого. Перевір
+   `railway.app/account/usage` для лімітів.
+
+6. **ВСІ 4 сервіси треба redeploy** окремо (BE, FE, Celery, Celery beat) —
+   Railway тригерить webhook на кожен сервіс паралельно, але не атомарно.
+   Якщо 1 завис — інші можуть deployити нормально, утворюючи split state
+   (BE на новому коді, FE на старому). Перевіряй що в кожному з 4-х
+   сервісів latest deploy = ACTIVE, не QUEUED.
+
 ### Email backend — Resend HTTP API only (без SMTP)
 
 **Railway egress блокує/затримує SMTP** (підтверджено експериментально:
@@ -161,6 +201,65 @@ Verified domain: `apartmentos.org` у Resend → `noreply@apartmentos.org`
 
 Lock-down тести унеможливлюють regression на critical config через
 звичайний rebase/refactor.
+
+### Multi-tenant FK auto-pinning pattern (PR-14, 2026-04-29)
+
+Bug 1 у PR-14 був класичним: `BuildingSerializer.Meta.fields` НЕ містив
+`organization`, view не override-ив `perform_create` → `Building` зберігався
+з `organization=None` → з `get_queryset` фільтром по orgs, новий запис
+**миттєво зникав** для creator-staff. Симптом: "створив, побачив success,
+але у списку нема". Для CEO superuser була друга маска: `get_queryset`
+для superuser'а повертає все, тому bug ховався у CI з `AdminUserFactory(is_superuser=True)`.
+
+**Правильний паттерн для будь-якого нового tenant-scoped resource:**
+
+1. **Не додавай tenant FK у `Meta.fields`** — інакше staff може spoofити
+   payload і запарковати запис у чужу org.
+2. **Pin org через `perform_create`** на view:
+   ```python
+   def perform_create(self, serializer):
+       org = _resolve_caller_organization(self.request.user)
+       serializer.save(organization=org)
+   ```
+3. **`_resolve_caller_organization` helper** (у `apartments/views.py:44`)
+   обробляє три кейси:
+   - superuser з orgs → first org
+   - superuser БЕЗ orgs → `None` (legacy compat для тестових fixtures)
+   - staff БЕЗ orgs → `ValidationError` (інакше створений запис буде
+     невидимий)
+4. **Lock-down regex test** — окремо stere що organization НЕ writable
+   у серіалізаторі та що `perform_create` override присутній (приклад:
+   `apps/apartments/tests/test_admin_view_lockdowns.py`).
+5. **Legacy endpoints теж фікси.** Якщо у проекті є дублі (новий
+   `/admin/` + legacy `/create/`) — fix на обох. Frontend міг лишатися
+   на legacy.
+6. **Bug 1-style діагностика:** перший крок — Django Admin фільтр
+   `?organization__isnull=true` на постраждалій моделі. Якщо там нові
+   записи з `org=NULL` — bug підтверджено. Manual fix: пройтися по
+   списку, виставити org. Або написати `python manage.py
+   backfill_<model>_orgs` management command.
+
+### TOCTOU race protection для unique_together (PR-14 pattern)
+
+При nested create або PATCH-rename що чіпає `unique_together(parent, name)`,
+оптимістична `.exists()` перед `.create()` має race window. У pre-check
+все чисто, потім інший request встигає створити те ж саме → `IntegrityError`
+бабахне 500. Стандартний guard:
+
+```python
+try:
+    with transaction.atomic():
+        instance = Model.objects.create(**data)
+        # nested children тут — все під одним atomic
+except IntegrityError:
+    raise serializers.ValidationError(
+        {"field": "Дублікат — запис уже існує."}
+    )
+```
+
+`bulk_create` у тому ж `atomic` для масових children (>100 рядків) —
+наприклад 500 Unit'ів на entrance — економить ~10x latency проти
+per-row save() і безпечно rollback-иться як одне ціле.
 
 ## Development Workflow
 

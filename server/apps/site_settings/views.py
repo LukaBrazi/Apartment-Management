@@ -1,13 +1,17 @@
 from apps.common.renderers import GenericJSONRenderer
 from django.db.models import Count, Q
-from rest_framework import status
+from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import ContactPerson, SiteSettings
-from .serializers import ContactPersonSerializer, SiteSettingsSerializer
+from .serializers import (
+    AdminContactPersonSerializer,
+    ContactPersonSerializer,
+    SiteSettingsSerializer,
+)
 
 
 class SiteSettingsAPIView(APIView):
@@ -42,6 +46,76 @@ class SiteSettingsAPIView(APIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+def _scope_admin_contacts(user):
+    """Contacts visible to a staff caller — scoped to their orgs.
+
+    Same pattern as ``_scope_admin_buildings`` in apartments/views.py:
+    superusers see everything, regular staff see only contacts whose
+    ``organization`` is one of their active memberships.  Contacts
+    with ``organization=None`` (platform-level legacy) are excluded
+    for non-superusers — there is no safe tenant claim on them.
+    """
+    from apps.organizations.utils import get_user_organizations
+
+    base = ContactPerson.objects.select_related("organization")
+    if user.is_superuser:
+        return base
+    return base.filter(organization__in=get_user_organizations(user))
+
+
+class AdminContactListCreateAPIView(generics.ListCreateAPIView):
+    """Admin list/create contacts — scoped to the caller's orgs.
+
+    URL: ``/api/v1/site-settings/contacts/admin/``.  Body for POST is
+    the writable field set defined on ``AdminContactPersonSerializer``
+    (no ``organization`` — pinned server-side).
+
+    Bug 1 prevention (PR-14 pattern): without ``perform_create``
+    pinning, the new row would be saved with ``organization=None`` and
+    immediately disappear from this same view's GET response (the
+    queryset filters by org membership).
+    """
+
+    serializer_class = AdminContactPersonSerializer
+    permission_classes = [IsAdminUser]
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "admin_contacts"
+    pagination_class = None
+
+    def get_queryset(self):
+        return _scope_admin_contacts(self.request.user).order_by(
+            "order", "name"
+        )
+
+    def perform_create(self, serializer):
+        # Local import — avoid an import cycle at module load (apartments
+        # imports from site_settings via the SiteSettings FK in some
+        # paths) and keep the helper as the single source of truth.
+        from apps.apartments.views import _resolve_caller_organization
+
+        org = _resolve_caller_organization(self.request.user)
+        serializer.save(organization=org)
+
+
+class AdminContactUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """Admin retrieve/update/destroy for a single contact.
+
+    URL: ``/api/v1/site-settings/contacts/admin/<int:id>/``.  Cross-org
+    access returns 404 because the queryset filters out contacts that
+    do not belong to the caller's orgs (paranoid: not 403, to avoid
+    leaking the existence of the contact ID).
+    """
+
+    serializer_class = AdminContactPersonSerializer
+    permission_classes = [IsAdminUser]
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "admin_contact"
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return _scope_admin_contacts(self.request.user)
 
 
 class SuperAdminOrgsAPIView(APIView):

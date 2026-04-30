@@ -42,6 +42,51 @@ class ContactPersonSerializer(serializers.ModelSerializer):
         return None
 
 
+class AdminContactPersonSerializer(serializers.ModelSerializer):
+    """Admin-facing CRUD serializer for ``ContactPerson``.
+
+    PR-15: ``organization`` is intentionally NOT in ``fields`` so staff
+    cannot spoof the FK and park a contact in another tenant's org.
+    The view's ``perform_create`` pins the org server-side via
+    ``_resolve_caller_organization`` (same pattern as PR-14 Buildings).
+
+    The lock-down regex test in
+    ``apps/site_settings/tests/test_admin_contacts_api.py`` enforces
+    this invariant — do not add ``organization`` here.
+    """
+
+    role_display = serializers.CharField(source="get_role_display", read_only=True)
+    photo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ContactPerson
+        fields = [
+            "id",
+            "name",
+            "role",
+            "role_display",
+            "position",
+            "phone",
+            "email",
+            "telegram",
+            "photo_url",
+            "is_emergency",
+            "working_hours",
+            "order",
+            "is_active",
+        ]
+        read_only_fields = ["id", "role_display", "photo_url"]
+
+    def get_photo_url(self, obj):
+        request = self.context.get("request")
+        if obj.photo:
+            url = obj.photo.url
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        return None
+
+
 class SiteSettingsSerializer(serializers.ModelSerializer):
     """Public site settings serializer for homepage and initial page load."""
 

@@ -1,8 +1,18 @@
 # ApartmentOS — Client (Next.js) Context
 
 > Context for developers and AI agents working in `client/`.
-> Last updated: **2026-04-29** — after PR-9..PR-12 batch (Telegram alerts,
-> health monitoring, org reports, Resend HTTP API).
+> Last updated: **2026-04-29 (evening)** — after PR-13a (billing core),
+> i18n cleanup (Total → Всього on Reports tab), admin dashboard clickable
+> rows, PR-14 (Buildings nested create + edit + visibility fix + Issue
+> staff edit dialog).
+>
+> RTK Query tag types now include `"AdminBuildings"`, `"AdminEntrances"`,
+> and (PR-15) `"AdminContacts"` (`baseApiSlice.ts`). Mutations on entrances
+> invalidate `["AdminEntrances", "AdminBuildings", "Apartment"]` так що list
+> buildings + units count + manage-entrances modal оновляться синхронно.
+> Mutations on admin contacts invalidate `["AdminContacts", "SiteSettings"]`
+> щоб публічна сторінка `/contacts` (читає `getSiteSettings`) бачила нові
+> зміни одразу.
 
 ## 🚨 Package manager policy: npm ONLY
 
@@ -185,6 +195,43 @@ All password: `Demo1234!` (prod rotates via `DEMO_PASSWORD` env + `--passwords-f
 - `/api/v1/consent/` (POST) — `ConsentCreateAPIView` (GDPR ToS+Privacy)
 - `/api/v1/consent/me/` (GET) — `ConsentMeAPIView` повертає `{tos, privacy, tos_current_version, privacy_current_version}` — frontend має слати `*_current_version` при POST, інакше modal зациклюється
 - `/api/v1/health/` — `HealthCheckAPIView` (no auth, no throttle, DB+Redis ping → 200/503)
+- `/api/v1/apartments/buildings/admin/` — `AdminBuildingListCreateAPIView` (GET list, POST create with optional nested `entrances: [{name, apartments_count}]`)
+- `/api/v1/apartments/buildings/create/` — `BuildingCreateAPIView` legacy create (frontend hits this currently — both endpoints share the perform_create org auto-pin from PR-14)
+- `/api/v1/apartments/buildings/<int:pkid>/` — `BuildingUpdateDestroyAPIView` (PATCH/DELETE)
+- `/api/v1/apartments/buildings/<int:building_pkid>/entrances/admin/` — `AdminEntranceListCreateAPIView` (PR-14: nested list+create entrance, body `{name, apartments_count}`, max 500 units per entrance)
+- `/api/v1/apartments/entrances/<uuid:id>/` — `AdminEntranceUpdateDestroyAPIView` (PR-14: PATCH rename / DELETE; DELETE → 409 if any unit has Residency)
+- `/api/v1/apartments/entrances/<uuid:id>/grow/` — `AdminEntranceGrowAPIView` (PR-14: POST `{delta: N}`, append N apartments with sequential numbering, total cap 500)
+- `/api/v1/site-settings/contacts/admin/` — `AdminContactListCreateAPIView` (PR-15: GET list, POST create. Body: `{name, role, position?, phone?, email?, telegram?, working_hours?, is_emergency?, is_active?, order?}`. `organization` НЕ writable — pin server-side через `perform_create` (Bug 1 prevention). `role` ∈ `manager|technician|guard|accountant|emergency|other`)
+- `/api/v1/site-settings/contacts/admin/<int:id>/` — `AdminContactUpdateDestroyAPIView` (PR-15: PATCH update / DELETE. Cross-org → 404)
+
+### PR-15 — Issue address visibility
+
+`IssueSerializer` тепер містить `building_address` + `city` поля.  Backend
+повертає реальні значення ТІЛЬКИ для:
+- `request.user == issue.reported_by` (автор)
+- `request.user == issue.assigned_to` (виконавець)
+- `request.user.is_staff or request.user.is_superuser`
+
+Усі інші читачі (наприклад, інший tenant у тій самій org з ID заявки)
+отримують `null` для обох полів.  Це навмисна data minimisation —
+номер квартири + точна адреса разом = достатньо для ідентифікації.
+
+Frontend: `IssueDetails.tsx` рендерить адресу як subtitle нижче "Номер
+квартири: X" тільки якщо `building_address` truthy.  `admin/issues`
+table — те ж саме у subtitle колонки "Назва".
+
+### PR-15 — `/profile?tab=my-issues` Bug 1 fallback
+
+`MyIssuesListAPIView.get_queryset` тепер повертає рядки де
+`reported_by=user AND (organization in user_orgs OR organization IS NULL)`.
+Без NULL-fallback легасі дані (Issue з `org=NULL`) ховались від автора —
+hot path tenant'а лишався порожнім.  Backfill через
+`python manage.py backfill_issue_orgs` (resolve org з `unit.entrance.building`
+або з reporter's first membership).
+
+`IssueCreateSerializer.create` для надійності пинить org з `unit.entrance.building.organization`
+коли user'у не вдалось знайти org через memberships (edge case для
+superuser-creators).
 
 ## 🌐 Public pages (Next.js, без auth)
 

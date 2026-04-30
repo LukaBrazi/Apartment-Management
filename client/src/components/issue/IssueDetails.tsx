@@ -225,6 +225,18 @@ export default function IssueDetails({ params }: IssueDetailsProps) {
 						</p>
 					</CardTitle>
 
+					{/* PR-15: full street address — shown only when backend
+					    returned it (reporter / assignee / staff).  The
+					    visibility rule lives server-side, see
+					    ``IssueSerializer._can_see_address``. */}
+					{issue?.building_address && (
+						<p className="text-xs text-[#6B7F8C] truncate">
+							{issue.building_address}
+							{issue.unit_number ? `, кв. ${issue.unit_number}` : ""}
+							{issue.city ? ` · ${issue.city}` : ""}
+						</p>
+					)}
+
 					<CardDescription className="mt-1">
 						<p className="flex flex-wrap items-center gap-x-2 gap-y-1">
 							<CheckCheck className="tab-icon flex-shrink-0" />

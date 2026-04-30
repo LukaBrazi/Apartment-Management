@@ -41,7 +41,7 @@ export default function LeftNavbar() {
 	const initial = profile?.first_name?.charAt(0)?.toUpperCase() ?? "?";
 	const roleLabel =
 		profile?.occupation === "tenant"
-			? "Орендар"
+			? "Мешканець"
 			: profile?.occupation === "owner"
 			? "Власник"
 			: profile?.occupation === "guard"

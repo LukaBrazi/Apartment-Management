@@ -137,15 +137,38 @@ class MyIssuesListAPIView(generics.ListAPIView):
     ordering = ("-created_at",)
 
     def get_queryset(self):
-        """Strict multi-tenant scoping: a non-superuser without any
-        active ``OrganizationMembership`` sees no issues.
+        """Tenant view of their own reports.
+
+        Authorisation: a user can only see issues where they are the
+        reporter — that's the predicate baked into the base filter.
+
+        PR-15 Bug 1 fallback: legacy seed/migration paths produced
+        ``Issue`` rows with ``organization=None`` even when the
+        reporter has an active ``OrganizationMembership``.  A pure
+        ``organization__in=user_orgs`` filter excludes NULL → tenants
+        saw an empty list at ``/profile?tab=my-issues``.  Since the
+        reporter is already pinned to ``request.user``, allowing
+        NULL-org rows for the reporter is safe (it's still THEIR
+        issue, no cross-tenant leak possible) and matches the
+        ``_resolve_caller_organization`` legacy-compat pattern from
+        PR-14.
         """
+        from django.db.models import Q
+
         from apps.organizations.utils import get_user_organizations
 
-        qs = _issue_base_qs().filter(reported_by=self.request.user)
-        if self.request.user.is_superuser:
+        user = self.request.user
+        qs = _issue_base_qs().filter(reported_by=user)
+        if user.is_superuser:
             return qs
-        return qs.filter(organization__in=get_user_organizations(self.request.user))
+        # Reporter-scoped fallback: row is theirs OR row is in one of
+        # their orgs.  ``reported_by=user`` is the strong predicate;
+        # the org filter is kept so a user who lost their reporter
+        # FK (anonymisation) still sees nothing across orgs.
+        return qs.filter(
+            Q(organization__in=get_user_organizations(user))
+            | Q(organization__isnull=True)
+        )
 
 
 # IssueCreateAPIView Class
