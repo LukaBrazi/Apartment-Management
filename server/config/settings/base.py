@@ -164,6 +164,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.common.middleware.OrganizationMiddleware",
+    # PR-18 — daily security counters for the evening TG digest.
+    # Lightweight: increments cache keys on 429 / 5xx responses, never
+    # raises. Placed last so only fully-formed responses are counted.
+    "apps.common.security_metrics.SecurityMetricsMiddleware",
 ]
 
 

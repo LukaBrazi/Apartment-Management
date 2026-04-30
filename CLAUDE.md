@@ -239,6 +239,41 @@ Bug 1 у PR-14 був класичним: `BuildingSerializer.Meta.fields` НЕ 
    списку, виставити org. Або написати `python manage.py
    backfill_<model>_orgs` management command.
 
+### Daily TG digest content (PR-18, 2026-04-30)
+
+`daily_health_status_task` (Celery Beat 09:00 + 21:00 Europe/Kyiv,
+`apps/common/tasks.py`) — двосекційний digest у Telegram:
+
+- **Morning (hour < 12, 🌅):** health checks + Billing digest
+  (`apps/billing/digest.py:build_billing_digest`).
+  - Trial expiring ≤7 днів (список org + днів)
+  - Draft invoices >3 днів (count + 3 топ invoice_number)
+  - Approved-not-paid >10 днів overdue (count + 3 топ)
+  - MRR snapshot (sum `plan.monthly_price_uah` для active+non-paused
+    +post-trial subscriptions; addon MRR — окремий PR)
+- **Evening (hour ≥ 12, 🌙):** health checks + Security digest
+  (`apps/common/security_metrics.py:build_security_digest`).
+  - Failed logins (24h) — threshold >50 → 🚨, >10 → ⚠️
+  - Rate-limit hits (24h) — >100 → ⚠️
+  - 5xx errors (24h) — >0 → 🚨
+
+Health checks (`run_health_checks()`) присутні в обох — спільний
+рендерер `_format_health_lines()`.
+
+**Security counters** (`apps/common/security_metrics.py`):
+- Storage — Django cache (Redis prod, LocMem test) з ключем
+  `metrics:<name>:YYYY-MM-DD` + 48h TTL.
+- `failed_logins` — `user_login_failed` signal handler, реєструється у
+  `CommonConfig.ready()` з `dispatch_uid` щоб уникнути dup connect.
+- `throttle_hits` (429) і `errors_5xx` (500-599) — `SecurityMetricsMiddleware`,
+  доданий у `MIDDLEWARE` (base.py) останнім після `OrganizationMiddleware`.
+- Middleware ніколи не raise-ить — exception у counter swallow-иться
+  через `try/except` щоб flaky Redis не повертав 500 на здорову view.
+
+**Lock-down test:** `apps/common/tests/test_daily_digest_lockdown.py` —
+regex stere що morning/evening branches лишаються wired. Парний з
+runtime `test_health_monitoring.py::TestDailyHealthStatusTask`.
+
 ### TOCTOU race protection для unique_together (PR-14 pattern)
 
 При nested create або PATCH-rename що чіпає `unique_together(parent, name)`,
