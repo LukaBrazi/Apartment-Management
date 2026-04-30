@@ -63,6 +63,10 @@ export function useAuthNavigation() {
 		if (link.path === "/request-pass" && !isAuthenticated) return false;
 		if (link.path === "/request-pass" && !isTenant && !isStaff) return false;
 
+		// PR-16: assigned issues — worker/staff/dispatcher/guard only.
+		// Tenants don't get assignments, so hide it for them and for unauth.
+		if (link.path === "/assigned-issues" && (isTenant || !isAuthenticated)) return false;
+
 		// Guard-only: guard portal
 		if (link.path === "/guard-portal" && !isGuard && !isStaff) return false;
 

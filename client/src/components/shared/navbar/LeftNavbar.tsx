@@ -2,7 +2,10 @@
 
 import { NavIcon } from "@/components/shared/NavIcon";
 import { useAuthNavigation } from "@/hooks";
-import { useGetMyIssuesQuery } from "@/lib/redux/features/issues/issueApiSlice";
+import {
+	useGetMyAssignedStatsQuery,
+	useGetMyIssuesQuery,
+} from "@/lib/redux/features/issues/issueApiSlice";
 import { useGetMyPassesQuery } from "@/lib/redux/features/passes/passApiSlice";
 import { useGetNewsQuery } from "@/lib/redux/features/news/newsApiSlice";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -22,17 +25,24 @@ export default function LeftNavbar() {
 	const { data: passesData } = useGetMyPassesQuery({ status: "pending" }, { skip: !authState });
 	// unread_count: articles the user hasn't opened yet (server tracks via NewsRead model)
 	const { data: newsData } = useGetNewsQuery(undefined, { skip: !authState });
+	// PR-16: assigned-issues badge — light COUNT-only endpoint, only "accepted"
+	// (newly assigned, not yet in_progress) drives the sidebar number.
+	const { data: assignedStatsData } = useGetMyAssignedStatsQuery(undefined, {
+		skip: !authState,
+	});
 
 	// Use total `.count` from the paginated API response — filtering paginated
 	// `.results` (max 10 per page) would give wrong counts for users with many items.
 	const openIssuesCount = issuesData?.my_issues?.count ?? 0;
 	const pendingPassesCount = passesData?.count ?? 0;
 	const newsUnreadCount = newsData?.unread_count ?? 0;
+	const acceptedAssignedCount = assignedStatsData?.stats?.accepted ?? 0;
 
 	const getBadgeCount = (path: string): number => {
 		if (path === "/profile?tab=my-issues") return openIssuesCount;
 		if (path === "/my-passes") return pendingPassesCount;
 		if (path === "/news") return newsUnreadCount;
+		if (path === "/assigned-issues") return acceptedAssignedCount;
 		return 0;
 	};
 

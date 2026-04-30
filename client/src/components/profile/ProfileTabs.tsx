@@ -7,7 +7,6 @@ import About from "@/components/profile/About";
 // Posts (форум) тимчасово приховано — фіча повернеться у наступному PR.
 // import Posts from "@/components/profile/Posts";
 import Issues from "@/components/profile/Issues";
-import AssignedIssues from "@/components/profile/AssignedIssues";
 import Reports from "@/components/profile/Reports";
 import TelegramSettings from "@/components/profile/TelegramSettings";
 import { useGetTelegramStatusQuery } from "@/lib/redux/features/telegram/telegramProfileApiSlice";
@@ -16,12 +15,13 @@ import { useSearchParams } from "next/navigation";
 // PR-15: канонічний whitelist дозволених `?tab=` значень.  Додавання нового
 // табу = додавання в цей масив.  Приходить ?tab=posts (legacy) → fallback
 // на "about", щоб сторінка не лишалась з прихованим контентом.
+// PR-16: "assigned-issues" винесено у окрему сторінку `/assigned-issues` —
+// прибрано з whitelist і з рендеру.
 const ALLOWED_TABS = [
 	"about",
 	"my-issues",
 	"my-reports",
 	"notifications",
-	"assigned-issues",
 ] as const;
 type AllowedTab = (typeof ALLOWED_TABS)[number];
 
@@ -33,7 +33,7 @@ function normalizeTab(raw: string | null): AllowedTab {
 }
 
 export default function ProfileTabs() {
-	const { isTenant, isAuthenticated } = useAuthNavigation();
+	const { isAuthenticated } = useAuthNavigation();
 	const { data: telegramStatus, isLoading: isTelegramLoading } = useGetTelegramStatusQuery(
 		undefined,
 		{ skip: !isAuthenticated },
@@ -95,16 +95,6 @@ export default function ProfileTabs() {
 								Сповіщення
 							</TabsTrigger>
 						)}
-						{!isTenant && (
-							<TabsTrigger
-								value="assigned-issues"
-								className="rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap
-									data-[state=active]:bg-[#1E2761] data-[state=active]:text-white data-[state=active]:shadow-sm
-									data-[state=inactive]:bg-transparent data-[state=inactive]:text-[#475569] dark:data-[state=inactive]:text-[#8FA8B8]"
-							>
-								Призначені заявки
-							</TabsTrigger>
-						)}
 					</TabsList>
 				</div>
 
@@ -113,7 +103,6 @@ export default function ProfileTabs() {
 				<Issues />
 				<Reports />
 				{isAuthenticated && <TelegramSettings />}
-				{!isTenant && <AssignedIssues />}
 			</Tabs>
 		</div>
 	);

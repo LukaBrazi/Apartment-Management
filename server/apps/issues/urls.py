@@ -8,6 +8,7 @@ from apps.issues.views import (
     IssueListAPIView,
     IssueReviewAPIView,
     IssueUpdateAPIView,
+    MyAssignedStatsAPIView,
     MyIssuesListAPIView,
     MyReviewableIssuesAPIView,
 )
@@ -17,6 +18,8 @@ from django.urls import path
 urlpatterns = [
     path("", IssueListAPIView.as_view(), name="list-issues"),
     path("assigned/", AssignedIssuesListAPIView.as_view(), name="list-assigned-issues"),
+    # PR-16: count-only stats endpoint for the LeftNavbar assigned-issues badge.
+    path("assigned/stats/", MyAssignedStatsAPIView.as_view(), name="assigned-stats"),
     path("my-issues/", MyIssuesListAPIView.as_view(), name="list-my-issues"),
     path("my/reviewable/", MyReviewableIssuesAPIView.as_view(), name="my-reviewable-issues"),
     # PR-4: default path — resolves unit from primary Residency.

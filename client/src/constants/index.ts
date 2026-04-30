@@ -45,6 +45,8 @@ export const residentOccupationOptions = [
 export const leftNavLinks: LeftNavLink[] = [
 	{ path: "/welcome",       label: "Мій будинок",    imgLocation: "/assets/icons/home.svg" },
 	{ path: "/profile?tab=my-issues", label: "Мої заявки", imgLocation: "/assets/icons/report.svg" },
+	// PR-16: видно тільки worker/staff/dispatcher/guard (не tenant) — gating у `useAuthNavigation`.
+	{ path: "/assigned-issues", label: "Призначені заявки", imgLocation: "/assets/icons/report.svg" },
 	{ path: "/my-passes",     label: "Мої перепустки",  imgLocation: "/assets/icons/report.svg" },
 	{ path: "/payments",      label: "Платежі",        imgLocation: "/assets/icons/bookmark.svg" },
 	{ path: "/news",          label: "Новини",         imgLocation: "/assets/icons/speak.svg" },

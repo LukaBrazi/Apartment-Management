@@ -314,6 +314,22 @@ export interface MyAssignedIssuesResponse {
 	};
 }
 
+/**
+ * PR-16: light-weight COUNT-only stats endpoint for the LeftNavbar
+ * "Призначені заявки" badge.  Returns the number of issues currently
+ * assigned to the user, grouped by status.  Excludes self-reported
+ * issues (reporter == assignee).
+ */
+export interface MyAssignedStatsResponse {
+	stats: {
+		reported: number;
+		accepted: number;
+		in_progress: number;
+		done: number;
+		rejected: number;
+	};
+}
+
 export interface IssueReview {
 	id: string;
 	issue: string;

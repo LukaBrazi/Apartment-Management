@@ -203,6 +203,7 @@ All password: `Demo1234!` (prod rotates via `DEMO_PASSWORD` env + `--passwords-f
 - `/api/v1/apartments/entrances/<uuid:id>/grow/` — `AdminEntranceGrowAPIView` (PR-14: POST `{delta: N}`, append N apartments with sequential numbering, total cap 500)
 - `/api/v1/site-settings/contacts/admin/` — `AdminContactListCreateAPIView` (PR-15: GET list, POST create. Body: `{name, role, position?, phone?, email?, telegram?, working_hours?, is_emergency?, is_active?, order?}`. `organization` НЕ writable — pin server-side через `perform_create` (Bug 1 prevention). `role` ∈ `manager|technician|guard|accountant|emergency|other`)
 - `/api/v1/site-settings/contacts/admin/<int:id>/` — `AdminContactUpdateDestroyAPIView` (PR-15: PATCH update / DELETE. Cross-org → 404)
+- `/api/v1/issues/assigned/stats/` — `MyAssignedStatsAPIView` (PR-16, GET, повертає flat dict з кількостями `Issue` по статусах для assigned issues, виключає self-reported. Запит ходить з LeftNavbar бейджа `Призначені заявки`. Status keys: `reported|accepted|in_progress|done|rejected`. UI використовує тільки `accepted` для бейджа.)
 
 ### PR-15 — Issue address visibility
 

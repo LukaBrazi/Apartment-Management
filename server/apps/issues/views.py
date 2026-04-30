@@ -122,6 +122,46 @@ class AssignedIssuesListAPIView(generics.ListAPIView):
         return qs.filter(organization__in=get_user_organizations(self.request.user))
 
 
+# MyAssignedStatsAPIView Class
+class MyAssignedStatsAPIView(APIView):
+    """Light count-only stats endpoint for the assigned-issues badge.
+
+    URL: ``GET /api/v1/issues/assigned/stats/``
+
+    Returns the number of issues currently assigned to ``request.user``
+    grouped by ``Issue.IssueStatus``.  Excludes self-reported issues
+    (``reported_by == assigned_to``) — those are not real "work".
+
+    No serialisation of the issue rows themselves — pure ``COUNT(*)``
+    aggregation so the LeftNavbar badge stays cheap to refresh on every
+    page load.
+
+    Response shape (wrapped by :class:`GenericJSONRenderer`):
+
+    .. code-block:: json
+
+       {"stats": {"reported": 0, "accepted": 3, "in_progress": 1, "done": 2, "rejected": 0}}
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    renderer_classes = (GenericJSONRenderer,)
+    object_label = "stats"
+
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        rows = (
+            Issue.objects.filter(assigned_to=request.user)
+            .exclude(reported_by=request.user)
+            .values("status")
+            .annotate(count=Count("id"))
+        )
+        # Default every IssueStatus to 0 so the frontend can rely on a
+        # fully-populated dict regardless of what the DB returned.
+        stats: Dict[str, int] = {choice.value: 0 for choice in Issue.IssueStatus}
+        for row in rows:
+            stats[row["status"]] = row["count"]
+        return Response(stats)
+
+
 # MyIssuesListAPIView Class
 class MyIssuesListAPIView(generics.ListAPIView):
     """List issues reported by the current user (tenant view).

@@ -4,6 +4,7 @@ import {
 	IssueReview,
 	IssueReviewsResponse,
 	MyAssignedIssuesResponse,
+	MyAssignedStatsResponse,
 	MyIssuesResponse,
 	ReportIssueData,
 	ReviewableIssue,
@@ -30,6 +31,11 @@ export const issueApiSlice = baseApiSlice.injectEndpoints({
 		}),
 		getMyAssignedIssues: builder.query<MyAssignedIssuesResponse, string>({
 			query: () => "/issues/assigned/",
+			providesTags: ["Issue"],
+		}),
+		// PR-16: COUNT-only stats endpoint for the sidebar badge.
+		getMyAssignedStats: builder.query<MyAssignedStatsResponse, void>({
+			query: () => "/issues/assigned/stats/",
 			providesTags: ["Issue"],
 		}),
 		getSingleIssue: builder.query<IssueResponse, string>({
@@ -77,6 +83,7 @@ export const {
 	useGetMyIssuesQuery,
 	useGetSingleIssueQuery,
 	useGetMyAssignedIssuesQuery,
+	useGetMyAssignedStatsQuery,
 	useUpdateIssueMutation,
 	useReviewIssueMutation,
 	useGetIssueReviewsQuery,

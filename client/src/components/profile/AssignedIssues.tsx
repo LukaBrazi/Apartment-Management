@@ -3,9 +3,14 @@
 import { useGetMyAssignedIssuesQuery } from "@/lib/redux/features/issues/issueApiSlice";
 import React from "react";
 import Spinner from "../shared/Spinner";
-import { TabsContent } from "../ui/tabs";
 import IssueCard from "../cards/IssueCard";
 
+/**
+ * PR-16: refactored from a Tabs-bound `<TabsContent>` wrapper to a
+ * standalone container so the same component can render inside the
+ * dedicated `/assigned-issues` page (sidebar nav target) without
+ * depending on the Radix Tabs context.
+ */
 export default function AssignedIssues() {
 	const { data: assignedIssues, isLoading } = useGetMyAssignedIssuesQuery("");
 
@@ -20,9 +25,9 @@ export default function AssignedIssues() {
 	}
 
 	return (
-		<TabsContent value="assigned-issues">
+		<div className="w-full">
 			<h2 className="h2-semibold flex-center font-robotoSlab dark:text-pumpkin text-xl">
-				Всього: ({myAssignedIssues?.count})
+				Всього: ({myAssignedIssues?.count ?? 0})
 			</h2>
 			<div className="mt-4 grid cursor-pointer grid-cols-1 gap-4 p-1.5 md:grid-cols-2 lg:grid-cols-3">
 				{myAssignedIssues && myAssignedIssues.results.length > 0 ? (
@@ -31,10 +36,10 @@ export default function AssignedIssues() {
 					))
 				) : (
 					<p className="h2-semibold dark:text-lime-500">
-						No Issue(s) Assigned to you Yet!
+						Жодних призначених заявок поки немає.
 					</p>
 				)}
 			</div>
-		</TabsContent>
+		</div>
 	);
 }
