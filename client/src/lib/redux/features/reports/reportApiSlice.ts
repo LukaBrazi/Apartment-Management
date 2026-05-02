@@ -17,7 +17,11 @@ export const reportApiSlice = baseApiSlice.injectEndpoints({
 		}),
 
 		getMyReports: builder.query<MyReportsResponse, void>({
-			query: () => "/reports/me/",
+			// Backend route is `/reports/my-reports/` (apps/reports/urls.py).
+			// Earlier `/reports/me/` returned 404 → empty list after a
+			// successful create — exactly the reported "скарга створена,
+			// але у списку нема" symptom.
+			query: () => "/reports/my-reports/",
 			providesTags: ["Report"],
 		}),
 	}),
