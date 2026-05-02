@@ -12,7 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { FormFieldComponent } from "../FormFieldComponent";
 import Select from "react-select";
@@ -32,7 +32,12 @@ export default function CreateIssueForm() {
 	const profile = profileData?.profile;
 	const hasUnit = Boolean(profile?.unit_id);
 
+	// Local-only selection state — composed into `location_note` on
+	// submit.  Keeping these out of react-hook-form avoids the race
+	// between the building's `setValue` and the entrance Controller
+	// that previously dropped the entrance suffix on submit.
 	const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+	const [selectedEntranceId, setSelectedEntranceId] = useState<string | null>(null);
 	const [notBuildingRelated, setNotBuildingRelated] = useState(false);
 
 	const { data: buildingsData, isLoading: buildingsLoading } = useGetBuildingsQuery();
@@ -47,9 +52,7 @@ export default function CreateIssueForm() {
 	const {
 		register,
 		handleSubmit,
-		control,
 		reset,
-		setValue,
 		formState: { errors },
 	} = useForm<TIssueCreateSchema>({
 		resolver: zodResolver(issueCreateSchema),
@@ -68,6 +71,24 @@ export default function CreateIssueForm() {
 			label: `Під'їзд ${e.name}`,
 		})) ?? [];
 
+	// Compose location_note from current selection (building + optional
+	// entrance).  Building label uses "(address)" suffix only when the
+	// building has one, so the format is consistent with what the
+	// backend prepends to description: "📍 Місце: …".
+	const composeLocationNote = (): string => {
+		if (notBuildingRelated) return "";
+		const building = buildingsData?.buildings?.find((b) => b.id === selectedBuildingId);
+		if (!building) return "";
+		const buildingLabel = building.address
+			? `${building.name} (${building.address})`
+			: building.name;
+		const entrance = entrancesData?.entrances?.find((e) => e.id === selectedEntranceId);
+		if (entrance) {
+			return `${buildingLabel} / Підʼїзд ${entrance.name}`;
+		}
+		return buildingLabel;
+	};
+
 	const onSubmit = async (formValues: TIssueCreateSchema) => {
 		if (!hasUnit) {
 			toast.error(
@@ -78,10 +99,17 @@ export default function CreateIssueForm() {
 
 		try {
 			// Backend resolves Unit from primary Residency (see PR-11).
-			await reportIssue(formValues).unwrap();
+			// We send `location_note` composed locally here — NOT from
+			// react-hook-form state — to avoid the race that previously
+			// dropped the entrance suffix between Controller / setValue.
+			await reportIssue({
+				...formValues,
+				location_note: composeLocationNote(),
+			}).unwrap();
 			toast.success("Заявку подано. Підтвердження надіслано на вашу пошту.");
 			reset();
 			setSelectedBuildingId(null);
+			setSelectedEntranceId(null);
 			setNotBuildingRelated(false);
 			router.push("/welcome");
 		} catch (error) {
@@ -121,7 +149,7 @@ export default function CreateIssueForm() {
 							setNotBuildingRelated(e.target.checked);
 							if (e.target.checked) {
 								setSelectedBuildingId(null);
-								setValue("location_note", "");
+								setSelectedEntranceId(null);
 							}
 						}}
 						className="size-4 rounded border-[#E2E5E8] accent-[#3D7A8A]"
@@ -138,15 +166,11 @@ export default function CreateIssueForm() {
 								options={buildingOptions}
 								value={buildingOptions.find((o) => o.value === selectedBuildingId) ?? null}
 								onChange={(val) => {
-									const bid = val?.value ?? null;
-									setSelectedBuildingId(bid);
-									const selected = buildingsData?.buildings?.find((b) => b.id === bid);
-									setValue(
-										"location_note",
-										selected
-											? (selected.address ? `${selected.name} (${selected.address})` : selected.name)
-											: "",
-									);
+									setSelectedBuildingId(val?.value ?? null);
+									// Reset entrance whenever the building changes, otherwise
+									// stale entranceId can compose into a different building's
+									// label on submit.
+									setSelectedEntranceId(null);
 								}}
 								placeholder={buildingsLoading ? "Завантаження..." : "Оберіть будинок"}
 								isLoading={buildingsLoading}
@@ -158,39 +182,26 @@ export default function CreateIssueForm() {
 
 						{selectedBuildingId && (
 							<ClientOnly>
-								<Controller
-									name="location_note"
-									control={control}
-									render={({ field: { onChange, onBlur, value } }) => (
-										<Select
-											options={entranceOptions}
-											value={entranceOptions.find((o) => {
-												const building = buildingsData?.buildings?.find(
-													(b) => b.id === selectedBuildingId,
-												);
-												return value === `${building?.name} / Під'їзд ${o.label.replace("Під'їзд ", "")}`;
-											}) ?? null}
-											onChange={(val) => {
-												const building = buildingsData?.buildings?.find(
-													(b) => b.id === selectedBuildingId,
-												);
-												const bLabel = building
-													? (building.address ? `${building.name} (${building.address})` : building.name)
-													: "";
-												if (val && building) {
-													onChange(`${bLabel} / Під'їзд ${val.label.replace("Під'їзд ", "")}`);
-												} else {
-													onChange(bLabel);
-												}
-											}}
-											onBlur={onBlur}
-											placeholder={entrancesLoading ? "Завантаження..." : "Оберіть під'їзд (необов'язково)"}
-											isLoading={entrancesLoading}
-											instanceId="entrance-select"
-											styles={customStyles}
-											isClearable
-										/>
-									)}
+								<Select
+									options={entranceOptions}
+									value={
+										entranceOptions.find((o) => o.value === selectedEntranceId) ?? null
+									}
+									onChange={(val) => {
+										setSelectedEntranceId(val?.value ?? null);
+									}}
+									placeholder={
+										entrancesLoading
+											? "Завантаження..."
+											: entranceOptions.length === 0
+												? "У будинку немає підʼїздів"
+												: "Оберіть підʼїзд (необовʼязково)"
+									}
+									isLoading={entrancesLoading}
+									isDisabled={!entrancesLoading && entranceOptions.length === 0}
+									instanceId="entrance-select"
+									styles={customStyles}
+									isClearable
 								/>
 							</ClientOnly>
 						)}

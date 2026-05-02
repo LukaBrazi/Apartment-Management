@@ -63,15 +63,25 @@ class ReportAdmin(admin.ModelAdmin):
     def get_report_count(self, obj: Report) -> int:
         """Get the report count.
 
+        Returns 0 when ``reported_user`` is None — this happens after
+        GDPR-style erasure where ``Report.reported_user`` is SET_NULL
+        on user deletion (the report is preserved for audit but the
+        user link is severed).  Same defensive read for ``profile`` —
+        Django Admin lookups must never raise on stale FK chains.
+
         Args:
             obj (Report): The Report object.
 
         Returns:
-            int: The report count.
+            int: The report count, or 0 when the chain is broken.
         """
-
-        # Return the report count
-        return obj.reported_user.profile.report_count
+        user = obj.reported_user
+        if user is None:
+            return 0
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            return 0
+        return profile.report_count
 
     # Set the short description for the report count
     get_report_count.short_description = "Report Count"
