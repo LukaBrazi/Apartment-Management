@@ -66,18 +66,24 @@ class TestMyReportsAfterCreate:
         list_resp = api_client.get(self.list_url)
         assert list_resp.status_code == 200, list_resp.content
 
-        # Generic renderer wraps payload in ``{"report": ...}`` (object_label).
-        # The list view returns a paginated/array body — peel both shapes.
+        # PR-19: object_label MUST be "reports" (plural) — frontend
+        # MyReportsResponse reads `data.reports`.  Earlier this was
+        # "report" (singular) and the client never found the data,
+        # rendering an empty list even when records existed.
         body = list_resp.json()
-        if isinstance(body, dict):
-            results = body.get("report") or body.get("reports") or body
-        else:
-            results = body
-
-        if isinstance(results, dict) and "results" in results:
-            results = results["results"]
-
-        titles = [r.get("title") for r in results]
+        assert "reports" in body, (
+            f"object_label must be 'reports', got keys: {list(body.keys())}"
+        )
+        # Default DRF pagination wraps results.
+        assert "results" in body["reports"], body
+        titles = [r.get("title") for r in body["reports"]["results"]]
         assert "Шумить уночі" in titles, (
             f"Created report not surfaced in /my-reports/. Body: {body}"
         )
+
+    def test_object_label_is_plural_reports(self, api_client):
+        """Lock-down — protect the contract from accidental rename back
+        to singular ``report``.  Frontend `MyReportsResponse.reports`
+        depends on this exact key."""
+        from apps.reports.views import ReportListAPIView
+        assert ReportListAPIView.object_label == "reports"

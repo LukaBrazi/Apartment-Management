@@ -1,7 +1,10 @@
 "use client";
 
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { useGetSiteSettingsQuery } from "@/lib/redux/features/siteSettings/siteSettingsApiSlice";
+import { useGetUserProfileQuery } from "@/lib/redux/features/users/usersApiSlice";
 import { useAppSelector } from "@/lib/redux/hooks/typedHooks";
 import FeedbackForm from "@/components/feedback/FeedbackForm";
 import Image from "next/image";
@@ -18,6 +21,13 @@ import Image from "next/image";
 export default function ContactsPage() {
   const { data: siteSettingsData, isLoading, error } = useGetSiteSettingsQuery();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  // PR-19: surface "Редагувати у адмінці" CTA on the public /contacts
+  // page for staff/super-admin so they don't need to navigate the
+  // sidebar.  Tenants don't see it — read-only display.
+  const { data: profileData } = useGetUserProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const isStaff = profileData?.profile?.is_staff === true;
 
   const contacts = siteSettingsData?.contacts || [];
   const settings = siteSettingsData?.settings;
@@ -29,13 +39,24 @@ export default function ContactsPage() {
   return (
     <div className="flex flex-col gap-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-[#111827] dark:text-white">
-          Контакти
-        </h1>
-        <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mt-1">
-          Контакти служб та управителя {settings?.display_complex_name || "будинку"}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-[#111827] dark:text-white">
+            Контакти
+          </h1>
+          <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mt-1">
+            Контакти служб та управителя {settings?.display_complex_name || "будинку"}
+          </p>
+        </div>
+        {isStaff && (
+          <Link
+            href="/admin/contacts"
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-[#3D7A8A] bg-white px-4 py-2 text-sm font-medium text-[#3D7A8A] transition-colors hover:bg-[#EBF3F5] dark:border-[#5BA3B5] dark:bg-[#162032] dark:text-[#5BA3B5] dark:hover:bg-[#1A2E3A]"
+          >
+            <Pencil className="h-4 w-4" />
+            Редагувати в адмінці
+          </Link>
+        )}
       </div>
 
       {/* Loading state */}

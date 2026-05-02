@@ -79,7 +79,11 @@ class ReportListAPIView(generics.ListAPIView):
     # Attributes
     serializer_class = ReportListSerializer
     renderer_classes = (GenericJSONRenderer,)
-    object_label = "report"
+    # PR-19: object_label must match what the client reads —
+    # ``MyReportsResponse.reports`` (plural) on the frontend.  Was
+    # ``"report"`` (singular) which made ``data.reports`` undefined and
+    # rendered an empty list even when records existed.
+    object_label = "reports"
 
     # Method to get the queryset of reports
     def get_queryset(self) -> Report:

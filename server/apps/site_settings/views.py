@@ -33,9 +33,35 @@ class SiteSettingsAPIView(APIView):
 
         site = get_request_site_settings(request)
         org = getattr(request, "organization", None)
-        contacts = ContactPerson.objects.filter(
-            organization=org, is_active=True
-        ).order_by("order", "name")
+
+        # Resolve the org context for the contacts list:
+        #   * middleware-detected org (subdomain / X-Organization-Slug
+        #     header) — wins when present
+        #   * authenticated user's primary org — fallback so authenticated
+        #     tenants on the bare apex domain (e.g. apartmentos.org)
+        #     still see THEIR ОСББ's contacts.  Without this fallback,
+        #     admin-created contacts (organization=org_A) were invisible
+        #     because the middleware returned None for apex requests and
+        #     the filter then matched only legacy org=None rows.
+        #   * unauthenticated apex visitor — still org=None (platform).
+        contacts_qs = ContactPerson.objects.filter(is_active=True)
+        if org is not None:
+            contacts_qs = contacts_qs.filter(organization=org)
+        elif request.user.is_authenticated:
+            from apps.organizations.utils import get_user_organizations
+
+            user_orgs = get_user_organizations(request.user)
+            if user_orgs.exists():
+                contacts_qs = contacts_qs.filter(organization__in=user_orgs)
+            else:
+                # Authenticated but no membership — show only platform
+                # contacts (legacy organization=None).
+                contacts_qs = contacts_qs.filter(organization__isnull=True)
+        else:
+            # Anonymous on apex — only platform contacts.
+            contacts_qs = contacts_qs.filter(organization__isnull=True)
+
+        contacts = contacts_qs.order_by("order", "name")
 
         data = {
             "settings": SiteSettingsSerializer(site, context={"request": request}).data,

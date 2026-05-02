@@ -10,7 +10,7 @@ import Issues from "@/components/profile/Issues";
 import Reports from "@/components/profile/Reports";
 import TelegramSettings from "@/components/profile/TelegramSettings";
 import { useGetTelegramStatusQuery } from "@/lib/redux/features/telegram/telegramProfileApiSlice";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 // PR-15: канонічний whitelist дозволених `?tab=` значень.  Додавання нового
 // табу = додавання в цей масив.  Приходить ?tab=posts (legacy) → fallback
@@ -41,6 +41,8 @@ export default function ProfileTabs() {
 	const showNotificationsTab =
 		isAuthenticated && (isTelegramLoading || telegramStatus?.feature_enabled === true);
 	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
 	const tabFromUrl = normalizeTab(searchParams.get("tab"));
 	const [activeTab, setActiveTab] = useState<string>(tabFromUrl);
 
@@ -48,12 +50,22 @@ export default function ProfileTabs() {
 		setActiveTab(tabFromUrl);
 	}, [tabFromUrl]);
 
+	// PR-19: sync ?tab=… into the URL on click so reload + share-link work.
+	// Use router.replace (not push) — tab switches inside profile shouldn't
+	// pollute history.  About is treated as default → no `?tab=about`
+	// shows up so the URL stays clean for the most common landing.
+	const handleTabChange = (value: string) => {
+		setActiveTab(value);
+		const next = value === "about" ? pathname : `${pathname}?tab=${value}`;
+		router.replace(next, { scroll: false });
+	};
+
 	return (
 		<div className="w-full">
 			<Tabs
 				className="rounded-lg border border-[#E5E7EB] dark:border-[#2D3D4F]"
 				value={activeTab}
-				onValueChange={setActiveTab}
+				onValueChange={handleTabChange}
 			>
 				{/* PR-17 mobile-first: tabs wrap to a 2nd row on narrow
 				    viewports instead of horizontal scrolling.  `whitespace-nowrap`
