@@ -39,7 +39,7 @@ drf-spectacular[sidecar]==0.27.2  # https://github.com/tfranzel/drf-spectacular
 # Telegram Bot
 # ------------------------------------------------------------------------------
 python-telegram-bot>=20.0  # https://github.com/python-telegram-bot/python-telegram-bot
-httpx>=0.25.0  # https://github.com/encode/httpx
+httpx>=0.28.1  # https://github.com/encode/httpx
 # requests is used by apps.notifications.tasks.send_telegram_error_alert_task
 # (PR-9 error alerts). Lightweight sync HTTP — Celery worker only.
 requests==2.32.3  # https://github.com/psf/requests
