@@ -20,7 +20,7 @@ django-redis==5.4.0  # https://github.com/jazzband/django-redis
 django-autoslug==1.9.9  # https://github.com/justinmayer/django-autoslug/
 django-countries==7.6.1  # https://github.com/SmileyChris/django-countries/
 django-phonenumber-field==7.3.0  # https://github.com/stefanfoulis/django-phonenumber-field
-phonenumbers==8.13.38  # https://github.com/daviddrysdale/python-phonenumbers
+phonenumbers==9.0.30  # https://github.com/daviddrysdale/python-phonenumbers
 djoser==2.2.3  # https://github.com/sunscrapers/djoser
 django-taggit==5.0.1  # https://github.com/jazzband/django-taggit
 django-filter==24.2  # https://github.com/carltongibson/django-filter
