@@ -67,7 +67,7 @@ jobs:
           # GitHub turn the step red.
           pip-audit -r server/requirements/production.txt --strict || \
             (echo "::warning::pip-audit found vulnerabilities — review and triage in docs/SECURITY_BACKLOG.md" && exit 0)
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
       - name: npm audit (frontend)
